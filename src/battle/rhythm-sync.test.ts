@@ -27,7 +27,7 @@ interface Spawn {
 function runScenario() {
   const audio = new FakeAudio(START, 0.03);
   const input = new Input();
-  const phase = new DodgePhase(input, audio, 9, SYNC_FIXTURE);
+  const phase = new DodgePhase(input, audio, 18, SYNC_FIXTURE);
   // Truy cập thành viên private bằng ngoặc vuông: chỉ để quan sát, không đổi hành vi.
   const clock = phase["clock"];
   const world: BulletWorld = phase["world"];

@@ -27,9 +27,9 @@ describe("validatePattern: dữ liệu thật và quy tắc công bằng", () =>
         lengthBeats: 8,
         loop: false,
         events: [
-          { beat: 1, type: "straight", from: "left", at: 0.5, radius: 6, telegraphBeats: 0 },
+          { beat: 1, type: "straight", from: "left", at: 0.5, radius: 12, telegraphBeats: 0 },
           { beat: 2, type: "burst", x: 0.5, y: 0.5, count: 8, telegraphBeats: 0 },
-          { beat: 3, type: "sweep", x: 0.5, y: 0.5, length: 30, startAngleDeg: 0, degreesPerBeat: 30, durationBeats: 2, telegraphBeats: -1 },
+          { beat: 3, type: "sweep", x: 0.5, y: 0.5, length: 60, startAngleDeg: 0, degreesPerBeat: 30, durationBeats: 2, telegraphBeats: -1 },
           { beat: 4, type: "aimed", from: "top", at: 0.5, radius: BULLET_FEEL.bigRadius, telegraphBeats: 0 },
         ],
       },
@@ -49,7 +49,7 @@ describe("validatePattern: dữ liệu thật và quy tắc công bằng", () =>
       loop: false,
       events: [
         { beat: 1, type: "straight", from: "left", at: 0.5, telegraphBeats: 0 },
-        { beat: 2, type: "straight", from: "left", at: 0.5, radius: 6 },
+        { beat: 2, type: "straight", from: "left", at: 0.5, radius: 12 },
       ],
     };
     expect(validatePattern(pattern, BULLET_FEEL)).toEqual([]);
@@ -144,7 +144,7 @@ const bigStraight = (beat: number, extra: Partial<StraightEvent> = {}): Straight
   type: "straight",
   from: "right",
   at: 0.5,
-  radius: 6,
+  radius: 12,
   ...extra,
 });
 
@@ -220,8 +220,8 @@ describe("lặp vòng", () => {
 });
 
 describe("đạn nhắm vào người chơi: khóa hướng lúc nào", () => {
-  const near = { x: arena.x + 20, y: arena.y + 60 };
-  const far = { x: arena.x + 180, y: arena.y + 20 };
+  const near = { x: arena.x + 40, y: arena.y + 120 };
+  const far = { x: arena.x + 360, y: arena.y + 40 };
   /** Hướng (rad) từ điểm bắn của đạn `aimed` (giữa cạnh trên) tới một vị trí. */
   const angleTo = (p: { x: number; y: number }): number => Math.atan2(p.y - arena.y, p.x - (arena.x + arena.w / 2));
 
@@ -233,8 +233,8 @@ describe("đạn nhắm vào người chơi: khóa hướng lúc nào", () => {
   };
 
   it("đạn có cảnh báo: khóa lúc BẮT ĐẦU cảnh báo, người chơi chạy đi sau đó thì đạn vẫn bay vào chỗ cũ", () => {
-    // Đạn lớn (radius 5) bắn ở beat 6, cảnh báo từ beat 5. Người chơi rời `near` ở beat 5.5, giữa lúc cảnh báo.
-    const pattern: Pattern = { name: "n", bpm: 100, lengthBeats: 16, loop: false, events: [{ beat: 6, type: "aimed", from: "top", at: 0.5, radius: 5 }] };
+    // Đạn lớn (radius 10) bắn ở beat 6, cảnh báo từ beat 5. Người chơi rời `near` ở beat 5.5, giữa lúc cảnh báo.
+    const pattern: Pattern = { name: "n", bpm: 100, lengthBeats: 16, loop: false, events: [{ beat: 6, type: "aimed", from: "top", at: 0.5, radius: 10 }] };
     const { dots } = runPattern(pattern, 8, player(5.5));
     const angle = (dots[0] as LoggedDot).angle;
     expect(Math.abs(angle - angleTo(near))).toBeLessThan(0.15);

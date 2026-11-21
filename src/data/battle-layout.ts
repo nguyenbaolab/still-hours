@@ -1,8 +1,8 @@
 import { GAME_HEIGHT, GAME_WIDTH } from "../core/config";
 import type { Rect } from "../core/math";
 
-const ARENA_WIDTH = 200;
-const ARENA_HEIGHT = 80;
+const ARENA_WIDTH = 400;
+const ARENA_HEIGHT = 160;
 
 export interface BattleLayout {
   /** Vùng bên trong khung mà bánh răng được phép đi (không tính viền). Mặc định nằm giữa màn hình. */
@@ -26,6 +26,6 @@ export const BATTLE_LAYOUT: BattleLayout = {
     w: ARENA_WIDTH,
     h: ARENA_HEIGHT,
   },
-  borderThickness: 2,
-  hpBar: { gapBelowFrame: 8, height: 8, pxPerHp: 3 },
+  borderThickness: 4,
+  hpBar: { gapBelowFrame: 16, height: 16, pxPerHp: 6 },
 };

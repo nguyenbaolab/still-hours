@@ -15,7 +15,7 @@ const COLOR = {
 /** Đạn không sống quá số giây này (dọn rác an toàn nếu có đạn bay mãi). */
 const MAX_LIFETIME_SECONDS = 40;
 /** Phần hiển thị lớn hơn vùng va chạm bấy nhiêu px (cùng nguyên tắc: hình vẽ lớn hơn hitbox, người chơi thấy mình né sát). */
-const DRAW_EXTRA_RADIUS = 0.5;
+const DRAW_EXTRA_RADIUS = 1;
 
 /**
  * Đạn chấm: vị trí là HÀM CỦA THỜI GIAN kể từ lúc xuất hiện (điểm xuất phát + vận tốc × thời gian), không cộng dồn
@@ -112,7 +112,7 @@ export class BulletWorld {
       dot.y = dot.originY + dot.vy * age;
 
       // Bị loại khi đã ra ngoài khung VÀ đang bay xa khỏi khung (đạn mới xuất hiện ở ngoài mép nhưng bay vào thì giữ lại).
-      const margin = dot.radius + 2;
+      const margin = dot.radius + 4;
       const outside =
         dot.x < arena.x - margin ||
         dot.x > arena.x + arena.w + margin ||
@@ -239,7 +239,7 @@ export class BulletWorld {
       if (Math.floor((this.time - t.startTime) / flash) % 2 === 1) continue; // pha tắt của nhấp nháy
       if (t.shape === "box") renderer.rect(t.x, t.y, t.w, t.h, COLOR.telegraph);
       else if (t.shape === "ring") renderer.ring(t.x, t.y, t.w, COLOR.telegraph);
-      else renderer.line(t.x, t.y, t.w, t.h, 1, COLOR.telegraph, t.dashed ? 3 : 0);
+      else renderer.line(t.x, t.y, t.w, t.h, 2, COLOR.telegraph, t.dashed ? 6 : 0);
     }
 
     for (let i = 0; i < this.dots.size; i++) {
@@ -256,8 +256,8 @@ export class BulletWorld {
       const tipX = hand.cx + Math.cos(angle) * hand.length;
       const tipY = hand.cy + Math.sin(angle) * hand.length;
       renderer.line(hand.cx, hand.cy, tipX, tipY, hand.thickness, COLOR.hand);
-      renderer.disc(hand.cx, hand.cy, hand.thickness + 0.5, COLOR.handHub);
-      if (debug) renderer.line(hand.cx, hand.cy, tipX, tipY, 1, COLOR.debugBullet);
+      renderer.disc(hand.cx, hand.cy, hand.thickness + 1, COLOR.handHub);
+      if (debug) renderer.line(hand.cx, hand.cy, tipX, tipY, 2, COLOR.debugBullet);
     }
 
     renderer.unclip();

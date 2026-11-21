@@ -14,9 +14,10 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước (1): di chuyển, va chạm, máu.
   - Bước (2): đạn theo beat + tiếng tích tắc procedural (đồng hồ nhịp lấy từ đồng hồ âm thanh, pattern dạng dữ liệu,
     cảnh báo công bằng, pool). Có bộ test Vitest (`npm test`) cho đồng bộ nhịp và quy tắc cảnh báo.
-- **Bước tiếp theo: (2b)**, nâng độ phân giải logic từ 320×180 lên 640×360, giữ nguyên cảm giác chơi. Chưa có gì của
-  pha tháo lắp. Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset
-  (chưa có màn thua).
+  - Bước (2b): độ phân giải logic 640×360. Mọi số pixel nhân đôi; sprite placeholder `scale` 2. Cảm giác chơi
+    (thời gian đi hết khung, thời gian đạn bay qua khung, độ khó né sát) giữ nguyên.
+- **Bước tiếp theo: (3a)**, lời tiêu cực của cư dân 3 trong pha né đạn (làm chậm nhịp). Chưa có gì của pha tháo
+  lắp. Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
 - **Vấn đề còn mở:**
   1. **Làm chậm nhịp của cư dân 3 mà vẫn trở lại tempo kịch bản.** Đã chọn hướng (a): hệ số chậm tách riêng, nhân lên
      tempo kịch bản, rồi hồi về 1. Không dùng `clock.tempo.change` cho việc này: `change` cắt bỏ mọi tempo kịch bản
@@ -113,6 +114,7 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
 - **Hình ảnh**: giai đoạn đầu dùng placeholder vẽ bằng code (hình khối, sprite pixel định nghĩa bằng mảng dữ
   liệu). Game chỉ tham chiếu sprite qua `id` (xem `src/core/sprites.ts`, `Renderer.sprite()`), nên khi có ảnh PNG
   chỉ cần đổi `definePixels(id, ...)` thành `loadImage(id, url)`, code vẽ không đổi. PNG đặt trong `public/assets/`.
+  Placeholder hiện có `scale: 2` (mỗi pixel dữ liệu = khối 2×2). PNG vẽ sẵn ở 640×360 thì để `scale` mặc định 1.
 - **Âm thanh**: tạo bằng WebAudio theo kiểu procedural: tiếng tích tắc, tiếng bánh răng, hiệu ứng khi tháo lắp,
   nhạc nền đơn giản. Module `src/audio/` phải thiết kế để sau này thêm được file nhạc thật (phát qua cùng một
   giao diện theo tên âm thanh, nguồn có thể là bộ tổng hợp hoặc file). Nhớ: trình duyệt chỉ cho phát âm thanh sau
@@ -184,16 +186,27 @@ Hiện đã có:
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `patterns/test-pattern.ts` (pattern thử ~31 giây).
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
   (pattern fixture + hàm tính giờ độc lập). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
-  `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`.
+  `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `core/renderer.test.ts` (hệ số phóng).
 - Chưa có code: lưu tiến trình trong `core/`, pha tháo lắp, hội thoại, thị trấn.
 
 ### Nền tảng kỹ thuật đã chốt
 
-- **Độ phân giải logic cố định**, hiện **320×180** (`GAME_WIDTH`/`GAME_HEIGHT` trong `src/core/config.ts`). Mọi
-  toạ độ trong game theo hệ này. Bước 2b nâng lên **640×360** và giữ nguyên cảm giác chơi; đến bước đó mới đổi hai
-  hằng này cùng các kích thước px đi kèm.
-- **Scale pixel art**: `Renderer.fit()` phóng canvas theo bội số nguyên của pixel thiết bị (có tính
-  `devicePixelRatio`), CSS `image-rendering: pixelated`. Chỉ thu nhỏ lẻ khi cửa sổ nhỏ hơn độ phân giải logic.
+- **Độ phân giải logic cố định 640×360** (`GAME_WIDTH`/`GAME_HEIGHT` trong `src/core/config.ts`). Mọi toạ độ
+  trong game theo hệ này. So với 320×180, mọi số pixel (khung 400×160, tốc độ, hitbox, đạn, cỡ chữ, độ dày nét)
+  đã nhân đôi để thời gian đi hết khung và độ khó né sát giữ nguyên. Bố cục (tỉ lệ, căn giữa) giữ nguyên.
+- **Scale pixel art**: `Renderer.fit()` gọi `pixelArtScale(innerWidth × devicePixelRatio, innerHeight × devicePixelRatio)`:
+  bội số nguyên làm tròn xuống khi cửa sổ đủ lớn, thu nhỏ lẻ khi nhỏ hơn 640×360. CSS `image-rendering: pixelated`.
+  Hệ số đang dùng hiện ở lớp debug (F1), chữ `phóng`. Bảng dưới là pixel **thiết bị** (tích `innerWidth × dpr`),
+  không phải pixel CSS. Màn 1920×1080 để scale Windows 125% (dpr 1,25) ra khoảng 2400×1350 pixel thiết bị, hệ số là 3.
+  Thiếu một pixel so với bội tiếp theo thì giữ bội thấp hơn (1919×1079 → 2).
+
+  | Pixel thiết bị của cửa sổ | Hệ số phóng |
+  | ------------------------- | ----------- |
+  | 1280×720                  | 2           |
+  | 1920×1080                 | 3           |
+  | 2560×1440                 | 4           |
+  | 3840×2160                 | 6           |
+
 - **Fixed timestep 60 Hz** (`TICK_RATE`). `update()` tách khỏi `render(alpha)`. Logic KHÔNG phụ thuộc FPS
   hay `Date.now()`: chuyển động của người chơi đi theo số tick. **Ngoại lệ có chủ đích: nhịp của trận.** Trong pha né
   đạn, "bây giờ là lúc nào" do **đồng hồ nhịp (BeatClock) lấy từ đồng hồ âm thanh** quyết định, không đếm theo tick.
@@ -206,13 +219,14 @@ Hiện đã có:
 - **Di chuyển bánh răng**: vận tốc tức thời, không gia tốc (không trượt). Chuẩn hóa hướng nên đi chéo không nhanh
   hơn đi thẳng. Giữ `slow` (Shift) để đi chậm. Vị trí là số thực; vẽ thì nội suy theo `alpha` rồi làm tròn về lưới
   pixel (`Renderer.rect`/`sprite` tự làm tròn).
-- **Hitbox nhỏ hơn hình vẽ** (`hitboxSize` so với sprite 9px) để người chơi thấy mình né sát mà không trúng. Va chạm
+- **Hitbox nhỏ hơn hình vẽ** (`hitboxSize` 10 so với sprite 18px, dữ liệu 9px × `scale` 2) để người chơi thấy mình né sát mà không trúng. Va chạm
   dùng AABB (`overlaps`); chỉ chạm mép thì không tính là trúng.
 - **Cảm giác nằm ở `data/feel.ts`** (tốc độ, tốc độ khi giữ Shift, hitbox, thời gian bất tử, nhấp nháy, máu tối đa).
   Đơn vị: px/giây và giây; code tự quy ra tick. Không rải số "cảm giác" vào code.
 - **Lớp debug bật/tắt bằng F1** (vẫn có trong bản deploy): hiện hitbox bánh răng (xanh lá), khung hình vẽ (xám),
   vùng va chạm của đạn và kim (hồng), toạ độ, số tick, **beat hiện tại, BPM, vòng pattern, số đạn và cảnh báo đang
-  hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0).
+  hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0), **hệ số phóng** (`phóng`), và một dòng mẫu dấu
+  tiếng Việt ở cỡ 8, 12, 16, 20 để chọn cỡ nhỏ nhất còn đọc rõ. Chưa chọn font.
 - Windows có "Sticky Keys" bật lên khi bấm Shift 5 lần liên tiếp, có thể làm gián đoạn lúc chơi; đây là cài đặt của
   hệ điều hành, game không chặn được. Nếu thành vấn đề, thêm phím phụ cho `slow` trong `keybindings.ts`.
 
@@ -279,7 +293,7 @@ export const MY_PATTERN: Pattern = {
     { beat: 4, type: "straight", from: "right", at: 0.5 },                         // đạn từ mép phải, giữa cạnh
     { beat: 8, type: "aimed", from: "top", at: 0.5, count: 3, spreadDeg: 18 },       // 3 viên nhắm vào người chơi
     { beat: 18, type: "burst", x: 0.5, y: 0.5, count: 12 },                          // vòng tròn 12 viên từ giữa
-    { beat: 20, type: "sweep", x: 0.5, y: 0.5, length: 40, startAngleDeg: -90,
+    { beat: 20, type: "sweep", x: 0.5, y: 0.5, length: 80, startAngleDeg: -90,
       degreesPerBeat: 45, durationBeats: 8 },                                         // kim đồng hồ quay quanh tâm
     { beat: 24, type: "tempo", bpm: 160, overBeats: 16 },                             // tăng dần lên 160 BPM
   ],
@@ -333,7 +347,7 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
 | ---------------------------------------------- | -------------------------------------------- |
 | Nhịp nhanh/chậm chung                          | `defaultBpm` hoặc `bpm` trong pattern         |
 | Đạn bay nhanh/chậm                             | `BULLET_FEEL.speed` (hoặc `speed` từng sự kiện) |
-| Đạn "to/nhỏ", khó/dễ né sát                    | `BULLET_FEEL.radius` (vùng trúng; hình vẽ lớn hơn 0,5 px) |
+| Đạn "to/nhỏ", khó/dễ né sát                    | `BULLET_FEEL.radius` (vùng trúng; hình vẽ lớn hơn 1 px) |
 | Cảnh báo dài/ngắn                              | `telegraphBeats`, `telegraphMinSeconds`       |
 | Nhịp nhấp nháy của cảnh báo                    | `telegraphFlashSeconds`                       |
 | Tiếng to/nhỏ                                   | `AUDIO_FEEL.volume`                           |

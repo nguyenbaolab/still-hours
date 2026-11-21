@@ -26,16 +26,17 @@ export class PressStartScene implements Scene {
 
   render(renderer: Renderer): void {
     const cx = GAME_WIDTH / 2;
+    const gear = renderer.sprites.size("gear");
     renderer.clear("#0b0908");
-    renderer.sprite("gear", cx - 4, 34);
-    renderer.text("Still Hours", cx, 52, { size: 24, align: "center", color: "#d8c9a3" });
+    renderer.sprite("gear", cx - gear.width / 2, 68);
+    renderer.text("Still Hours", cx, 104, { size: 48, align: "center", color: "#d8c9a3" });
 
     // Nhấp nháy chậm: hiện 40 tick, ẩn 20 tick.
     if (this.tick % 60 < 40) {
-      renderer.text("Nhấn phím bất kỳ để bắt đầu", cx, 104, { size: 12, align: "center", color: "#ffffff" });
+      renderer.text("Nhấn phím bất kỳ để bắt đầu", cx, 208, { size: 24, align: "center", color: "#ffffff" });
     }
 
-    renderer.text("Mũi tên / WASD: di chuyển     Shift: đi chậm", cx, 138, { size: 8, align: "center", color: "#8a7f68" });
-    renderer.text("M: tắt/bật tiếng     F1: debug", cx, 150, { size: 8, align: "center", color: "#8a7f68" });
+    renderer.text("Mũi tên / WASD: di chuyển     Shift: đi chậm", cx, 276, { size: 16, align: "center", color: "#8a7f68" });
+    renderer.text("M: tắt/bật tiếng     F1: debug", cx, 300, { size: 16, align: "center", color: "#8a7f68" });
   }
 }

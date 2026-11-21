@@ -1,7 +1,7 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { TickScheduler } from "../audio/tick-scheduler";
 import { BeatClock } from "../core/beat-clock";
-import { GAME_WIDTH } from "../core/config";
+import { GAME_HEIGHT, GAME_WIDTH } from "../core/config";
 import type { Input } from "../core/input";
 import { lerp } from "../core/math";
 import type { Renderer } from "../core/renderer";
@@ -15,6 +15,10 @@ import { BulletWorld } from "./bullets";
 import { PatternRunner } from "./pattern-runner";
 import { Player } from "./player";
 import type { SpawnContext } from "./spawners";
+
+/** Dòng mẫu để chọn cỡ chữ còn đọc rõ dấu tiếng Việt. Chưa chọn font. */
+const VIETNAMESE_SAMPLE = "ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự ỳ ỷ ỹ ỵ đ";
+const SAMPLE_SIZES = [8, 12, 16, 20] as const;
 
 const COLOR = {
   background: "#0b0908",
@@ -113,7 +117,7 @@ export class DodgePhase implements Scene {
 
     this.renderHpBar(renderer);
     if (this.audio.muted) {
-      renderer.text("tắt tiếng (M)", GAME_WIDTH - 4, 4, { size: 8, align: "right", color: COLOR.mutedHint });
+      renderer.text("tắt tiếng (M)", GAME_WIDTH - 8, 8, { size: 16, align: "right", color: COLOR.mutedHint });
     }
     if (this.debug) this.renderDebug(renderer, px, py);
   }
@@ -124,13 +128,13 @@ export class DodgePhase implements Scene {
     const { hp, maxHp } = this.player;
 
     const y = arena.y + arena.h + borderThickness + hpBar.gapBelowFrame;
-    const barX = arena.x + 20;
+    const barX = arena.x + 40;
     const barWidth = maxHp * hpBar.pxPerHp;
 
-    renderer.text("HP", arena.x, y, { size: 10, color: COLOR.text });
+    renderer.text("HP", arena.x, y, { size: 20, color: COLOR.text });
     renderer.rect(barX, y, barWidth, hpBar.height, COLOR.hpLost);
     renderer.rect(barX, y, hp * hpBar.pxPerHp, hpBar.height, COLOR.hp);
-    renderer.text(`${hp} / ${maxHp}`, barX + barWidth + 6, y, { size: 10, color: COLOR.text });
+    renderer.text(`${hp} / ${maxHp}`, barX + barWidth + 12, y, { size: 20, color: COLOR.text });
   }
 
   /** Lớp debug (F1): hitbox thật của bánh răng và đạn, cùng số liệu nhịp. */
@@ -142,12 +146,21 @@ export class DodgePhase implements Scene {
     const hitbox = player.hitboxAt(px, py);
     renderer.rectOutline(hitbox.x, hitbox.y, hitbox.w, hitbox.h, COLOR.debugPlayerHitbox);
 
+    const scale = renderer.pixelScale;
+    const scaleText = Number.isInteger(scale) ? String(scale) : scale.toFixed(2);
     const lines = [
-      `DEBUG (F1)  tick ${this.tick}`,
+      `DEBUG (F1)  tick ${this.tick}  phóng ${scaleText}`,
       `x ${player.x.toFixed(1)}  y ${player.y.toFixed(1)}  ${player.invincible ? "bất tử" : ""}`,
       `beat ${clock.beat.toFixed(2)}  BPM ${clock.bpm.toFixed(1)}  vòng ${this.runner.cycle + 1}`,
       `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}`,
     ];
-    lines.forEach((line, i) => renderer.text(line, 4, 4 + i * 10, { size: 8, color: COLOR.debugText }));
+    lines.forEach((line, i) => renderer.text(line, 8, 8 + i * 20, { size: 16, color: COLOR.debugText }));
+
+    let sampleY = GAME_HEIGHT - 8;
+    for (let i = SAMPLE_SIZES.length - 1; i >= 0; i--) {
+      const size = SAMPLE_SIZES[i] as number;
+      sampleY -= size + 4;
+      renderer.text(`${size}  ${VIETNAMESE_SAMPLE}`, 8, sampleY, { size, color: COLOR.debugText });
+    }
   }
 }

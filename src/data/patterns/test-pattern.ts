@@ -35,14 +35,14 @@ export const TEST_PATTERN: Pattern = {
     { beat: 13, type: "aimed", from: "top", at: 0.25 },
     { beat: 14, type: "aimed", from: "left", at: 0.75 },
 
-    // Đạn LỚN chậm (radius >= 4 nên tự có cảnh báo trước 1 beat ở mép khung).
-    { beat: 16, type: "straight", from: "right", at: 0.5, radius: 6, speed: 55 },
+    // Đạn LỚN chậm (radius >= 8 nên tự có cảnh báo trước 1 beat ở mép khung).
+    { beat: 16, type: "straight", from: "right", at: 0.5, radius: 12, speed: 110 },
 
     // Vòng tròn 12 viên tỏa từ giữa khung (luôn có cảnh báo: vòng nhấp nháy ở tâm).
-    { beat: 18, type: "burst", x: 0.5, y: 0.5, count: 12, speed: 60 },
+    { beat: 18, type: "burst", x: 0.5, y: 0.5, count: 12, speed: 120 },
 
     // Kim đồng hồ: một kim quay 45°/beat, đủ một vòng trong 8 beat. Cảnh báo vạch đường kim bắt đầu.
-    { beat: 20, type: "sweep", x: 0.5, y: 0.5, length: 40, startAngleDeg: -90, degreesPerBeat: 45, durationBeats: 8 },
+    { beat: 20, type: "sweep", x: 0.5, y: 0.5, length: 80, startAngleDeg: -90, degreesPerBeat: 45, durationBeats: 8 },
     { beat: 22, type: "straight", from: "right", at: 0.2, count: 3, spacing: 0.3 },
 
     // ── 24–40: tempo tăng dần 100 → 160 BPM trong 16 beat ────────────
@@ -55,14 +55,14 @@ export const TEST_PATTERN: Pattern = {
     { beat: 28, type: "straight", from: "left", at: 0.2 },
     { beat: 29, type: "straight", from: "right", at: 0.8 },
     // Quạt 5 viên từ mép trái bắn sang phải (có cảnh báo: vòng ở nguồn và hai vạch rìa quạt).
-    { beat: 30, type: "burst", x: 0.03, y: 0.5, count: 5, angleDeg: 0, arcDeg: 70, speed: 70 },
+    { beat: 30, type: "burst", x: 0.03, y: 0.5, count: 5, angleDeg: 0, arcDeg: 70, speed: 140 },
     { beat: 31, type: "straight", from: "right", at: 0.5 },
     { beat: 32, type: "straight", from: "left", at: 0.5 },
     { beat: 33, type: "aimed", from: "right", at: 0.5, count: 3, spreadDeg: 18 },
     { beat: 34, type: "straight", from: "left", at: 0.35 },
     { beat: 35, type: "straight", from: "right", at: 0.65 },
     // Hai kim đối nhau quay 60°/beat: kim quay theo BEAT nên lúc tempo đang tăng, kim cũng quay nhanh dần.
-    { beat: 36, type: "sweep", x: 0.5, y: 0.5, length: 40, startAngleDeg: 0, degreesPerBeat: 60, durationBeats: 6, hands: 2 },
+    { beat: 36, type: "sweep", x: 0.5, y: 0.5, length: 80, startAngleDeg: 0, degreesPerBeat: 60, durationBeats: 6, hands: 2 },
     { beat: 37, type: "straight", from: "left", at: 0.15 },
     { beat: 38, type: "straight", from: "right", at: 0.85 },
     { beat: 39, type: "straight", from: "left", at: 0.85 },
@@ -91,9 +91,9 @@ export const TEST_PATTERN: Pattern = {
     { beat: 50, type: "aimed", from: "top", at: 0.5 },
     { beat: 52, type: "aimed", from: "right", at: 0.5 },
     // Vòng lớn 16 viên kết đoạn.
-    { beat: 54, type: "burst", x: 0.5, y: 0.5, count: 16, speed: 55 },
+    { beat: 54, type: "burst", x: 0.5, y: 0.5, count: 16, speed: 110 },
 
     // ── 56–60: 100 BPM, một kim chậm 30°/beat rồi nghỉ ──────────────
-    { beat: 56, type: "sweep", x: 0.5, y: 0.5, length: 40, startAngleDeg: 90, degreesPerBeat: 30, durationBeats: 4 },
+    { beat: 56, type: "sweep", x: 0.5, y: 0.5, length: 80, startAngleDeg: 90, degreesPerBeat: 30, durationBeats: 4 },
   ],
 };

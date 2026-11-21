@@ -1,6 +1,6 @@
 /** Độ phân giải logic cố định của game (16:9). Mọi toạ độ trong game dùng hệ này. */
-export const GAME_WIDTH = 320;
-export const GAME_HEIGHT = 180;
+export const GAME_WIDTH = 640;
+export const GAME_HEIGHT = 360;
 
 /** Số bước update mỗi giây (fixed timestep). Logic game chỉ phụ thuộc vào con số này, không phụ thuộc FPS. */
 export const TICK_RATE = 60;

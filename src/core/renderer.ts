@@ -1,6 +1,15 @@
 import { FONT_FAMILY, GAME_HEIGHT, GAME_WIDTH } from "./config";
 import { SpriteStore } from "./sprites";
 
+/**
+ * Hệ số phóng pixel-art cho cửa sổ tính bằng pixel thiết bị (`innerWidth * devicePixelRatio`).
+ * Cửa sổ đủ lớn thì bội số nguyên làm tròn xuống; nhỏ hơn độ phân giải logic thì thu nhỏ lẻ.
+ */
+export function pixelArtScale(deviceWidth: number, deviceHeight: number): number {
+  const fitScale = Math.min(deviceWidth / GAME_WIDTH, deviceHeight / GAME_HEIGHT);
+  return fitScale >= 1 ? Math.floor(fitScale) : fitScale;
+}
+
 export interface TextOptions {
   color?: string;
   /** Cỡ chữ theo pixel logic (không phải pixel màn hình). */
@@ -14,6 +23,8 @@ export interface TextOptions {
  */
 export class Renderer {
   readonly sprites = new SpriteStore();
+  /** Hệ số `pixelArtScale` của lần `fit()` gần nhất. Lớp debug đọc số này. */
+  pixelScale = 1;
   private readonly ctx: CanvasRenderingContext2D;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
@@ -33,12 +44,8 @@ export class Renderer {
   /** Tính lại kích thước hiển thị. Dùng pixel thiết bị (devicePixelRatio) để tỉ lệ nguyên thật sự là nguyên. */
   private fit(): void {
     const dpr = window.devicePixelRatio || 1;
-    const fitScale = Math.min(
-      (window.innerWidth * dpr) / GAME_WIDTH,
-      (window.innerHeight * dpr) / GAME_HEIGHT,
-    );
-    // Cửa sổ nhỏ hơn độ phân giải logic thì đành thu nhỏ lẻ; còn lại luôn làm tròn xuống số nguyên.
-    const scale = fitScale >= 1 ? Math.floor(fitScale) : fitScale;
+    const scale = pixelArtScale(window.innerWidth * dpr, window.innerHeight * dpr);
+    this.pixelScale = scale;
     this.canvas.style.width = `${(GAME_WIDTH * scale) / dpr}px`;
     this.canvas.style.height = `${(GAME_HEIGHT * scale) / dpr}px`;
   }
@@ -57,7 +64,7 @@ export class Renderer {
   }
 
   /** Viền hình chữ nhật (nằm bên trong khung x, y, w, h). */
-  rectOutline(x: number, y: number, w: number, h: number, color: string, thickness = 1): void {
+  rectOutline(x: number, y: number, w: number, h: number, color: string, thickness = 2): void {
     this.rect(x, y, w, thickness, color);
     this.rect(x, y + h - thickness, w, thickness, color);
     this.rect(x, y + thickness, thickness, h - 2 * thickness, color);
@@ -76,12 +83,12 @@ export class Renderer {
     }
   }
 
-  /** Vòng tròn rỗng dày 1 px, cùng quy ước toạ độ với `disc`. Dùng cho lớp debug. */
-  ring(x: number, y: number, radius: number, color: string): void {
+  /** Vòng tròn rỗng dày `thickness` px, cùng quy ước toạ độ với `disc`. Dùng cho cảnh báo và lớp debug. */
+  ring(x: number, y: number, radius: number, color: string, thickness = 2): void {
     const cx = Math.floor(x);
     const cy = Math.floor(y);
     const outer = radius * radius;
-    const inner = Math.max(0, radius - 1) ** 2;
+    const inner = Math.max(0, radius - thickness) ** 2;
     const reach = Math.floor(radius);
     this.ctx.fillStyle = color;
     for (let dy = -reach; dy <= reach; dy++) {
@@ -118,7 +125,7 @@ export class Renderer {
     this.ctx.restore();
   }
 
-  text(content: string, x: number, y: number, { color = "#fff", size = 8, align = "left" }: TextOptions = {}): void {
+  text(content: string, x: number, y: number, { color = "#fff", size = 16, align = "left" }: TextOptions = {}): void {
     this.ctx.font = `${size}px ${FONT_FAMILY}`;
     this.ctx.textAlign = align;
     this.ctx.textBaseline = "top";

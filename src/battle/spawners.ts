@@ -32,12 +32,12 @@ export interface EventHandler<E extends BulletEvent> {
 
 const DEG = Math.PI / 180;
 /** Bề dày dải đánh dấu ở mép khung (px). */
-const EDGE_MARK = 4;
+const EDGE_MARK = 8;
 /** Đạn xuất hiện cách mép khung bấy nhiêu px (ngoài bán kính) để lúc đầu nằm hẳn ngoài khung. */
-const SPAWN_MARGIN = 2;
+const SPAWN_MARGIN = 4;
 /** Độ dài đường ngắm cảnh báo (px): đủ dài để vượt qua khung, phần thừa bị cắt. */
-const AIM_LINE = 260;
-const BURST_RING_RADIUS = 6;
+const AIM_LINE = 520;
+const BURST_RING_RADIUS = 12;
 
 const degToRad = (degrees: number): number => degrees * DEG;
 
@@ -202,7 +202,7 @@ const sweep: EventHandler<SweepEvent> = {
   warn(ctx, event, warnTime, fireTime) {
     const { x, y } = sweepOrigin(ctx, event);
     const hands = event.hands ?? 1;
-    ctx.world.addTelegraph("ring", x, y, 3, 0, false, warnTime, fireTime);
+    ctx.world.addTelegraph("ring", x, y, 6, 0, false, warnTime, fireTime);
     for (let i = 0; i < hands; i++) {
       const angle = degToRad(event.startAngleDeg) + (i * FULL_CIRCLE) / hands;
       ctx.world.addTelegraph("line", x, y, x + Math.cos(angle) * event.length, y + Math.sin(angle) * event.length, true, warnTime, fireTime);

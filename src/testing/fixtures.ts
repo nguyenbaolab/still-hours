@@ -14,15 +14,15 @@ export const SYNC_FIXTURE: Pattern = {
   events: [
     { type: "tempo", beat: 8, bpm: 160, overBeats: 8 },
     { type: "tempo", beat: 20, bpm: 100, overBeats: 4 },
-    { beat: 0.5, type: "straight", from: "right", at: 0.5, radius: 6 }, // đạn lớn: cảnh báo bắt đầu từ vòng trước
+    { beat: 0.5, type: "straight", from: "right", at: 0.5, radius: 12 }, // đạn lớn: cảnh báo bắt đầu từ vòng trước
     { beat: 2, type: "straight", from: "right", at: 0.5 },
     { beat: 3, type: "straight", from: "left", at: 0.5 },
     { beat: 4, type: "aimed", from: "top", at: 0.5 },
     { beat: 6, type: "burst", x: 0.5, y: 0.5, count: 8 },
-    { beat: 9, type: "straight", from: "left", at: 0.3, radius: 5 },
-    { beat: 12, type: "sweep", x: 0.5, y: 0.5, length: 30, startAngleDeg: 0, degreesPerBeat: 45, durationBeats: 4 },
+    { beat: 9, type: "straight", from: "left", at: 0.3, radius: 10 },
+    { beat: 12, type: "sweep", x: 0.5, y: 0.5, length: 60, startAngleDeg: 0, degreesPerBeat: 45, durationBeats: 4 },
     { beat: 14.5, type: "straight", from: "bottom", at: 0.3 },
-    { beat: 18, type: "aimed", from: "right", at: 0.5, count: 3, radius: 5 },
+    { beat: 18, type: "aimed", from: "right", at: 0.5, count: 3, radius: 10 },
     { beat: 22, type: "burst", x: 0.3, y: 0.5, count: 5, arcDeg: 60 },
   ],
 };

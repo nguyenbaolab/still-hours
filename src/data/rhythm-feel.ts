@@ -2,7 +2,7 @@
  * Các con số "cảm giác" của nhịp, đạn và âm thanh. Sửa file này, lưu, trình duyệt tự tải lại.
  * (Cảm giác của người chơi: xem feel.ts.)
  *
- * Đơn vị: "px" là pixel logic (màn hình game 320×180, khung né 200×80).
+ * Đơn vị: "px" là pixel logic (màn hình game 640×360, khung né 400×160).
  */
 
 export interface RhythmFeel {
@@ -19,9 +19,9 @@ export interface RhythmFeel {
 }
 
 export interface BulletFeel {
-  /** Tốc độ đạn mặc định (px/giây). Mỗi sự kiện trong pattern có thể tự đặt `speed`. Người chơi đi 90 px/giây. */
+  /** Tốc độ đạn mặc định (px/giây). Mỗi sự kiện trong pattern có thể tự đặt `speed`. Người chơi đi 180 px/giây. */
   speed: number;
-  /** Bán kính va chạm đạn nhỏ (px). Hình vẽ lớn hơn 0,5 px nên đạn trông "to hơn" vùng trúng, như hitbox của bánh răng. */
+  /** Bán kính va chạm đạn nhỏ (px). Hình vẽ lớn hơn 1 px nên đạn trông "to hơn" vùng trúng, như hitbox của bánh răng. */
   radius: number;
   /** Đạn có bán kính từ mức này trở lên được coi là LỚN: bắt buộc có cảnh báo (công bằng). */
   bigRadius: number;
@@ -57,14 +57,14 @@ export const RHYTHM_FEEL: RhythmFeel = {
 };
 
 export const BULLET_FEEL: BulletFeel = {
-  speed: 70,
-  radius: 2.5,
-  bigRadius: 4,
+  speed: 140,
+  radius: 5,
+  bigRadius: 8,
   damage: 4,
   telegraphBeats: 1,
   telegraphMinSeconds: 0.45,
   telegraphFlashSeconds: 0.08,
-  handThickness: 3,
+  handThickness: 6,
   maxBullets: 256,
 };
 
