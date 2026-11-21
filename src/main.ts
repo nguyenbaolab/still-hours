@@ -1,27 +1,30 @@
 import "./style.css";
-import { GAME_HEIGHT, GAME_WIDTH } from "./core/config";
+import { DodgePhase } from "./battle/dodge-phase";
+import { Input } from "./core/input";
+import { attachKeyboard } from "./core/keyboard";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
+import { KEY_BINDINGS } from "./data/keybindings";
 import { SPRITES } from "./data/sprites";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
 
 const renderer = new Renderer(canvas);
-renderer.sprites.definePixels("clock", SPRITES.clock);
+renderer.sprites.definePixels("gear", SPRITES.gear);
 
-// Màn hình tạm của skeleton: tên game + bộ đếm tick để xác nhận vòng lặp đang chạy.
-let tick = 0;
+const input = new Input();
+attachKeyboard(input, KEY_BINDINGS);
+
+// Tạm thời chạy thẳng pha né đạn; máy trạng thái cảnh sẽ có ở bước 5.
+const dodgePhase = new DodgePhase(input, renderer.sprites.size("gear").width);
 
 startLoop({
   update() {
-    tick++;
+    input.poll();
+    dodgePhase.update();
   },
-  render() {
-    const cx = GAME_WIDTH / 2;
-    renderer.clear("#14110f");
-    renderer.sprite("clock", cx - 4, GAME_HEIGHT / 2 - 46);
-    renderer.text("Still Hours", cx, GAME_HEIGHT / 2 - 28, { size: 24, align: "center", color: "#d8c9a3" });
-    renderer.text(`tick: ${tick}`, cx, GAME_HEIGHT / 2 + 8, { size: 12, align: "center", color: "#8a7f68" });
+  render(alpha) {
+    dodgePhase.render(renderer, alpha);
   },
 });

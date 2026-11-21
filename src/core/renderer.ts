@@ -48,9 +48,20 @@ export class Renderer {
     this.ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
   }
 
+  /** Tô hình chữ nhật. Cạnh được làm tròn về lưới pixel nên vật chuyển động lẻ pixel vẫn sắc nét, không bị mờ viền. */
   rect(x: number, y: number, w: number, h: number, color: string): void {
+    const left = Math.round(x);
+    const top = Math.round(y);
     this.ctx.fillStyle = color;
-    this.ctx.fillRect(x, y, w, h);
+    this.ctx.fillRect(left, top, Math.round(x + w) - left, Math.round(y + h) - top);
+  }
+
+  /** Viền hình chữ nhật (nằm bên trong khung x, y, w, h). */
+  rectOutline(x: number, y: number, w: number, h: number, color: string, thickness = 1): void {
+    this.rect(x, y, w, thickness, color);
+    this.rect(x, y + h - thickness, w, thickness, color);
+    this.rect(x, y + thickness, thickness, h - 2 * thickness, color);
+    this.rect(x + w - thickness, y + thickness, thickness, h - 2 * thickness, color);
   }
 
   text(content: string, x: number, y: number, { color = "#fff", size = 8, align = "left" }: TextOptions = {}): void {

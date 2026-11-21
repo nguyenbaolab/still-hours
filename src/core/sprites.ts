@@ -11,8 +11,14 @@ export interface PixelSpriteData {
   readonly rows: readonly string[];
 }
 
+interface StoredSprite {
+  readonly source: CanvasImageSource;
+  readonly width: number;
+  readonly height: number;
+}
+
 export class SpriteStore {
-  private readonly sprites = new Map<string, CanvasImageSource>();
+  private readonly sprites = new Map<string, StoredSprite>();
 
   /** Dựng sprite từ mảng dữ liệu pixel. */
   definePixels(id: string, data: PixelSpriteData): void {
@@ -34,7 +40,7 @@ export class SpriteStore {
       }
     });
 
-    this.sprites.set(id, canvas);
+    this.sprites.set(id, { source: canvas, width, height: data.rows.length });
   }
 
   /** Nạp sprite từ file ảnh (PNG...). Dùng khi đã có asset thật. */
@@ -42,10 +48,20 @@ export class SpriteStore {
     const image = new Image();
     image.src = url;
     await image.decode();
-    this.sprites.set(id, image);
+    this.sprites.set(id, { source: image, width: image.naturalWidth, height: image.naturalHeight });
   }
 
   get(id: string): CanvasImageSource {
+    return this.require(id).source;
+  }
+
+  /** Kích thước sprite theo pixel logic. */
+  size(id: string): { width: number; height: number } {
+    const { width, height } = this.require(id);
+    return { width, height };
+  }
+
+  private require(id: string): StoredSprite {
     const sprite = this.sprites.get(id);
     if (!sprite) throw new Error(`Không có sprite "${id}"`);
     return sprite;

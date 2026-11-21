@@ -113,9 +113,19 @@ public/
 wrangler.jsonc  cấu hình Cloudflare Worker (Static Assets)
 ```
 
-Hiện đã có: `core/config.ts` (hằng số), `core/loop.ts` (fixed timestep), `core/renderer.ts` (canvas cố định, scale
-pixel art), `core/sprites.ts` (kho sprite theo id), `data/sprites.ts` (sprite placeholder). Các thư mục `scenes/`,
-`battle/`, `audio/`, và `input`/lưu tiến trình trong `core/` chưa có code (`.gitkeep` hoặc chưa tạo).
+Hiện đã có:
+
+- `core/`: `config.ts` (hằng số), `loop.ts` (fixed timestep), `renderer.ts` (canvas cố định, scale pixel art),
+  `sprites.ts` (kho sprite theo id), `math.ts` (`Rect`, `overlaps`, `clamp`, `lerp`), `input.ts` (lớp trừu tượng
+  hành động), `keyboard.ts` (nguồn input bàn phím).
+- `battle/`: `dodge-phase.ts` (pha né đạn: khung, thanh máu, lớp debug), `player.ts` (bánh răng: di chuyển, hitbox,
+  máu, bất tử), `temp-obstacles.ts` (**code TẠM**, xem dưới).
+- `data/`: `feel.ts` (**mọi con số cảm giác của người chơi**), `battle-layout.ts` (kích thước khung, thanh máu),
+  `keybindings.ts` (phím → hành động), `sprites.ts` (sprite placeholder), `temp-obstacles.ts` (**dữ liệu TẠM**).
+- Chưa có code: `scenes/`, `audio/`, lưu tiến trình trong `core/`.
+
+**Code tạm cần xóa ở bước 2:** `battle/temp-obstacles.ts` và `data/temp-obstacles.ts` (vật cản để thử va chạm). Thay
+bằng đạn theo beat đọc từ pattern trong `src/data/`; `DodgePhase` chỉ đổi chỗ tạo và cập nhật vật cản.
 
 ### Nền tảng kỹ thuật đã chốt
 
@@ -126,6 +136,21 @@ pixel art), `core/sprites.ts` (kho sprite theo id), `data/sprites.ts` (sprite pl
   va chạm) chỉ được phụ thuộc vào số tick, **không** dùng `Date.now()`/FPS. Nhờ vậy nhịp "theo beat" ổn định và
   cơ chế làm chậm nhịp (cư dân 3) chỉ là đổi hệ số tick.
 - Không dùng `{ alpha: false }` cho canvas context: nó bật antialiasing chữ LCD, gây viền màu trên pixel art.
+- **Input qua hành động, không qua phím.** Logic game chỉ dùng `Input.isDown(action)`, `wasPressed(action)` và
+  `input.move`. Hành động: `up/down/left/right/confirm/cancel/slow/debug`. Phím gán ở `data/keybindings.ts` (theo
+  `KeyboardEvent.code`). Thêm cảm ứng/tay cầm = viết thêm một nguồn gọi `input.setActionState(...)` (như
+  `keyboard.ts`), không sửa logic game. `Input.poll()` được gọi một lần ở đầu mỗi tick.
+- **Di chuyển bánh răng**: vận tốc tức thời, không gia tốc (không trượt). Chuẩn hóa hướng nên đi chéo không nhanh
+  hơn đi thẳng. Giữ `slow` (Shift) để đi chậm. Vị trí là số thực; vẽ thì nội suy theo `alpha` rồi làm tròn về lưới
+  pixel (`Renderer.rect`/`sprite` tự làm tròn).
+- **Hitbox nhỏ hơn hình vẽ** (`hitboxSize` so với sprite 9px) để người chơi thấy mình né sát mà không trúng. Va chạm
+  dùng AABB (`overlaps`); chỉ chạm mép thì không tính là trúng.
+- **Cảm giác nằm ở `data/feel.ts`** (tốc độ, tốc độ khi giữ Shift, hitbox, thời gian bất tử, nhấp nháy, máu tối đa).
+  Đơn vị: px/giây và giây; code tự quy ra tick. Không rải số "cảm giác" vào code.
+- **Lớp debug bật/tắt bằng F1** (vẫn có trong bản deploy): hiện hitbox bánh răng (xanh lá), khung hình vẽ (xám),
+  hitbox vật cản (hồng), toạ độ và số tick.
+- Windows có "Sticky Keys" bật lên khi bấm Shift 5 lần liên tiếp, có thể làm gián đoạn lúc chơi; đây là cài đặt của
+  hệ điều hành, game không chặn được. Nếu thành vấn đề, thêm phím phụ cho `slow` trong `keybindings.ts`.
 
 ## Quy ước code
 
