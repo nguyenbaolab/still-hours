@@ -5,6 +5,35 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
 > File này là nguồn sự thật về thiết kế và quy ước của dự án. Khi làm việc, hãy đọc kỹ các mục
 > "Thông điệp và nguyên tắc kể chuyện" và "Quy ước code" trước khi thêm bất cứ nội dung hay tính năng nào.
 
+## Trạng thái hiện tại
+
+*(Cập nhật mục này mỗi khi xong một bước. Chi tiết kỹ thuật nằm ở các mục bên dưới.)*
+
+- **Đã xong, đã commit và push lên `origin/main`:**
+  - Bước (1): di chuyển, va chạm, máu.
+  - Bước (2): đạn theo beat + tiếng tích tắc procedural (đồng hồ nhịp lấy từ đồng hồ âm thanh, pattern dạng dữ liệu,
+    cảnh báo công bằng, pool). Có bộ test Vitest (`npm test`) cho đồng bộ nhịp và quy tắc cảnh báo.
+- **Bước tiếp theo: (3)**, bản thô mini-game tháo lắp của cư dân 3 và cơ chế nét vẽ của cô bé. Chưa có gì của pha tháo
+  lắp. Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
+- **Vấn đề còn mở:**
+  1. **Quay lại tempo kịch bản sau khi cư dân 3 làm chậm nhịp.** `clock.tempo.change(beat, bpm, over)` đổi nhịp tiếng
+     và đạn cùng lúc, nhưng nó **cắt bỏ mọi tempo kịch bản sau `beat`**, kể cả vòng kế tiếp mà `PatternRunner` đã triển
+     khai trước, và runner không biết để làm lại; tempo sẽ kẹt ở giá trị mới. Giờ cảnh báo (`warnBeat`) cũng được tính
+     theo tempo lúc triển khai nên có thể lệch sau khi đổi. Cần chọn cách thiết kế khi làm cư dân 3, hai hướng:
+     (a) hệ số chậm tách riêng, nhân lên tempo kịch bản và hồi dần về 1 (sạch về ngữ nghĩa, nhưng `TempoMap` phải vẫn
+     tính được beat ↔ giây chính xác); (b) `PatternRunner` có thao tác "triển khai lại tempo kịch bản từ beat X", gọi sau
+     khi hết hiệu ứng chậm (đơn giản hơn, nhưng tempo nhảy về đường kịch bản trừ khi kèm đoạn ramp). Ràng buộc chung:
+     tiếng và đạn phải đọc cùng một `TempoMap`; `TickScheduler` đã tự hẹn lại khi `version` đổi (có test); phần mới
+     phải có test đồng bộ tương tự và được kiểm bằng cách phá code có chủ đích.
+  2. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
+     tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
+     con thì `wrangler dev` tự khởi động lại `workerd`. Cách dọn: tìm chủ cổng bằng `Get-NetTCPConnection -State Listen
+     -LocalPort <cổng>`, kiểm tra dòng lệnh có `still-hours` (không đụng tiến trình khác, ví dụ MCP server), rồi
+     `taskkill /PID <pid> /T /F` trên tiến trình trên cùng của cây, và kiểm lại cổng đã trống. Trước khi bật server nền,
+     kiểm cổng trống và dùng `--strictPort` để xung đột báo lỗi rõ thay vì chạy nhầm server cũ.
+  3. Nhỏ: `npm run deploy` chỉ build rồi deploy, **không chạy `npm test`**. Cân nhắc thêm `npm test &&` vào script nếu
+     muốn chặn deploy khi test vỡ. Độ trễ loa (đặc biệt Bluetooth) chỉnh bằng `visualDelaySeconds`.
+
 ## Bối cảnh
 
 Người chơi là **thợ sửa đồng hồ cuối cùng** trong một thị trấn mà thời gian ngừng chảy. Mỗi "kẻ thù" là một
