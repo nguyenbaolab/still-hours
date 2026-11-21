@@ -7,11 +7,13 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "test": "vitest run"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
+    "vitest": "^5.1.1",
     "wrangler": "^4.166.0"
   }
 }

@@ -93,6 +93,7 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
 | `npm run dev`      | Vite dev server (hot reload)                                      |
 | `npm run build`    | Kiểm tra kiểu (`tsc --noEmit`) rồi build ra `dist/`               |
 | `npm run preview`  | Xem bản build bằng Vite                                           |
+| `npm test`         | Chạy test (Vitest, không cần trình duyệt, ~0,3 giây)               |
 | `npm run deploy`   | Build rồi `wrangler deploy` (chủ dự án chạy)                      |
 | `npx wrangler dev` | Phục vụ `dist/` bằng runtime Workers, giống môi trường production |
 
@@ -107,6 +108,8 @@ src/
   battle/       pha né đạn, pha tháo lắp
   data/         pattern đạn theo beat, hội thoại, bản đồ thị trấn, sprite (dạng DỮ LIỆU)
   audio/        âm thanh procedural bằng WebAudio
+  testing/      đồng hồ giả, mô phỏng khung hình giật/treo, pattern fixture cho test (KHÔNG vào bản build)
+  **/*.test.ts  test, đặt cạnh file được kiểm
 public/
   assets/       ảnh/âm thanh thật khi có (copy nguyên sang dist/)
   .assetsignore loại file không cần deploy (.gitkeep)
@@ -128,6 +131,9 @@ Hiện đã có:
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `patterns/test-pattern.ts` (pattern thử ~31 giây).
+- `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
+  (pattern fixture + hàm tính giờ độc lập). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
+  `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`.
 - Chưa có code: lưu tiến trình trong `core/`, pha tháo lắp, hội thoại, thị trấn.
 
 ### Nền tảng kỹ thuật đã chốt
@@ -183,11 +189,18 @@ Tab bị ẩn thì `AudioContext.suspend()` nên đồng hồ dừng, trận t�
 vắng mặt). Trình duyệt chặn âm thanh tới khi người dùng tương tác: `AudioEngine` lắng nghe `keydown/pointerdown/
 touchend` và tạo/resume AudioContext NGAY trong sự kiện đó (Safari đòi vậy); `PressStartScene` chờ `audio.ready`.
 
-**Đã kiểm chứng** (script tạm, chưa nằm trong repo): mô phỏng 180 giây có jitter khung hình và một lần treo 1 giây:
-mọi tiếng lệch 0 µs so với tích phân số độc lập, không bỏ sót hay phát đôi (chỉ bỏ đúng beat rơi vào lúc treo), đạn
-luôn xuất hiện sau beat không quá một khung hình và độ trễ đầu/cuối trận như nhau. Trong Edge (headless, thiết bị
-âm thanh giả): 66 tiếng hẹn trên AudioContext thật lệch 0,0 µs so với lưới beat. **Chưa thử trên loa/tai nghe thật**,
-nên độ trễ đầu ra thực tế (đặc biệt Bluetooth) chỉ chỉnh được bằng `visualDelaySeconds`.
+**Đã kiểm chứng bằng test trong repo** (`npm test`): `battle/rhythm-sync.test.ts` chạy `DodgePhase` THẬT 180 giây trên đồng hồ
+âm thanh giả có jitter khung hình và một lần treo 1 giây. Kiểm: mọi tiếng nằm đúng lưới beat so với tích phân số độc lập
+(lệch dưới 1 µs, không lệch dần), tích/tắc xen kẽ, không beat nào phát đôi, khi treo chỉ bỏ đúng beat rơi vào lúc treo,
+đạn luôn xuất hiện sau lúc NGHE thấy tiếng của beat đó không quá một khung hình, kể cả sau lúc treo, và độ trễ đầu/cuối
+trận như nhau. `audio/tick-scheduler.test.ts` kiểm riêng bộ lên lịch (đổi tempo giữa trận không phát đôi, không thủng
+beat). Ngoài repo: trong Edge headless (thiết bị âm thanh giả) 66 tiếng hẹn trên AudioContext thật lệch 0,0 µs so với
+lưới beat. **Chưa thử trên loa/tai nghe thật**, nên độ trễ đầu ra thực tế (đặc biệt Bluetooth) chỉ chỉnh được bằng
+`visualDelaySeconds`.
+
+**Cách đo độ lệch trong test (quan trọng khi sửa):** đo độ trễ đạn bằng ĐỒNG HỒ ÂM THANH (`ctxTime` − giờ hẹn tiếng − độ
+trễ đầu ra), KHÔNG đo bằng `clock.time`. Đồng hồ nhịp tự nhất quán với chính nó nên một đồng hồ bị drift vẫn trông "đúng".
+Lần treo trong test được đặt ngay trước một cụm đạn dày; đặt vào đoạn không có đạn thì test không bắt được lỗi bắt kịp chậm.
 
 ### Bản đồ tempo (`core/tempo-map.ts`)
 
@@ -242,7 +255,7 @@ trong `battle/spawners.ts` (TypeScript buộc phải có handler cho mọi `type
   `PatternRunner`). Đạn nhỏ mặc định không cảnh báo, có thể bật bằng `telegraphBeats`.
 - Hình cảnh báo: dải ở mép khung (đạn lớn), vòng ở tâm (burst/kim), đường nét đứt (hướng nhắm, rìa quạt, hướng kim).
 - Đạn nhắm KHÓA hướng lúc BẮT ĐẦU cảnh báo (người chơi thấy đường ngắm và kịp rời đi); không có cảnh báo thì khóa lúc bắn.
-- Đã kiểm: một bot né đạn nhìn thấy cảnh báo bị trúng 0 lần qua 3 vòng pattern thử (3 lần chạy khác nhau); khi cho
+- Đã kiểm (bằng bot tạm, KHÔNG nằm trong repo): một bot né đạn nhìn thấy cảnh báo bị trúng 0 lần qua 3 vòng pattern thử (3 lần chạy khác nhau); khi cho
   bot mù cảnh báo thì bị trúng 36 lần. Tức cảnh báo thực sự đủ để né. Bot có phản xạ hoàn hảo nên người chơi thật
   sẽ khó hơn; đây chỉ là bằng chứng pattern không bất khả thi.
 
@@ -282,12 +295,17 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
   trong `src/data/` dưới dạng dữ liệu thuần (object/mảng, kiểu TypeScript rõ ràng). Code trong `core/`, `scenes/`,
   `battle/` chỉ là "bộ diễn giải" dữ liệu. Thêm cư dân mới = thêm dữ liệu, không sửa engine.
 - **Không thêm thư viện khi chưa cần.** Mọi dependency mới phải có lý do rõ ràng; ưu tiên API trình duyệt
-  sẵn có. Hiện chỉ có `vite`, `typescript`, `wrangler` (đều là devDependencies), không có thư viện chạy ở client.
+  sẵn có. Hiện chỉ có `vite`, `typescript`, `wrangler`, `vitest` (đều là devDependencies), không có thư viện chạy ở client.
 - **Giữ build nhỏ.** Theo dõi dung lượng sau `npm run build`. Asset lớn (nhạc, ảnh) phải được nén và cân nhắc kỹ.
 - **TypeScript strict.** `tsconfig.json` bật `strict`, `noUncheckedIndexedAccess`, `noUnusedLocals`,
   `noUnusedParameters`, `verbatimModuleSyntax`. `npm run build` phải qua mà không có lỗi kiểu.
 - Tách `update` và `render`: `update` không vẽ, `render` không đổi trạng thái game.
 - Mã định danh (biến, hàm, file) viết bằng tiếng Anh; comment và chuỗi hiển thị cho người chơi viết tiếng Việt.
+- **Test**: Vitest, đặt cạnh file được kiểm (`*.test.ts`), chạy bằng `npm test` (cũng được `tsc` kiểm kiểu khi build,
+  nhưng KHÔNG vào bản build). Test dùng pattern/fixture riêng ở `src/testing/`, không dựa vào dữ liệu thật vì dữ liệu
+  hay được sửa; ngoại lệ duy nhất là kiểm pattern thật còn hợp lệ. Không viết test cần trình duyệt headless (kiểm tay).
+  Test engine nhịp phải bắt được lỗi thật: khi sửa `beat-clock`/`tempo-map`/`tick-scheduler`/`pattern-runner`, thử phá
+  code có chủ đích (ví dụ cho đồng hồ đếm theo tick) và chắc chắn ít nhất một test vỡ.
 - Commit theo kiểu Conventional Commits (ví dụ `chore: ...`, `feat: ...`, `fix: ...`).
 
 ## Thứ tự phát triển
