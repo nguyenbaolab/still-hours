@@ -1,0 +1,19 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+body {
+  display: grid;
+  place-items: center;
+}
+
+/* Kích thước hiển thị do Renderer.fit() đặt; ở đây chỉ giữ pixel sắc nét khi phóng to. */
+canvas {
+  display: block;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}

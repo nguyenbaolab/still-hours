@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "still-hours",
+  "compatibility_date": "2026-11-21",
+  // Chỉ phục vụ file tĩnh (Workers Static Assets), chưa có Worker script/backend.
+  "assets": {
+    "directory": "./dist"
+  }
+}
