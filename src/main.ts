@@ -1,11 +1,15 @@
 import "./style.css";
+import { AudioEngine } from "./audio/audio-engine";
 import { DodgePhase } from "./battle/dodge-phase";
 import { Input } from "./core/input";
 import { attachKeyboard } from "./core/keyboard";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import { KEY_BINDINGS } from "./data/keybindings";
+import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
 import { SPRITES } from "./data/sprites";
+import { PressStartScene } from "./scenes/press-start";
+import type { Scene } from "./scenes/scene";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
@@ -15,16 +19,22 @@ renderer.sprites.definePixels("gear", SPRITES.gear);
 
 const input = new Input();
 attachKeyboard(input, KEY_BINDINGS);
+const audio = new AudioEngine(AUDIO_FEEL, RHYTHM_FEEL.visualDelaySeconds);
 
-// Tạm thời chạy thẳng pha né đạn; máy trạng thái cảnh sẽ có ở bước 5.
-const dodgePhase = new DodgePhase(input, renderer.sprites.size("gear").width);
+// Tạm thời main tự đổi cảnh: chờ người dùng tương tác (mở khóa âm thanh) rồi vào thẳng pha né đạn.
+// Máy trạng thái cảnh thật sẽ có ở bước 5.
+const pressStart = new PressStartScene(audio);
+let scene: Scene = pressStart;
 
 startLoop({
   update() {
     input.poll();
-    dodgePhase.update();
+    scene.update();
+    if (scene === pressStart && pressStart.ready) {
+      scene = new DodgePhase(input, audio, renderer.sprites.size("gear").width);
+    }
   },
   render(alpha) {
-    dodgePhase.render(renderer, alpha);
+    scene.render(renderer, alpha);
   },
 });

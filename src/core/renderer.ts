@@ -64,6 +64,60 @@ export class Renderer {
     this.rect(x + w - thickness, y + thickness, thickness, h - 2 * thickness, color);
   }
 
+  /** Đĩa đặc tâm (x, y), bán kính `radius`. Tâm được gióng vào lưới pixel nên đạn di chuyển từng pixel nguyên, không mờ. */
+  disc(x: number, y: number, radius: number, color: string): void {
+    const cx = Math.floor(x);
+    const cy = Math.floor(y);
+    const r2 = radius * radius;
+    this.ctx.fillStyle = color;
+    for (let dy = -Math.floor(radius); dy <= Math.floor(radius); dy++) {
+      const halfWidth = Math.floor(Math.sqrt(r2 - dy * dy));
+      this.ctx.fillRect(cx - halfWidth, cy + dy, 2 * halfWidth + 1, 1);
+    }
+  }
+
+  /** Vòng tròn rỗng dày 1 px, cùng quy ước toạ độ với `disc`. Dùng cho lớp debug. */
+  ring(x: number, y: number, radius: number, color: string): void {
+    const cx = Math.floor(x);
+    const cy = Math.floor(y);
+    const outer = radius * radius;
+    const inner = Math.max(0, radius - 1) ** 2;
+    const reach = Math.floor(radius);
+    this.ctx.fillStyle = color;
+    for (let dy = -reach; dy <= reach; dy++) {
+      for (let dx = -reach; dx <= reach; dx++) {
+        const d2 = dx * dx + dy * dy;
+        if (d2 <= outer && d2 >= inner) this.ctx.fillRect(cx + dx, cy + dy, 1, 1);
+      }
+    }
+  }
+
+  /** Đoạn thẳng dày `thickness` px. `dash` > 0 thì vẽ nét đứt (mỗi nét và mỗi khoảng trống dài `dash` px). */
+  line(x0: number, y0: number, x1: number, y1: number, thickness: number, color: string, dash = 0): void {
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy)));
+    const half = thickness / 2;
+    this.ctx.fillStyle = color;
+    for (let i = 0; i <= steps; i++) {
+      if (dash > 0 && Math.floor(i / dash) % 2 === 1) continue;
+      const t = i / steps;
+      this.ctx.fillRect(Math.round(x0 + dx * t - half), Math.round(y0 + dy * t - half), thickness, thickness);
+    }
+  }
+
+  /** Từ đây trở đi chỉ vẽ trong hình chữ nhật này, cho tới khi gọi `unclip()`. */
+  clip(x: number, y: number, w: number, h: number): void {
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.rect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    this.ctx.clip();
+  }
+
+  unclip(): void {
+    this.ctx.restore();
+  }
+
   text(content: string, x: number, y: number, { color = "#fff", size = 8, align = "left" }: TextOptions = {}): void {
     this.ctx.font = `${size}px ${FONT_FAMILY}`;
     this.ctx.textAlign = align;

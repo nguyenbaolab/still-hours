@@ -4,13 +4,14 @@
  * (xem keyboard.ts); không phải sửa logic game.
  */
 
-export const ACTIONS = ["up", "down", "left", "right", "confirm", "cancel", "slow", "debug"] as const;
+export const ACTIONS = ["up", "down", "left", "right", "confirm", "cancel", "slow", "debug", "mute"] as const;
 
 /**
  * - up/down/left/right: di chuyển.
  * - confirm/cancel: xác nhận/hủy (menu, hội thoại).
  * - slow: giữ để đi chậm khi cần né tỉ mỉ.
  * - debug: bật/tắt lớp debug (chỉ dành cho dev, không cần gán cho cảm ứng/tay cầm).
+ * - mute: tắt/bật tiếng.
  */
 export type Action = (typeof ACTIONS)[number];
 

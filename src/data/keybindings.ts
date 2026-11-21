@@ -14,4 +14,5 @@ export const KEY_BINDINGS: Readonly<Record<Action, readonly string[]>> = {
   cancel: ["KeyX", "Escape"],
   slow: ["ShiftLeft", "ShiftRight"],
   debug: ["F1"],
+  mute: ["KeyM"],
 };
