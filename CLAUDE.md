@@ -3,7 +3,8 @@
 Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare Worker: `still-hours`.
 
 > File này là nguồn sự thật về thiết kế và quy ước của dự án. Khi làm việc, hãy đọc kỹ các mục
-> "Thông điệp và nguyên tắc kể chuyện" và "Quy ước code" trước khi thêm bất cứ nội dung hay tính năng nào.
+> "Quy trình làm việc", "Trạng thái hiện tại", "Thứ tự phát triển", "Thông điệp và nguyên tắc kể chuyện"
+> và "Quy ước code" trước khi thêm bất cứ nội dung hay tính năng nào.
 
 ## Trạng thái hiện tại
 
@@ -13,18 +14,20 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước (1): di chuyển, va chạm, máu.
   - Bước (2): đạn theo beat + tiếng tích tắc procedural (đồng hồ nhịp lấy từ đồng hồ âm thanh, pattern dạng dữ liệu,
     cảnh báo công bằng, pool). Có bộ test Vitest (`npm test`) cho đồng bộ nhịp và quy tắc cảnh báo.
-- **Bước tiếp theo: (3)**, bản thô mini-game tháo lắp của cư dân 3 và cơ chế nét vẽ của cô bé. Chưa có gì của pha tháo
-  lắp. Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
+- **Bước tiếp theo: (2b)**, nâng độ phân giải logic từ 320×180 lên 640×360, giữ nguyên cảm giác chơi. Chưa có gì của
+  pha tháo lắp. Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset
+  (chưa có màn thua).
 - **Vấn đề còn mở:**
-  1. **Quay lại tempo kịch bản sau khi cư dân 3 làm chậm nhịp.** `clock.tempo.change(beat, bpm, over)` đổi nhịp tiếng
-     và đạn cùng lúc, nhưng nó **cắt bỏ mọi tempo kịch bản sau `beat`**, kể cả vòng kế tiếp mà `PatternRunner` đã triển
-     khai trước, và runner không biết để làm lại; tempo sẽ kẹt ở giá trị mới. Giờ cảnh báo (`warnBeat`) cũng được tính
-     theo tempo lúc triển khai nên có thể lệch sau khi đổi. Cần chọn cách thiết kế khi làm cư dân 3, hai hướng:
-     (a) hệ số chậm tách riêng, nhân lên tempo kịch bản và hồi dần về 1 (sạch về ngữ nghĩa, nhưng `TempoMap` phải vẫn
-     tính được beat ↔ giây chính xác); (b) `PatternRunner` có thao tác "triển khai lại tempo kịch bản từ beat X", gọi sau
-     khi hết hiệu ứng chậm (đơn giản hơn, nhưng tempo nhảy về đường kịch bản trừ khi kèm đoạn ramp). Ràng buộc chung:
-     tiếng và đạn phải đọc cùng một `TempoMap`; `TickScheduler` đã tự hẹn lại khi `version` đổi (có test); phần mới
-     phải có test đồng bộ tương tự và được kiểm bằng cách phá code có chủ đích.
+  1. **Làm chậm nhịp của cư dân 3 mà vẫn trở lại tempo kịch bản.** Đã chọn hướng (a): hệ số chậm tách riêng, nhân lên
+     tempo kịch bản, rồi hồi về 1. Không dùng `clock.tempo.change` cho việc này: `change` cắt bỏ mọi tempo kịch bản
+     sau beat đó (kể cả vòng kế mà `PatternRunner` đã triển khai trước) và runner không biết để làm lại. Ràng buộc:
+     - Hệ số chậm là **hằng số theo đoạn**. Nhân với đoạn BPM tuyến tính vẫn ra đoạn tuyến tính, nên `TempoMap` giữ
+       được công thức đóng beat ↔ giây. Ramp tuyến tính của hệ số sẽ ra bậc hai, không được.
+     - Hệ số luôn trong (0, 1]. Cảnh báo đã triển khai chỉ dài thêm theo giây, không ngắn hơn `telegraphMinSeconds`.
+     - Trúng thì giảm từ beat kế tiếp. Hồi phục áp dụng ở đầu ô nhịp (từng nấc hằng số, không phải dốc liên tục).
+       Cần thêm `beatsPerBar` vào `data/rhythm-feel.ts` (hiện chưa có).
+     - Tiếng và đạn phải đọc cùng một `TempoMap`. `TickScheduler` đã tự hẹn lại khi `version` đổi (có test). Phần mới
+       phải có test đồng bộ tương tự và được kiểm bằng cách phá code có chủ đích.
   2. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
      con thì `wrangler dev` tự khởi động lại `workerd`. Cách dọn: tìm chủ cổng bằng `Get-NetTCPConnection -State Listen
@@ -33,6 +36,19 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
      kiểm cổng trống và dùng `--strictPort` để xung đột báo lỗi rõ thay vì chạy nhầm server cũ.
   3. Nhỏ: `npm run deploy` chỉ build rồi deploy, **không chạy `npm test`**. Cân nhắc thêm `npm test &&` vào script nếu
      muốn chặn deploy khi test vỡ. Độ trễ loa (đặc biệt Bluetooth) chỉnh bằng `visualDelaySeconds`.
+
+## Quy trình làm việc (cho mọi trợ lý AI: Claude Code, Cursor...)
+
+- Mỗi cuộc chat làm đúng một bước trong "Thứ tự phát triển".
+- Làm xong thì KHÔNG commit, KHÔNG push. Dừng lại để chủ dự án chơi thử.
+- Chỉ commit khi chủ dự án nói đã ưng, theo Conventional Commits. Không bao giờ force push. Không bao giờ deploy:
+  cả `npm run deploy` lẫn `wrangler deploy`.
+- Không tự bật `npm run dev`, `npx wrangler dev` hay tiến trình nền nào; chủ dự án tự chạy trong terminal của họ.
+- Được tự chạy: `npm run build`, `npm test`.
+- Gặp quyết định thiết kế chưa có trong file này: hỏi, không tự chốt.
+- Kết thúc mỗi bước: build sạch, `npm test` xanh, hướng dẫn chạy thử, danh sách con số nên chỉnh (file + tên hằng),
+  cập nhật "Trạng thái hiện tại".
+- Trả lời chủ dự án bằng tiếng Việt.
 
 ## Bối cảnh
 
@@ -66,12 +82,17 @@ Mỗi trận xen kẽ hai pha:
    cơm, cuộc gọi bị bỏ lỡ.
 2. **Cư dân cả đời chưa ngẩng đầu nhìn quanh.** Đứng yên vài giây thì cảnh đẹp hiện ra và đạn chậm lại.
 3. **Cư dân bị lời người khác ám ảnh.** Đạn là những câu nói tiêu cực; đỡ trúng thì nhịp tích tắc của người
-   chơi bị chậm lại (mất thời gian vì điều không đáng).
+   chơi bị chậm lại (mất thời gian vì điều không đáng). Lời tiêu cực **không trừ máu**; cái giá là thời gian.
+   Ghi chú khi chơi thử: nhịp chậm thì đạn sinh thưa hơn, trận dễ hơn nhưng dài hơn; để ý người chơi có cố tình
+   ăn đạn không. Kể cả bị trúng liên tục, trận không dài quá ~1,25 lần độ dài kịch bản; chọn sàn và mức hồi
+   theo ràng buộc này.
 4. **Cô bé yêu thích vẽ nhưng chưa đạt được ước mơ**, giờ phải học trái ngành, nản vì thấy mình chưa làm được
    gì, rồi lại để thời gian trôi vào những việc khác.
    - Cơ chế: đường di chuyển của người chơi khi né đạn **để lại nét chì**; cuối trận các nét ghép thành một bức
      tranh ("mỗi bước nhỏ đều thành một nét vẽ").
-   - Đạn là những thứ xao nhãng, trông hấp dẫn và dễ bị hút vào; chạm vào thì **bị tẩy mất nét vẽ**.
+   - Đạn là những thứ xao nhãng, trông hấp dẫn và dễ bị hút vào; chạm vào thì **bị tẩy mất nét vẽ**. Đạn xao nhãng
+     **không trừ máu**; cái giá là mất nét vẽ.
+   - Ý tưởng cần thử, chưa chốt: đạn xao nhãng có lực hút nhẹ kéo bánh răng về phía nó.
    - Bức tranh cuối trận không cần hoàn hảo hay hoàn chỉnh, chỉ cần **có**.
    - Kết: cô bé cầm bút chì lên.
 5. **Boss: người thợ đồng hồ đã phí cả đời.** Không cần thắng, chỉ cần bước ra khỏi vòng lặp.
@@ -113,7 +134,8 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
     backend (Worker), mới cân nhắc chuyển sang plugin.
   - `compatibility_date` đặt theo ngày dựng dự án (2026-11-21). Chỉ đổi khi chủ động nâng cấp runtime.
   - `public/.assetsignore` loại `.gitkeep` khỏi những gì được deploy. Giữ file này.
-- **Claude KHÔNG chạy `wrangler deploy` thật.** Chủ dự án tự đăng nhập (`npx wrangler login`) và deploy.
+- **Trợ lý AI không chạy deploy:** cả `npm run deploy` lẫn `wrangler deploy`. Chủ dự án tự đăng nhập
+  (`npx wrangler login`) và deploy.
 
 ## Lệnh
 
@@ -167,9 +189,11 @@ Hiện đã có:
 
 ### Nền tảng kỹ thuật đã chốt
 
-- **Độ phân giải logic cố định 320×180** (`GAME_WIDTH`/`GAME_HEIGHT`). Mọi toạ độ trong game theo hệ này.
+- **Độ phân giải logic cố định**, hiện **320×180** (`GAME_WIDTH`/`GAME_HEIGHT` trong `src/core/config.ts`). Mọi
+  toạ độ trong game theo hệ này. Bước 2b nâng lên **640×360** và giữ nguyên cảm giác chơi; đến bước đó mới đổi hai
+  hằng này cùng các kích thước px đi kèm.
 - **Scale pixel art**: `Renderer.fit()` phóng canvas theo bội số nguyên của pixel thiết bị (có tính
-  `devicePixelRatio`), CSS `image-rendering: pixelated`. Chỉ thu nhỏ lẻ khi cửa sổ nhỏ hơn 320×180.
+  `devicePixelRatio`), CSS `image-rendering: pixelated`. Chỉ thu nhỏ lẻ khi cửa sổ nhỏ hơn độ phân giải logic.
 - **Fixed timestep 60 Hz** (`TICK_RATE`). `update()` tách khỏi `render(alpha)`. Logic KHÔNG phụ thuộc FPS
   hay `Date.now()`: chuyển động của người chơi đi theo số tick. **Ngoại lệ có chủ đích: nhịp của trận.** Trong pha né
   đạn, "bây giờ là lúc nào" do **đồng hồ nhịp (BeatClock) lấy từ đồng hồ âm thanh** quyết định, không đếm theo tick.
@@ -239,9 +263,8 @@ BPM mô tả theo đoạn: đứng yên, hoặc đổi tuyến tính THEO BEAT t
 chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 BPM giữa trận không phát đôi).
 
 - Tempo kịch bản nằm trong pattern (sự kiện `tempo`). Hết mỗi vòng, BPM trở về `pattern.bpm`.
-- **Cho bước 3 (cư dân 3 bị chậm nhịp khi trúng đạn)**: gọi `clock.tempo.change(clock.beat, bpmMoi, ...)` là đủ
-  để đổi nhịp tiếng và đạn cùng lúc. Lưu ý nó **cắt bỏ phần tempo kịch bản trong tương lai** (kể cả vòng kế đã được
-  triển khai trước một vòng), nên cần thiết kế cách trở lại tempo kịch bản; hiện CHƯA có.
+- **Cư dân 3 làm chậm nhịp (bước 3a):** đã chọn hướng (a). Không dùng `clock.tempo.change` để làm chậm, vì `change`
+  cắt bỏ tempo kịch bản phía sau. Hệ số chậm là lớp riêng, nhân lên tempo kịch bản. Chi tiết và ràng buộc ở vấn đề mở 1.
 
 ### Định dạng pattern (`data/pattern-types.ts`)
 
@@ -341,7 +364,10 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
 
 1. Di chuyển + va chạm + máu.
 2. Đạn theo beat + tiếng tích tắc procedural.
-3. Bản thô mini-game tháo lắp của cư dân 3 và cơ chế nét vẽ của cô bé.
+2b. Nâng độ phân giải logic từ 320×180 lên 640×360, giữ nguyên cảm giác chơi.
+3a. Lời tiêu cực của cư dân 3 trong pha né đạn (làm chậm nhịp).
+3b. Nét vẽ của cô bé trong pha né đạn.
+3c. Bản thô pha tháo lắp, dùng chung cho mọi cư dân (thiết kế sẽ chốt trước khi làm).
 4. Vertical slice một cư dân hoàn chỉnh.
 5. Máy trạng thái cảnh + thị trấn + lưu tiến trình.
 6. Nội dung các cư dân còn lại và boss.
