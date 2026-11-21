@@ -32,8 +32,24 @@ export class BeatClock {
     this.update();
   }
 
+  /** Giây đã giữ lại (xem tranh). Cộng dồn, không trả lại, nên nhịp không nhảy sau lúc dừng. */
+  private held = 0;
+
+  /**
+   * Mốc để hẹn tiếng tích tắc. Gồm thời gian đã giữ, nên tiếng và beat vẫn khớp sau lúc xem tranh.
+   * Khi chưa giữ thì bằng `origin`.
+   */
+  get scheduleOrigin(): number {
+    return this.origin + this.held;
+  }
+
+  /** Giữ nhịp trong `seconds` giây của đồng hồ nguồn. Gọi trước `update()`. */
+  hold(seconds: number): void {
+    if (seconds > 0) this.held += seconds;
+  }
+
   update(): void {
-    this.time = this.source.heardTime() - this.origin;
+    this.time = this.source.heardTime() - this.origin - this.held;
     this.beat = this.tempo.beatAtTime(this.time);
     this.bpm = this.tempo.bpmAtBeat(this.beat);
   }

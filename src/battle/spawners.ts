@@ -1,6 +1,7 @@
 import type { Rect } from "../core/math";
-import type { AimedEvent, BulletEvent, BurstEvent, Side, StraightEvent, SweepEvent, WordEvent } from "../data/pattern-types";
+import type { AimedEvent, BulletEvent, BurstEvent, DistractionEvent, Side, StraightEvent, SweepEvent, WordEvent } from "../data/pattern-types";
 import { WORD_FEEL, wordBox, type BulletFeel } from "../data/rhythm-feel";
+import { DISTRACTION_FEEL } from "../data/sketch-feel";
 import { NEGATIVE_PHRASES } from "../data/words";
 import type { BulletWorld } from "./bullets";
 
@@ -258,6 +259,36 @@ const sweep: EventHandler<SweepEvent> = {
   },
 };
 
+/** Đạn lớn, hoặc đang hút bánh răng, thì người chơi phải được báo trước. */
+export function distractionNeedsTelegraph(radius: number, bigRadius: number, pull: number): boolean {
+  return radius >= bigRadius || pull > 0;
+}
+
+const distraction: EventHandler<DistractionEvent> = {
+  needsTelegraph: (event, feel) =>
+    distractionNeedsTelegraph(event.radius ?? DISTRACTION_FEEL.radius, feel.bigRadius, DISTRACTION_FEEL.pull),
+
+  warn(ctx, event, warnTime, fireTime, fireBeat) {
+    const radius = event.radius ?? DISTRACTION_FEEL.radius;
+    addEdgeMark(ctx, event.from, event.at, radius, warnTime, fireTime, fireBeat);
+    return null;
+  },
+
+  spawn(ctx, event, _aim, fireTime) {
+    const radius = event.radius ?? DISTRACTION_FEEL.radius;
+    const p = edgePoint(ctx.arena, event.from, event.at, radius + SPAWN_MARGIN);
+    ctx.world.spawnDistraction(
+      p.x,
+      p.y,
+      p.inward,
+      event.speed ?? DISTRACTION_FEEL.speed,
+      radius,
+      event.sprite ?? DISTRACTION_FEEL.sprite,
+      fireTime,
+    );
+  },
+};
+
 const word: EventHandler<WordEvent> = {
   needsTelegraph: () => true,
 
@@ -280,6 +311,7 @@ const HANDLERS: { [K in BulletEvent["type"]]: EventHandler<Extract<BulletEvent, 
   burst,
   sweep,
   word,
+  distraction,
 };
 
 /** Handler của một sự kiện đạn, theo `event.type`. */

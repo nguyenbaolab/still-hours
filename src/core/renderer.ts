@@ -127,14 +127,25 @@ export class Renderer {
     this.ctx.restore();
   }
 
+  /** Nhân lên alpha hiện tại. 1 = giữ nguyên. Dùng khi làm mờ cả khung trong lúc xem tranh. */
+  setAlpha(alpha: number): void {
+    this.ctx.globalAlpha = alpha;
+  }
+
+  /** Vẽ một canvas (nét chì đã chốt) lên đúng pixel logic. */
+  image(source: CanvasImageSource, x: number, y: number): void {
+    this.ctx.drawImage(source, Math.round(x), Math.round(y));
+  }
+
   text(content: string, x: number, y: number, { color = "#fff", size = 16, align = "left", alpha = 1 }: TextOptions = {}): void {
+    const previous = this.ctx.globalAlpha;
     this.ctx.font = `${size}px ${FONT_FAMILY}`;
     this.ctx.textAlign = align;
     this.ctx.textBaseline = "top";
     this.ctx.fillStyle = color;
-    this.ctx.globalAlpha = alpha;
+    this.ctx.globalAlpha = previous * alpha;
     this.ctx.fillText(content, x, y);
-    this.ctx.globalAlpha = 1;
+    this.ctx.globalAlpha = previous;
   }
 
   /** Vẽ sprite theo id; (x, y) là góc trên trái. Toạ độ được làm tròn để pixel luôn khớp lưới. */

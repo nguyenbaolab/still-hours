@@ -70,6 +70,12 @@ export function validatePattern(pattern: Pattern, feel: BulletFeel): string[] {
         }
         if (event.speed !== undefined && !(event.speed > 0)) fail(i, "word: speed phải > 0");
         break;
+      case "distraction":
+        if (!fraction(event.at)) fail(i, `at ${event.at} phải trong [0, 1]`);
+        if (event.speed !== undefined && !(event.speed > 0)) fail(i, "distraction: speed phải > 0");
+        if (event.radius !== undefined && !(event.radius > 0)) fail(i, "distraction: radius phải > 0");
+        if (event.sprite !== undefined && event.sprite.length === 0) fail(i, "distraction: sprite rỗng");
+        break;
     }
 
     // Công bằng: đạn lớn/nguy hiểm phải được báo trước.

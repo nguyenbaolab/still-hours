@@ -67,6 +67,13 @@ export class Player {
     if (this.invincibleTicks > 0) this.invincibleTicks--;
   }
 
+  /** Xê dịch thêm trong tick này (lực hút), không đụng `prev`, vẫn kẹp trong khung. */
+  shift(dx: number, dy: number, arena: Rect): void {
+    const half = this.bodySize / 2;
+    this.x = clamp(this.x + dx, arena.x + half, arena.x + arena.w - half);
+    this.y = clamp(this.y + dy, arena.y + half, arena.y + arena.h - half);
+  }
+
   /** Hitbox (nhỏ hơn hình vẽ) khi tâm ở (cx, cy). */
   hitboxAt(cx: number, cy: number): Rect {
     const size = this.feel.hitboxSize;

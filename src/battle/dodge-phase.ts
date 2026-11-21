@@ -10,12 +10,15 @@ import { PLAYER_FEEL } from "../data/feel";
 import type { Pattern } from "../data/pattern-types";
 import { TEST_PATTERN } from "../data/patterns/test-pattern";
 import { BULLET_FEEL, PACE_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
+import { DISTRACTION_FEEL, SKETCH_FEEL } from "../data/sketch-feel";
 import type { Scene } from "../scenes/scene";
 import { BulletWorld } from "./bullets";
 import { Pace } from "./pace";
 import { PatternRunner } from "./pattern-runner";
 import { Player } from "./player";
+import { EraserPlay, Sketch } from "./sketch";
 import type { SpawnContext } from "./spawners";
+import { StrokeLayer } from "./stroke-layer";
 
 /** Dòng mẫu để chọn cỡ chữ còn đọc rõ dấu tiếng Việt. Chưa chọn font. */
 const VIETNAMESE_SAMPLE = "ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự ỳ ỷ ỹ ỵ đ";
@@ -56,13 +59,20 @@ export class DodgePhase implements Scene {
   private readonly player: Player;
   private readonly clock: BeatClock;
   private readonly world: BulletWorld;
+  private readonly pattern: Pattern;
   private readonly runner: PatternRunner;
   private readonly pace: Pace;
   private readonly ticks: TickScheduler;
+  private readonly sketch = new Sketch(SKETCH_FEEL);
+  private readonly strokes = new StrokeLayer(SKETCH_FEEL);
+  private readonly eraser = new EraserPlay();
   private readonly spawnContext: SpawnContext;
   private tick = 0;
   private debug = false;
   private absorbFlash = 0;
+  private heardAt: number;
+  private reveal = 0;
+  private galleries = 0;
 
   /** `bodySize`: cạnh sprite bánh răng (px). */
   constructor(
@@ -71,6 +81,7 @@ export class DodgePhase implements Scene {
     bodySize: number,
     pattern: Pattern = TEST_PATTERN,
   ) {
+    this.pattern = pattern;
     this.player = new Player(PLAYER_FEEL, bodySize);
     this.player.place(this.arena.x + this.arena.w / 2, this.arena.y + this.arena.h / 2);
 
@@ -82,6 +93,7 @@ export class DodgePhase implements Scene {
     this.runner = new PatternRunner(pattern, this.clock.tempo, BULLET_FEEL, RHYTHM_FEEL.defaultBpm);
     this.pace = new Pace(this.clock.tempo, PACE_FEEL, RHYTHM_FEEL.beatsPerBar);
     this.ticks = new TickScheduler(this.clock, () => audio.contextTime(), audio.tickSink);
+    this.heardAt = audio.heardTime();
   }
 
   update(): void {
@@ -89,13 +101,29 @@ export class DodgePhase implements Scene {
     if (this.input.wasPressed("debug")) this.debug = !this.debug;
     if (this.input.wasPressed("mute")) this.audio.toggleMute();
 
+    const heard = this.audio.heardTime();
+    const heardDt = Math.max(0, heard - this.heardAt);
+    this.heardAt = heard;
+
+    if (this.reveal > 0) {
+      this.clock.hold(heardDt);
+      this.clock.update();
+      this.reveal -= 1 / TICK_RATE;
+      this.eraser.update(SKETCH_FEEL.eraserSpeed / TICK_RATE);
+      return;
+    }
+
     this.clock.update();
+    if (this.beginGallery()) return;
+
     this.player.update(this.input, this.arena);
     this.world.step(this.clock.time, this.clock.beat);
 
     this.spawnContext.playerX = this.player.x;
     this.spawnContext.playerY = this.player.y;
     this.runner.update(this.clock.beat, this.spawnContext);
+    this.pullPlayer();
+    this.sketch.sample(this.player.x, this.player.y, this.input.isDown("slow"));
 
     // Câu không trừ máu. Ôm thì nhịp chậm từ beat sau; đi qua thì hồi ở đầu nhịp kế.
     // Đổi hệ số trước khi hẹn tiếng, để tick này đã dùng bản đồ mới.
@@ -112,6 +140,11 @@ export class DodgePhase implements Scene {
     }
     this.pace.update(this.clock.beat);
     this.ticks.update();
+
+    const grabbed = this.world.consumeDistractions(this.player.hitbox);
+    for (let i = 0; i < grabbed; i++) this.eraser.push(this.sketch.erase(SKETCH_FEEL.eraseLength));
+    this.eraser.update(SKETCH_FEEL.eraserSpeed / TICK_RATE);
+
     if (absorbed > 0) this.absorbFlash = ABSORB_FLASH_SECONDS;
     else this.absorbFlash = Math.max(0, this.absorbFlash - 1 / TICK_RATE);
 
@@ -123,6 +156,54 @@ export class DodgePhase implements Scene {
     if (this.player.hp <= 0) this.player.resetHealth();
   }
 
+  /** Kéo bánh răng về phía từng đạn xao nhãng. `pull` = 0 thì không làm gì. */
+  private pullPlayer(): void {
+    const pull = DISTRACTION_FEEL.pull / TICK_RATE;
+    if (!(pull > 0)) return;
+    let dx = 0;
+    let dy = 0;
+    for (let i = 0; i < this.world.distractions.size; i++) {
+      const item = this.world.distractions.at(i);
+      const ox = item.x - this.player.x;
+      const oy = item.y - this.player.y;
+      const dist = Math.hypot(ox, oy);
+      if (dist < 1e-4) continue;
+      dx += (ox / dist) * pull;
+      dy += (oy / dist) * pull;
+    }
+    if (dx !== 0 || dy !== 0) this.player.shift(dx, dy, this.arena);
+  }
+
+  /**
+   * Cuối vòng của pattern có `gallery`: giữ nhịp đúng ở mốc vừa khép, hủy tiếng đã hẹn,
+   * rồi để tranh hiện. Pattern khác không đi vào đây, nên đồng hồ thử nhịp không bị giữ.
+   */
+  private beginGallery(): boolean {
+    if (!this.pattern.gallery) return false;
+    const length = this.pattern.lengthBeats;
+    const finished = Math.floor(Math.max(0, this.clock.beat) / length);
+    const next = this.pattern.loop ? finished : Math.min(finished, 1);
+    if (next <= this.galleries) return false;
+    this.galleries = next;
+    const boundary = this.clock.tempo.timeAtBeat(next * length);
+    const overshoot = this.clock.time - boundary;
+    if (overshoot > 0) this.clock.hold(overshoot);
+    this.clock.update();
+    this.ticks.dropPending();
+    this.reveal = SKETCH_FEEL.revealSeconds;
+    return true;
+  }
+
+  /** 1 = trận bình thường, 0 = chỉ còn tranh. Mờ dần rồi hiện lại khung trước khi vòng sau chạy. */
+  private veil(): number {
+    if (this.reveal <= 0) return 1;
+    const fade = Math.min(0.45, SKETCH_FEEL.revealSeconds / 3);
+    const elapsed = SKETCH_FEEL.revealSeconds - this.reveal;
+    if (elapsed < fade) return 1 - elapsed / fade;
+    if (this.reveal < fade) return 1 - this.reveal / fade;
+    return 0;
+  }
+
   render(renderer: Renderer, alpha: number): void {
     const { arena } = this;
     const { borderThickness: border } = BATTLE_LAYOUT;
@@ -130,7 +211,9 @@ export class DodgePhase implements Scene {
 
     renderer.clear(COLOR.background);
 
-    // Khung chiến đấu: viền trắng bao quanh vùng đen.
+    const veil = this.veil();
+    renderer.setAlpha(veil);
+    // Khung chiến đấu: viền trắng bao quanh vùng đen. Khi xem tranh thì mờ đi cùng đạn.
     renderer.rect(arena.x - border, arena.y - border, arena.w + 2 * border, arena.h + 2 * border, COLOR.frame);
     renderer.rect(arena.x, arena.y, arena.w, arena.h, COLOR.arena);
 
@@ -143,6 +226,11 @@ export class DodgePhase implements Scene {
     if (this.absorbFlash > 0) renderer.rectOutline(px - half - 2, py - half - 2, player.bodySize + 4, player.bodySize + 4, COLOR.absorb);
 
     this.renderHpBar(renderer);
+    renderer.setAlpha(1);
+
+    renderer.clip(arena.x, arena.y, arena.w, arena.h);
+    this.strokes.render(renderer, this.sketch, this.eraser, px, py);
+    renderer.unclip();
     if (this.audio.muted) {
       renderer.text("tắt tiếng (M)", GAME_WIDTH - 8, 8, { size: 16, align: "right", color: COLOR.mutedHint });
     }
@@ -179,7 +267,7 @@ export class DodgePhase implements Scene {
       `DEBUG (F1)  tick ${this.tick}  phóng ${scaleText}`,
       `x ${player.x.toFixed(1)}  y ${player.y.toFixed(1)}  ${player.invincible ? "bất tử" : ""}`,
       `beat ${clock.beat.toFixed(2)}  BPM ${clock.bpm.toFixed(1)}  hệ số ${clock.tempo.paceAtBeat(clock.beat).toFixed(2)}  vòng ${this.runner.cycle + 1}`,
-      `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}`,
+      `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}  nét ${this.sketch.count}`,
     ];
     lines.forEach((line, i) => renderer.text(line, 8, 8 + i * 20, { size: 16, color: COLOR.debugText }));
 

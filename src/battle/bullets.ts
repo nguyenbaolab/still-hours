@@ -1,6 +1,7 @@
 import { circleIntersectsRect, lerp, overlaps, type Rect, segmentIntersectsBox } from "../core/math";
 import type { Renderer } from "../core/renderer";
 import { WORD_FEEL, type BulletFeel } from "../data/rhythm-feel";
+import { DISTRACTION_FEEL } from "../data/sketch-feel";
 import { Pool } from "./pool";
 
 const COLOR = {
@@ -55,6 +56,21 @@ export class HandBullet {
   damage = 0;
 }
 
+/** Đạn xao nhãng: bay thẳng như đạn chấm, chạm thì không trừ máu. */
+export class DistractionBullet {
+  x = 0;
+  y = 0;
+  prevX = 0;
+  prevY = 0;
+  originX = 0;
+  originY = 0;
+  vx = 0;
+  vy = 0;
+  fireTime = 0;
+  radius = 0;
+  sprite = DISTRACTION_FEEL.sprite;
+}
+
 export type TelegraphShape = "box" | "line" | "ring";
 
 /** Hình cảnh báo nhấp nháy. Dùng chung các trường tùy theo `shape`. */
@@ -102,6 +118,7 @@ export class BulletWorld {
   readonly dots: Pool<DotBullet>;
   readonly hands: Pool<HandBullet>;
   readonly words: Pool<WordBullet>;
+  readonly distractions: Pool<DistractionBullet>;
   readonly telegraphs: Pool<Telegraph>;
   /** Câu vừa đi hết khung mà không chạm, trong tick này. */
   readonly signals: "release"[] = [];
@@ -119,11 +136,12 @@ export class BulletWorld {
     this.dots = new Pool(feel.maxBullets, () => new DotBullet());
     this.hands = new Pool(32, () => new HandBullet());
     this.words = new Pool(WORD_FEEL.maxWords, () => new WordBullet());
+    this.distractions = new Pool(DISTRACTION_FEEL.max, () => new DistractionBullet());
     this.telegraphs = new Pool(64, () => new Telegraph());
   }
 
   get activeBullets(): number {
-    return this.dots.size + this.hands.size + this.words.size;
+    return this.dots.size + this.hands.size + this.words.size + this.distractions.size;
   }
 
   /** Đưa mọi thứ đang có tới thời điểm mới, và dọn những gì đã hết hạn. Gọi mỗi tick, TRƯỚC khi sinh đạn mới. */
@@ -163,6 +181,24 @@ export class BulletWorld {
       hand.prevAngle = hand.angle;
       hand.angle = hand.startAngle + hand.angularVelocity * (beat - hand.fireBeat);
       i++;
+    }
+
+    for (let i = 0; i < this.distractions.size; ) {
+      const item = this.distractions.at(i);
+      item.prevX = item.x;
+      item.prevY = item.y;
+      const age = Math.max(0, time - item.fireTime);
+      item.x = item.originX + item.vx * age;
+      item.y = item.originY + item.vy * age;
+      const margin = item.radius + 4;
+      const outside =
+        item.x < arena.x - margin ||
+        item.x > arena.x + arena.w + margin ||
+        item.y < arena.y - margin ||
+        item.y > arena.y + arena.h + margin;
+      const leaving = (item.x - centerX) * item.vx + (item.y - centerY) * item.vy > 0;
+      if ((outside && leaving) || age > MAX_LIFETIME_SECONDS) this.distractions.release(i);
+      else i++;
     }
 
     for (let i = 0; i < this.words.size; ) {
@@ -297,6 +333,40 @@ export class BulletWorld {
     word.y = word.prevY = y + word.vy * age;
   }
 
+  /** Sinh một đạn xao nhãng. Không có sát thương. */
+  spawnDistraction(x: number, y: number, angle: number, speed: number, radius: number, sprite: string, fireTime: number): void {
+    const item = this.distractions.acquire();
+    if (!item) {
+      this.dropped++;
+      return;
+    }
+    item.originX = x;
+    item.originY = y;
+    item.vx = Math.cos(angle) * speed;
+    item.vy = Math.sin(angle) * speed;
+    item.fireTime = fireTime;
+    item.radius = radius;
+    item.sprite = sprite;
+    const age = Math.max(0, this.time - fireTime);
+    item.x = item.prevX = x + item.vx * age;
+    item.y = item.prevY = y + item.vy * age;
+  }
+
+  /** Chạm đạn xao nhãng thì lấy nó ra khỏi khung. Không trừ máu. Trả về số viên vừa chạm. */
+  consumeDistractions(hitbox: Rect): number {
+    let count = 0;
+    for (let i = 0; i < this.distractions.size; ) {
+      const item = this.distractions.at(i);
+      if (!circleIntersectsRect(item.x, item.y, item.radius, hitbox)) {
+        i++;
+        continue;
+      }
+      this.distractions.release(i);
+      count++;
+    }
+    return count;
+  }
+
   /**
    * Ôm những câu đang bay mà hitbox chồng lên `hitbox`. Không trừ máu.
    * Câu đã chạm thì không còn tính là "đi qua".
@@ -419,6 +489,15 @@ export class BulletWorld {
       if (debug && word.state === "fly") {
         renderer.rectOutline(x - word.hitW / 2, y - word.hitH / 2, word.hitW, word.hitH, COLOR.debugBullet);
       }
+    }
+
+    for (let i = 0; i < this.distractions.size; i++) {
+      const item = this.distractions.at(i);
+      const x = lerp(item.prevX, item.x, alpha);
+      const y = lerp(item.prevY, item.y, alpha);
+      const sprite = renderer.sprites.size(item.sprite);
+      renderer.sprite(item.sprite, x - sprite.width / 2, y - sprite.height / 2);
+      if (debug) renderer.ring(x, y, item.radius, COLOR.debugBullet);
     }
 
     renderer.unclip();

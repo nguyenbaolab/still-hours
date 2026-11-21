@@ -18,4 +18,18 @@ export const SPRITES = {
       "....#....",
     ],
   },
+  /** Đạn xao nhãng: một viên kẹo sáng, để sau này thay bằng PNG cùng id. */
+  distraction: {
+    scale: 2,
+    palette: { "#": "#ffe08a", "@": "#ffb4c8", o: "#fffaf0" },
+    rows: [
+      "...#...",
+      "..#@#..",
+      ".#o.o#.",
+      "#o...o#",
+      ".#o.o#.",
+      "..#@#..",
+      "...#...",
+    ],
+  },
 } as const satisfies Record<string, PixelSpriteData>;

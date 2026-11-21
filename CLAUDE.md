@@ -17,9 +17,12 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước (2b): độ phân giải logic 640×360. Mọi số pixel nhân đôi; sprite placeholder `scale` 2. Cảm giác chơi
     (thời gian đi hết khung, thời gian đạn bay qua khung, độ khó né sát) giữ nguyên.
   - Bước (3a): lời tiêu cực của cư dân 3 trong pha né đạn. Hệ số nhịp là lớp chung (`TempoMap.setPace`); đạn
-    `word` không trừ máu. `main.ts` đang chọn `RESIDENT3_PATTERN` qua hằng `PLAYTEST_PATTERN`.
-- **Bước tiếp theo: (3b)**, nét vẽ của cô bé trong pha né đạn. Chưa có gì của pha tháo lắp. Hiện `main.ts` chạy thẳng
-  `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
+    `word` không trừ máu. `main.ts` chọn pattern chơi thử qua hằng `PLAYTEST_PATTERN`.
+- **Bước (3b) đang làm vòng 2.** Vòng 1 là điểm lưu này: nét chì hiện suốt lúc chơi, lưu danh sách đoạn, đạn
+  `distraction` không trừ máu và tẩy ngược, lực hút `DISTRACTION_FEEL.pull` (ý tưởng cần thử, mặc định 24, 0 = tắt).
+  `PLAYTEST_PATTERN` đang là `RESIDENT4_PATTERN`. Vòng 2 sẽ giấu nét lúc chơi và dẫn bằng đốm sáng.
+- **Sau vòng 2 mới tới (3c)**, bản thô pha tháo lắp, dùng chung cho mọi cư dân (thiết kế sẽ chốt trước khi làm).
+  Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -87,9 +90,19 @@ Mỗi trận xen kẽ hai pha:
      tranh ("mỗi bước nhỏ đều thành một nét vẽ").
    - Đạn là những thứ xao nhãng, trông hấp dẫn và dễ bị hút vào; chạm vào thì **bị tẩy mất nét vẽ**. Đạn xao nhãng
      **không trừ máu**; cái giá là mất nét vẽ.
-   - Ý tưởng cần thử, chưa chốt: đạn xao nhãng có lực hút nhẹ kéo bánh răng về phía nó.
+   - Ý tưởng cần thử, chưa chốt: đạn xao nhãng có lực hút nhẹ kéo bánh răng về phía nó. Đã có con số
+     `DISTRACTION_FEEL.pull` (mặc định 24 px/giây, 0 = tắt). Hướng đang làm: kéo **bánh răng về phía đạn**.
    - Bức tranh cuối trận không cần hoàn hảo hay hoàn chỉnh, chỉ cần **có**.
    - Kết: cô bé cầm bút chì lên.
+   - Đã làm ở bước 3b (chưa commit, chờ chơi thử): nét lưu danh sách đoạn (`Sketch`), lấy mẫu theo khoảng cách tối thiểu;
+     đứng yên không vẽ; giữ Shift thì nét đậm hơn và lấy mẫu dày hơn (`SKETCH_FEEL`). Tẩy ngược từ nét mới nhất một
+     đoạn dài cố định, cắt giữa đoạn nếu độ dài rơi giữa chừng; vết tẩy còn `erasedAlpha` (0 = mất hẳn). Cục gôm chạy
+     ngược theo đường vừa tẩy. Đoạn đã ổn định ghi vào canvas phụ, chỉ vẽ lại cả lớp khi bị tẩy; F1 hiện số đoạn (`nét`).
+     Cuối vòng, chỉ pattern có `gallery: true` làm mờ khung và đạn trong `revealSeconds` (cả nét còn lẫn vết tẩy) rồi
+     nhịp chạy tiếp. Đồng hồ bị giữ (`BeatClock.hold`, tiếng hẹn theo `scheduleOrigin`) nên tích tắc không trễ sau lúc
+     xem tranh. Pattern khác không giữ đồng hồ. `RESIDENT4_PATTERN` (~36 giây, toàn đạn `distraction`, có `gallery`)
+     đang được `PLAYTEST_PATTERN` chọn. Ghi chú chơi thử: pattern chưa có đạn trừ máu, áp lực chỉ là mất nét; để ý
+     lực hút có kéo người chơi vào đạn không.
 5. **Boss: người thợ đồng hồ đã phí cả đời.** Không cần thắng, chỉ cần bước ra khỏi vòng lặp.
 
 ## Thông điệp và nguyên tắc kể chuyện
@@ -174,15 +187,19 @@ Hiện đã có:
   (tiếng ôm / nhả một câu).
 - `battle/`: `dodge-phase.ts` (pha né đạn: khung, thanh máu, lớp debug, ghép mọi thứ), `player.ts` (bánh răng),
   `pattern-runner.ts` (chạy pattern theo beat, kiểm tra tính công bằng), `spawners.ts` (một handler cho mỗi loại
-  đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng), `pace.ts` (khi nào hạ / hồi hệ số nhịp).
+  đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng), `pace.ts` (khi nào hạ / hồi hệ số nhịp),
+  `sketch.ts` (danh sách đoạn nét chì, tẩy ngược, hoạt ảnh cục gôm), `stroke-layer.ts` (canvas phụ cho nét đã ổn định).
 - `scenes/`: `scene.ts` (giao diện `Scene`), `press-start.ts` (màn "Nhấn phím bất kỳ để bắt đầu").
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
-  `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây).
+  `sketch-feel.ts` (**độ dày nét, lấy mẫu, tẩy, vết mờ, lực hút, thời gian hiện tranh**),
+  `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
+  `patterns/resident-4.ts` (pattern thử nét chì, ~36 giây, `gallery`).
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
   (pattern fixture + hàm tính giờ độc lập). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
   `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `battle/pace.test.ts`, `battle/words.test.ts`,
+  `battle/sketch.test.ts` (tẩy ngược, cắt đoạn, khoảng lấy mẫu), `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
 - Chưa có code: lưu tiến trình trong `core/`, pha tháo lắp, hội thoại, thị trấn.
 
@@ -222,7 +239,8 @@ Hiện đã có:
   Đơn vị: px/giây và giây; code tự quy ra tick. Không rải số "cảm giác" vào code.
 - **Lớp debug bật/tắt bằng F1** (vẫn có trong bản deploy): hiện hitbox bánh răng (xanh lá), khung hình vẽ (xám),
   vùng va chạm của đạn, kim và chữ (hồng), toạ độ, số tick, **beat hiện tại, BPM hiệu dụng, hệ số nhịp, vòng
-  pattern, số đạn và cảnh báo đang hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0), **hệ số phóng**
+  pattern, số đạn và cảnh báo đang hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0), **số đoạn nét chì**
+  (`nét`, kể cả đoạn đã tẩy), **hệ số phóng**
   (`phóng`), và một dòng mẫu dấu tiếng Việt ở cỡ 8, 12, 16, 20 để chọn cỡ nhỏ nhất còn đọc rõ. Chưa chọn font.
 - Windows có "Sticky Keys" bật lên khi bấm Shift 5 lần liên tiếp, có thể làm gián đoạn lúc chơi; đây là cài đặt của
   hệ điều hành, game không chặn được. Nếu thành vấn đề, thêm phím phụ cho `slow` trong `keybindings.ts`.
@@ -293,6 +311,8 @@ chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 
 Một pattern là danh sách sự kiện theo beat. **Thêm pattern mới = thêm file dữ liệu trong `data/patterns/`**
 (xuất một `Pattern`), rồi truyền vào `new DodgePhase(input, audio, bodySize, pattern)`; không sửa code engine.
 `DodgePhase` mặc định dùng `TEST_PATTERN`. `main.ts` đang truyền `PLAYTEST_PATTERN` (đổi một dòng để chơi pattern kia).
+Pattern của cô bé đặt `gallery: true`: hết mỗi vòng, khung và đạn mờ đi, chỉ còn tranh (`SKETCH_FEEL.revealSeconds`),
+rồi nhịp chạy tiếp từ đúng mốc vừa khép. Pattern không có cờ này thì vòng chạy liền và đồng hồ không bị giữ.
 
 ```ts
 export const MY_PATTERN: Pattern = {
@@ -304,6 +324,7 @@ export const MY_PATTERN: Pattern = {
     { beat: 20, type: "sweep", x: 0.5, y: 0.5, length: 80, startAngleDeg: -90,
       degreesPerBeat: 45, durationBeats: 8 },                                         // kim đồng hồ quay quanh tâm
     { beat: 22, type: "word", from: "left", at: 0.4, phrase: 0 },                     // câu số 0 trong NEGATIVE_PHRASES
+    { beat: 23, type: "distraction", from: "right", at: 0.6 },                        // đạn xao nhãng, không trừ máu
     { beat: 24, type: "tempo", bpm: 160, overBeats: 16 },                             // tăng dần lên 160 BPM
   ],
 };
@@ -317,6 +338,7 @@ export const MY_PATTERN: Pattern = {
 | `sweep`    | kim đồng hồ quay quanh tâm (quay theo BEAT)            | `x`, `y`, `length`, `startAngleDeg`, `degreesPerBeat`, `durationBeats`, `hands` |
 | `tempo`    | đổi BPM kịch bản                                       | `bpm`, `overBeats` (0 = ngay)                                    |
 | `word`     | một câu ngắn bay từ mép khung; trúng không trừ máu     | `from`, `at`, `phrase` (chỉ số trong `data/words.ts`), `speed`   |
+| `distraction` | thứ xao nhãng bay từ mép; trúng không trừ máu, tẩy nét | `from`, `at`, `speed`, `radius`, `sprite`                        |
 
 Quy ước: `beat` là lúc đạn XUẤT HIỆN (có thể lẻ, ví dụ 40.5); vị trí trong khung là **tỉ lệ 0..1** (đổi kích thước khung
 không hỏng pattern); góc tính bằng độ (0° = sang phải, 90° = xuống); `speed`, `radius`, `damage` tùy chọn, mặc định ở
@@ -325,10 +347,12 @@ trong `battle/spawners.ts` (TypeScript buộc phải có handler cho mọi `type
 
 ### Công bằng: cảnh báo trước
 
-- Đạn **lớn** (`radius ≥ bigRadius`), **vòng tròn/quạt** (`burst`), **kim** (`sweep`) và **chữ** (`word`) BẮT BUỘC
+- Đạn **lớn** (`radius ≥ bigRadius`), **vòng tròn/quạt** (`burst`), **kim** (`sweep`), **chữ** (`word`) và **đạn
+  xao nhãng** (`distraction` khi `radius ≥ bigRadius` hoặc `DISTRACTION_FEEL.pull` > 0) BẮT BUỘC
   có cảnh báo nhấp nháy trước khi xuất hiện: mặc định `telegraphBeats` = 1 beat nhưng không ngắn hơn
   `telegraphMinSeconds` (BPM cao thì 1 beat quá ngắn). `validatePattern` từ chối pattern đặt `telegraphBeats` ≤ 0 cho
-  các loại này (ném lỗi khi tạo `PatternRunner`). Đạn nhỏ mặc định không cảnh báo, có thể bật bằng `telegraphBeats`.
+  các loại này (ném lỗi khi tạo `PatternRunner`). Đạn nhỏ, và đạn xao nhãng nhỏ khi lực hút = 0, mặc định không cảnh báo;
+  có thể bật bằng `telegraphBeats`.
 - Hình cảnh báo: dải ở mép khung (đạn lớn), vòng ở tâm (burst/kim), đường nét đứt (hướng nhắm, rìa quạt, hướng kim).
 - Đạn nhắm KHÓA hướng lúc BẮT ĐẦU cảnh báo (người chơi thấy đường ngắm và kịp rời đi); không có cảnh báo thì khóa lúc bắn.
 - Đã kiểm (bằng bot tạm, KHÔNG nằm trong repo): một bot né đạn nhìn thấy cảnh báo bị trúng 0 lần qua 3 vòng pattern thử (3 lần chạy khác nhau); khi cho
@@ -337,7 +361,7 @@ trong `battle/spawners.ts` (TypeScript buộc phải có handler cho mọi `type
 
 ### Object pool
 
-`BulletWorld` cấp phát sẵn pool đạn chấm (`maxBullets` = 256), kim (32), chữ (`WORD_FEEL.maxWords` = 32) và cảnh báo (64); giữa trận không tạo đối tượng
+`BulletWorld` cấp phát sẵn pool đạn chấm (`maxBullets` = 256), kim (32), chữ (`WORD_FEEL.maxWords` = 32), đạn xao nhãng (`DISTRACTION_FEEL.max` = 32) và cảnh báo (64); giữa trận không tạo đối tượng
 mới nên không giật GC khi nhiều đạn. Hết chỗ thì bỏ qua đạn mới và đếm vào `dropped` (hiện ở lớp debug, nên là 0).
 Duyệt pool không tạo closure: xem ghi chú đầu `battle/pool.ts`.
 
@@ -368,6 +392,19 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
 | Sàn nhịp / mỗi câu hạ / mỗi câu hồi            | `PACE_FEEL.floor`, `drop`, `recover`          |
 | Chữ to/nhỏ, bay nhanh/chậm, hitbox chữ         | `WORD_FEEL.fontSize` (16), `speed`, `hitboxScale` |
 | Câu tan / câu nổ lâu hay mau                   | `WORD_FEEL.fadeSeconds`, `absorbSeconds`      |
+
+Nét chì và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640×360):
+
+| Muốn…                                          | Chỉnh                                        |
+| ---------------------------------------------- | -------------------------------------------- |
+| Nét mảnh/đậm khi đi thường hoặc khi giữ Shift  | `SKETCH_FEEL.width`, `slowWidth`              |
+| Nét gãy / mịn (khoảng lấy mẫu)                 | `sampleDistance`, `slowSampleDistance`        |
+| Mỗi lần chạm tẩy mất bao nhiêu đường đi        | `eraseLength`                                 |
+| Cục gôm chạy ngược nhanh/chậm                  | `eraserSpeed`                                 |
+| Vết tẩy còn thấy hay biến mất (0 = mất hẳn)    | `erasedAlpha`                                 |
+| Tranh hiện bao lâu cuối mỗi vòng               | `revealSeconds`                               |
+| Lực hút đạn xao nhãng (0 = tắt)                | `DISTRACTION_FEEL.pull`                       |
+| Đạn xao nhãng bay nhanh/chậm, to/nhỏ           | `DISTRACTION_FEEL.speed`, `radius`            |
 
 ## Quy ước code
 

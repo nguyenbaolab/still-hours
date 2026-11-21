@@ -50,7 +50,8 @@ export class TickScheduler {
   /** Gọi mỗi tick. Lên lịch mọi beat sẽ rơi vào khoảng `LOOKAHEAD_SECONDS` sắp tới. */
   update(): void {
     const now = this.contextTime();
-    const { tempo, origin } = this.clock;
+    const { tempo } = this.clock;
+    const origin = this.clock.scheduleOrigin;
 
     // Bỏ những tiếng đã phát xong khỏi danh sách chờ.
     let kept = 0;
@@ -82,5 +83,21 @@ export class TickScheduler {
       }
       this.nextBeat++;
     }
+  }
+
+  /**
+   * Hủy tiếng đã hẹn mà chưa phát, và hẹn lại từ beat chưa tới.
+   * Dùng khi nhịp bị giữ (xem tranh): mốc hẹn đổi, tiếng đã xếp theo mốc cũ sẽ sớm.
+   */
+  dropPending(): void {
+    const now = this.contextTime();
+    for (const item of this.pending) item.cancel();
+    this.pending.length = 0;
+    const { tempo } = this.clock;
+    const origin = this.clock.scheduleOrigin;
+    let beat = Math.max(0, Math.ceil(this.clock.beat - 1e-4));
+    for (let guard = 0; guard < 100000 && origin + tempo.timeAtBeat(beat) <= now + 1e-4; guard++) beat++;
+    this.nextBeat = beat;
+    this.seenVersion = tempo.version;
   }
 }

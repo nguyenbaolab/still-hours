@@ -7,19 +7,21 @@ import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import { KEY_BINDINGS } from "./data/keybindings";
 import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
-import { RESIDENT3_PATTERN } from "./data/patterns/resident-3";
+import { RESIDENT4_PATTERN } from "./data/patterns/resident-4";
 import { SPRITES } from "./data/sprites";
-
-// Pattern đang chơi thử. Đổi thành TEST_PATTERN (data/patterns/test-pattern) để về pattern đạn cũ.
-const PLAYTEST_PATTERN = RESIDENT3_PATTERN;
 import { PressStartScene } from "./scenes/press-start";
 import type { Scene } from "./scenes/scene";
+
+// Pattern đang chơi thử. Đổi thành RESIDENT3_PATTERN hoặc TEST_PATTERN
+// (import từ data/patterns/resident-3 hoặc data/patterns/test-pattern).
+const PLAYTEST_PATTERN = RESIDENT4_PATTERN;
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
 
 const renderer = new Renderer(canvas);
 renderer.sprites.definePixels("gear", SPRITES.gear);
+renderer.sprites.definePixels("distraction", SPRITES.distraction);
 
 const input = new Input();
 attachKeyboard(input, KEY_BINDINGS);

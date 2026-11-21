@@ -73,6 +73,21 @@ export interface BurstEvent extends EventBase, BulletOptions {
 }
 
 /**
+ * Thứ xao nhãng, trông hấp dẫn. Trúng không trừ máu: cục gôm tẩy nét chì từ nét mới nhất.
+ * Lớn (bán kính ≥ bigRadius) hoặc đang có lực hút thì bắt buộc có cảnh báo.
+ */
+export interface DistractionEvent extends EventBase {
+  type: "distraction";
+  from: Side;
+  /** Vị trí dọc theo cạnh (0..1). */
+  at: number;
+  /** Sprite. Bỏ trống = DISTRACTION_FEEL.sprite. */
+  sprite?: string;
+  speed?: number;
+  radius?: number;
+}
+
+/**
  * Một câu ngắn bay từ mép khung vào trong. `phrase` là chỉ số trong `NEGATIVE_PHRASES`.
  * Luôn có cảnh báo (đạn lớn). Trúng không trừ máu: giá phải trả là nhịp chậm lại.
  */
@@ -114,7 +129,7 @@ export interface TempoEvent {
   overBeats?: number;
 }
 
-export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent;
+export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent | DistractionEvent;
 export type PatternEvent = BulletEvent | TempoEvent;
 
 export interface Pattern {
@@ -125,5 +140,10 @@ export interface Pattern {
   lengthBeats: number;
   /** Hết vòng thì lặp lại (BPM trở về `bpm` ở đầu vòng mới). */
   loop: boolean;
+  /**
+   * Cuối mỗi vòng, dừng nhịp và chỉ hiện nét chì trong `SKETCH_FEEL.revealSeconds`.
+   * Pattern không bật cờ này thì vòng chạy liền, đồng hồ không bị giữ.
+   */
+  gallery?: boolean;
   events: readonly PatternEvent[];
 }
