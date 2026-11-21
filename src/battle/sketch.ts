@@ -44,6 +44,11 @@ export class Sketch {
     return this.segments.length;
   }
 
+  /** Nhấc bút. Điểm tới không nối với nét cũ. */
+  lift(): void {
+    this.started = false;
+  }
+
   /** Điểm mẫu gần nhất, để vẽ nét đang nối tới bánh răng. Null khi chưa có điểm nào. */
   get pen(): { x: number; y: number; width: number } | null {
     if (!this.started) return null;
@@ -121,6 +126,45 @@ export class Sketch {
     if (taken.length > 0) this.eraseGeneration++;
     return taken;
   }
+}
+
+/** Một khúc của bản tua lại, theo thứ tự đã vẽ. Khúc cuối có thể bị cắt nếu mới tua tới giữa đoạn. */
+export interface ReplayPiece {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  width: number;
+  erased: boolean;
+}
+
+/**
+ * Phần nét đã được tua tới `drawnPx` px đường đi, từ đoạn cũ nhất.
+ * Vết tẩy vẫn nằm đúng chỗ nó được vẽ, không bị bỏ qua.
+ */
+export function replayPieces(segments: readonly StrokeSegment[], drawnPx: number): ReplayPiece[] {
+  const pieces: ReplayPiece[] = [];
+  let left = drawnPx;
+  for (const seg of segments) {
+    if (!(left > 1e-9)) break;
+    if (!(seg.length > 0)) continue;
+    if (seg.length <= left + 1e-9) {
+      pieces.push({ x0: seg.x0, y0: seg.y0, x1: seg.x1, y1: seg.y1, width: seg.width, erased: seg.erased });
+      left -= seg.length;
+      continue;
+    }
+    const t = left / seg.length;
+    pieces.push({
+      x0: seg.x0,
+      y0: seg.y0,
+      x1: seg.x0 + (seg.x1 - seg.x0) * t,
+      y1: seg.y0 + (seg.y1 - seg.y0) * t,
+      width: seg.width,
+      erased: seg.erased,
+    });
+    break;
+  }
+  return pieces;
 }
 
 function toRun(seg: StrokeSegment): InkRun {

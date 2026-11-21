@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SketchFeel } from "../data/sketch-feel";
-import { Sketch } from "./sketch";
+import { replayPieces, Sketch } from "./sketch";
 
 const FEEL: SketchFeel = {
   width: 2,
@@ -94,5 +94,23 @@ describe("nét chì", () => {
     expect(erased[0]?.length).toBeCloseTo(7, 6);
     expect(erased[0]?.x0).toBeCloseTo(13, 6);
     expect(erased[0]?.x1).toBeCloseTo(20, 6);
+  });
+
+  it("phát lại đúng thứ tự đã vẽ, vết tẩy nằm giữa chứ không bị đưa lên đầu", () => {
+    const sketch = new Sketch(FEEL);
+    for (const x of [0, 10, 20, 30]) sketch.sample(x, 0, false);
+    sketch.erase(10);
+
+    expect(replayPieces(sketch.segments, 0)).toEqual([]);
+    const early = replayPieces(sketch.segments, 5);
+    expect(early).toHaveLength(1);
+    expect(early[0]?.x0).toBeCloseTo(0, 6);
+    expect(early[0]?.x1).toBeCloseTo(5, 6);
+    expect(early[0]?.erased).toBe(false);
+
+    const mid = replayPieces(sketch.segments, 25);
+    expect(mid.map((piece) => piece.x0)).toEqual([0, 10, 20]);
+    expect(mid[2]?.erased).toBe(true);
+    expect(mid[2]?.x1).toBeCloseTo(25, 6);
   });
 });

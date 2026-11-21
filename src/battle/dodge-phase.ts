@@ -10,15 +10,16 @@ import { PLAYER_FEEL } from "../data/feel";
 import type { Pattern } from "../data/pattern-types";
 import { TEST_PATTERN } from "../data/patterns/test-pattern";
 import { BULLET_FEEL, PACE_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
-import { DISTRACTION_FEEL, SKETCH_FEEL } from "../data/sketch-feel";
+import { DISTRACTION_FEEL, GUIDE_FEEL, SKETCH_FEEL } from "../data/sketch-feel";
 import type { Scene } from "../scenes/scene";
 import { BulletWorld } from "./bullets";
+import { guidePose, scriptTempo, traceOnLight, validateGuide, type GuidePose } from "./guide";
 import { Pace } from "./pace";
 import { PatternRunner } from "./pattern-runner";
 import { Player } from "./player";
-import { EraserPlay, Sketch } from "./sketch";
+import { EraserPlay, replayPieces, Sketch } from "./sketch";
 import type { SpawnContext } from "./spawners";
-import { StrokeLayer } from "./stroke-layer";
+import { StrokeTail } from "./tail";
 
 /** Dòng mẫu để chọn cỡ chữ còn đọc rõ dấu tiếng Việt. Chưa chọn font. */
 const VIETNAMESE_SAMPLE = "ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự ỳ ỷ ỹ ỵ đ";
@@ -64,14 +65,16 @@ export class DodgePhase implements Scene {
   private readonly pace: Pace;
   private readonly ticks: TickScheduler;
   private readonly sketch = new Sketch(SKETCH_FEEL);
-  private readonly strokes = new StrokeLayer(SKETCH_FEEL);
+  private readonly tail = new StrokeTail();
   private readonly eraser = new EraserPlay();
+  private pose: GuidePose | null = null;
   private readonly spawnContext: SpawnContext;
   private tick = 0;
   private debug = false;
   private absorbFlash = 0;
   private heardAt: number;
-  private reveal = 0;
+  /** Giây còn lại của màn lộ tranh (tua lại rồi giữ). */
+  private galleryLeft = 0;
   private galleries = 0;
 
   /** `bodySize`: cạnh sprite bánh răng (px). */
@@ -94,6 +97,14 @@ export class DodgePhase implements Scene {
     this.pace = new Pace(this.clock.tempo, PACE_FEEL, RHYTHM_FEEL.beatsPerBar);
     this.ticks = new TickScheduler(this.clock, () => audio.contextTime(), audio.tickSink);
     this.heardAt = audio.heardTime();
+    if (pattern.guide) {
+      const problems = validateGuide(pattern.guide, this.arena, scriptTempo(pattern, RHYTHM_FEEL.defaultBpm), {
+        speed: PLAYER_FEEL.speed,
+        slowSpeed: PLAYER_FEEL.slowSpeed,
+        speedRatio: GUIDE_FEEL.speedRatio,
+      });
+      if (problems.length > 0) throw new Error(`Hình dẫn đường không hợp lệ:\n${problems.join("\n")}`);
+    }
   }
 
   update(): void {
@@ -105,11 +116,11 @@ export class DodgePhase implements Scene {
     const heardDt = Math.max(0, heard - this.heardAt);
     this.heardAt = heard;
 
-    if (this.reveal > 0) {
+    if (this.galleryLeft > 0) {
       this.clock.hold(heardDt);
       this.clock.update();
-      this.reveal -= 1 / TICK_RATE;
-      this.eraser.update(SKETCH_FEEL.eraserSpeed / TICK_RATE);
+      this.galleryLeft -= 1 / TICK_RATE;
+      this.tail.clear();
       return;
     }
 
@@ -123,7 +134,7 @@ export class DodgePhase implements Scene {
     this.spawnContext.playerY = this.player.y;
     this.runner.update(this.clock.beat, this.spawnContext);
     this.pullPlayer();
-    this.sketch.sample(this.player.x, this.player.y, this.input.isDown("slow"));
+    this.followLight();
 
     // Câu không trừ máu. Ôm thì nhịp chậm từ beat sau; đi qua thì hồi ở đầu nhịp kế.
     // Đổi hệ số trước khi hẹn tiếng, để tick này đã dùng bản đồ mới.
@@ -154,6 +165,27 @@ export class DodgePhase implements Scene {
 
     // Chưa có màn thua: hết máu thì hồi đầy máu và chơi tiếp.
     if (this.player.hp <= 0) this.player.resetHealth();
+  }
+
+  /** Bút chỉ chạm giấy trong vùng sáng. Ngoài vùng thì đuôi nét tắt và không nối qua khoảng trống. */
+  private followLight(): void {
+    const guide = this.pattern.guide;
+    const slow = this.input.isDown("slow");
+    if (!guide) {
+      this.pose = null;
+      this.sketch.lift();
+      this.tail.clear();
+      return;
+    }
+    const pose = guidePose(guide, this.clock.beat, this.arena, GUIDE_FEEL.lookAheadBeats);
+    this.pose = pose;
+    const down = traceOnLight(this.sketch, this.player.x, this.player.y, pose.x, pose.y, GUIDE_FEEL.radius, slow);
+    if (!down) {
+      this.tail.clear();
+      return;
+    }
+    const width = slow ? SKETCH_FEEL.slowWidth : SKETCH_FEEL.width;
+    this.tail.note(this.player.x, this.player.y, width, 1 / TICK_RATE, GUIDE_FEEL.tailSeconds);
   }
 
   /** Kéo bánh răng về phía từng đạn xao nhãng. `pull` = 0 thì không làm gì. */
@@ -190,17 +222,19 @@ export class DodgePhase implements Scene {
     if (overshoot > 0) this.clock.hold(overshoot);
     this.clock.update();
     this.ticks.dropPending();
-    this.reveal = SKETCH_FEEL.revealSeconds;
+    this.galleryLeft = GUIDE_FEEL.replaySeconds + SKETCH_FEEL.revealSeconds;
+    this.tail.clear();
     return true;
   }
 
   /** 1 = trận bình thường, 0 = chỉ còn tranh. Mờ dần rồi hiện lại khung trước khi vòng sau chạy. */
   private veil(): number {
-    if (this.reveal <= 0) return 1;
-    const fade = Math.min(0.45, SKETCH_FEEL.revealSeconds / 3);
-    const elapsed = SKETCH_FEEL.revealSeconds - this.reveal;
+    const total = GUIDE_FEEL.replaySeconds + SKETCH_FEEL.revealSeconds;
+    if (!(this.galleryLeft > 0) || !(total > 0)) return 1;
+    const fade = Math.min(0.45, total / 3);
+    const elapsed = total - this.galleryLeft;
     if (elapsed < fade) return 1 - elapsed / fade;
-    if (this.reveal < fade) return 1 - this.reveal / fade;
+    if (this.galleryLeft < fade) return 1 - this.galleryLeft / fade;
     return 0;
   }
 
@@ -229,12 +263,62 @@ export class DodgePhase implements Scene {
     renderer.setAlpha(1);
 
     renderer.clip(arena.x, arena.y, arena.w, arena.h);
-    this.strokes.render(renderer, this.sketch, this.eraser, px, py);
+    if (this.galleryLeft > 0) this.renderReplay(renderer);
+    else this.renderLiveInk(renderer);
     renderer.unclip();
     if (this.audio.muted) {
       renderer.text("tắt tiếng (M)", GAME_WIDTH - 8, 8, { size: 16, align: "right", color: COLOR.mutedHint });
     }
     if (this.debug) this.renderDebug(renderer, px, py);
+  }
+
+  /** Tua lại đúng thứ tự đã vẽ. Vết tẩy chỉ hiện ở đây. */
+  private renderReplay(renderer: Renderer): void {
+    let ink = 0;
+    for (const seg of this.sketch.segments) ink += seg.length;
+    const elapsed = GUIDE_FEEL.replaySeconds + SKETCH_FEEL.revealSeconds - this.galleryLeft;
+    const span = GUIDE_FEEL.replaySeconds;
+    const drawn = span <= 0 ? ink : ink * Math.min(1, Math.max(0, elapsed) / span);
+    for (const piece of replayPieces(this.sketch.segments, drawn)) {
+      if (piece.erased && !(SKETCH_FEEL.erasedAlpha > 0)) continue;
+      if (piece.erased) renderer.setAlpha(SKETCH_FEEL.erasedAlpha);
+      renderer.line(piece.x0, piece.y0, piece.x1, piece.y1, piece.width, SKETCH_FEEL.color);
+      if (piece.erased) renderer.setAlpha(1);
+    }
+  }
+
+  /** Lúc chơi: đuôi nét, đốm sáng và hướng một beat tới, rồi khúc vừa bị tẩy. */
+  private renderLiveInk(renderer: Renderer): void {
+    const life = GUIDE_FEEL.tailSeconds;
+    const points = this.tail.points;
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const point = points[i];
+      if (!prev || !point) continue;
+      const alpha = life > 0 ? 1 - point.age / life : 1;
+      if (alpha <= 0) continue;
+      renderer.setAlpha(Math.min(1, alpha));
+      renderer.line(prev.x, prev.y, point.x, point.y, point.width, SKETCH_FEEL.color);
+    }
+    renderer.setAlpha(1);
+
+    const pose = this.pose;
+    if (pose) {
+      renderer.setAlpha(0.45);
+      renderer.ring(pose.x, pose.y, GUIDE_FEEL.radius, GUIDE_FEEL.lightColor);
+      renderer.setAlpha(1);
+      if (Math.hypot(pose.aheadX - pose.x, pose.aheadY - pose.y) >= 1) {
+        renderer.line(pose.x, pose.y, pose.aheadX, pose.aheadY, 2, GUIDE_FEEL.lightColor);
+      }
+      renderer.disc(pose.x, pose.y, 4, GUIDE_FEEL.lightColor);
+    }
+
+    const flash = this.eraser.overlay();
+    for (const seg of flash.segments) renderer.line(seg.x0, seg.y0, seg.x1, seg.y1, seg.width, SKETCH_FEEL.color);
+    if (flash.tip) {
+      const size = 8;
+      renderer.rect(flash.tip.x - size / 2, flash.tip.y - size / 2, size, size, SKETCH_FEEL.eraserColor);
+    }
   }
 
   private renderHpBar(renderer: Renderer): void {

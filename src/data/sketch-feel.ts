@@ -54,3 +54,26 @@ export const DISTRACTION_FEEL: DistractionFeel = {
   sprite: "distraction",
   max: 32,
 };
+
+export interface GuideFeel {
+  /** Bánh răng trong bán kính này (px) quanh đốm sáng thì bút mới chạm giấy. */
+  radius: number;
+  /** Đuôi nét sau bánh răng, chỉ lúc đang vẽ (giây). */
+  tailSeconds: number;
+  /** Khúc thường: đốm sáng không nhanh hơn bấy nhiêu lần `PLAYER_FEEL.speed`. */
+  speedRatio: number;
+  /** Tua lại nét đã vẽ lúc lộ tranh (giây). */
+  replaySeconds: number;
+  /** Hiện hướng sắp đi xa bấy nhiêu beat. */
+  lookAheadBeats: number;
+  lightColor: string;
+}
+
+export const GUIDE_FEEL: GuideFeel = {
+  radius: 28,
+  tailSeconds: 0.4,
+  speedRatio: 0.7,
+  replaySeconds: 2.4,
+  lookAheadBeats: 1,
+  lightColor: "#ffe08a",
+};

@@ -18,10 +18,12 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     (thời gian đi hết khung, thời gian đạn bay qua khung, độ khó né sát) giữ nguyên.
   - Bước (3a): lời tiêu cực của cư dân 3 trong pha né đạn. Hệ số nhịp là lớp chung (`TempoMap.setPace`); đạn
     `word` không trừ máu. `main.ts` chọn pattern chơi thử qua hằng `PLAYTEST_PATTERN`.
-- **Bước (3b) đang làm vòng 2.** Vòng 1 là điểm lưu này: nét chì hiện suốt lúc chơi, lưu danh sách đoạn, đạn
-  `distraction` không trừ máu và tẩy ngược, lực hút `DISTRACTION_FEEL.pull` (ý tưởng cần thử, mặc định 24, 0 = tắt).
-  `PLAYTEST_PATTERN` đang là `RESIDENT4_PATTERN`. Vòng 2 sẽ giấu nét lúc chơi và dẫn bằng đốm sáng.
-- **Sau vòng 2 mới tới (3c)**, bản thô pha tháo lắp, dùng chung cho mọi cư dân (thiết kế sẽ chốt trước khi làm).
+- **Bước (3b) vòng 1 đã commit và push:** nét chì hiện suốt lúc chơi, đạn `distraction` tẩy ngược, lực hút
+  `DISTRACTION_FEEL.pull`. Commit `feat: pencil trail and distraction bullets (first prototype)`.
+- **Bước (3b) chuyển sang vòng 3.** Vòng 2 là điểm lưu này: lúc chơi chỉ có đuôi nét (`tailSeconds`) và đốm sáng
+  theo beat; bút chỉ chạm giấy trong bán kính vùng sáng; cuối vòng tua lại nét thật (`replaySeconds`) rồi giữ tranh
+  (`revealSeconds`). Hình thử là chân trời có tháp đồng hồ. `PLAYTEST_PATTERN` vẫn là `RESIDENT4_PATTERN`.
+- **Sau vòng 3 mới tới (3c)**, bản thô pha tháo lắp, dùng chung cho mọi cư dân (thiết kế sẽ chốt trước khi làm).
   Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
@@ -94,15 +96,17 @@ Mỗi trận xen kẽ hai pha:
      `DISTRACTION_FEEL.pull` (mặc định 24 px/giây, 0 = tắt). Hướng đang làm: kéo **bánh răng về phía đạn**.
    - Bức tranh cuối trận không cần hoàn hảo hay hoàn chỉnh, chỉ cần **có**.
    - Kết: cô bé cầm bút chì lên.
-   - Đã làm ở bước 3b (chưa commit, chờ chơi thử): nét lưu danh sách đoạn (`Sketch`), lấy mẫu theo khoảng cách tối thiểu;
-     đứng yên không vẽ; giữ Shift thì nét đậm hơn và lấy mẫu dày hơn (`SKETCH_FEEL`). Tẩy ngược từ nét mới nhất một
-     đoạn dài cố định, cắt giữa đoạn nếu độ dài rơi giữa chừng; vết tẩy còn `erasedAlpha` (0 = mất hẳn). Cục gôm chạy
-     ngược theo đường vừa tẩy. Đoạn đã ổn định ghi vào canvas phụ, chỉ vẽ lại cả lớp khi bị tẩy; F1 hiện số đoạn (`nét`).
-     Cuối vòng, chỉ pattern có `gallery: true` làm mờ khung và đạn trong `revealSeconds` (cả nét còn lẫn vết tẩy) rồi
-     nhịp chạy tiếp. Đồng hồ bị giữ (`BeatClock.hold`, tiếng hẹn theo `scheduleOrigin`) nên tích tắc không trễ sau lúc
-     xem tranh. Pattern khác không giữ đồng hồ. `RESIDENT4_PATTERN` (~36 giây, toàn đạn `distraction`, có `gallery`)
-     đang được `PLAYTEST_PATTERN` chọn. Ghi chú chơi thử: pattern chưa có đạn trừ máu, áp lực chỉ là mất nét; để ý
-     lực hút có kéo người chơi vào đạn không.
+   - Vòng 2 (điểm lưu này): nét đã vẽ không hiện lúc chơi, chỉ một đuôi ngắn (`GUIDE_FEEL.tailSeconds`).
+     Hình cần vẽ là dữ liệu (`GuideFigure`: đường gấp khúc, toạ độ 0..1 của khung, mỗi điểm một beat). Đốm sáng
+     nội suy theo beat nghe được, nên chậm theo hệ số nhịp; chỉ hiện vị trí hiện tại, vòng sáng và hướng khoảng
+     `lookAheadBeats` phía trước. Bút chạm giấy khi bánh răng nằm trong `GUIDE_FEEL.radius`; ra ngoài không sinh đoạn,
+     không nối qua khoảng trống, đuôi tắt, không trừ máu. Giữ Shift vẫn làm nét lưu đậm và mịn hơn. Chạm đạn xao nhãng
+     thì khúc bị tẩy hiện ra, cục gôm chạy ngược, rồi biến mất; vết mờ `erasedAlpha` chỉ hiện khi lộ tranh.
+     Đạn xao nhãng đặt lệch khỏi đường sáng và vẫn kéo bánh răng về phía đạn. Cuối vòng (`gallery`): làm mờ khung và
+     đạn, tua lại đúng thứ tự đã vẽ trong `replaySeconds` (kể cả vết tẩy), rồi giữ `revealSeconds`. Không hiện hình mẫu.
+     Tốc độ đốm kiểm lúc tạo trận, trên tempo kịch bản: khúc thường ≤ `speedRatio` × `PLAYER_FEEL.speed`, khúc
+     `detail` ≤ `slowSpeed`. `TOWN_HORIZON` (~34 giây nét, vòng 36 giây) là chân trời có tháp đồng hồ ở khúc chi tiết.
+     Ghi chú chơi thử: 2 giây dạo đầu để kịp tới đốm bên trái; pattern chưa có đạn trừ máu.
 5. **Boss: người thợ đồng hồ đã phí cả đời.** Không cần thắng, chỉ cần bước ra khỏi vòng lặp.
 
 ## Thông điệp và nguyên tắc kể chuyện
@@ -188,18 +192,22 @@ Hiện đã có:
 - `battle/`: `dodge-phase.ts` (pha né đạn: khung, thanh máu, lớp debug, ghép mọi thứ), `player.ts` (bánh răng),
   `pattern-runner.ts` (chạy pattern theo beat, kiểm tra tính công bằng), `spawners.ts` (một handler cho mỗi loại
   đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng), `pace.ts` (khi nào hạ / hồi hệ số nhịp),
-  `sketch.ts` (danh sách đoạn nét chì, tẩy ngược, hoạt ảnh cục gôm), `stroke-layer.ts` (canvas phụ cho nét đã ổn định).
+  `sketch.ts` (danh sách đoạn nét chì, tẩy ngược, tua lại), `guide.ts` (đốm sáng theo beat, kiểm tốc độ),
+  `tail.ts` (đuôi nét lúc chơi).
 - `scenes/`: `scene.ts` (giao diện `Scene`), `press-start.ts` (màn "Nhấn phím bất kỳ để bắt đầu").
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
-  `sketch-feel.ts` (**độ dày nét, lấy mẫu, tẩy, vết mờ, lực hút, thời gian hiện tranh**),
+  `sketch-feel.ts` (**độ dày nét, lấy mẫu, tẩy, vết mờ, lực hút, đuôi, vùng sáng, tua tranh**),
+  `guide.ts` (kiểu hình dẫn đường), `figures/town-horizon.ts` (chân trời thử, tháp là khúc chi tiết),
   `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
-  `patterns/resident-4.ts` (pattern thử nét chì, ~36 giây, `gallery`).
+  `patterns/resident-4.ts` (pattern thử nét chì, ~36 giây, `gallery` + `guide`).
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
   (pattern fixture + hàm tính giờ độc lập). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
   `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `battle/pace.test.ts`, `battle/words.test.ts`,
-  `battle/sketch.test.ts` (tẩy ngược, cắt đoạn, khoảng lấy mẫu), `battle/distraction.test.ts` (không trừ máu, cảnh báo),
+  `battle/sketch.test.ts` (tẩy ngược, cắt đoạn, khoảng lấy mẫu, thứ tự tua lại),
+  `battle/guide.test.ts` (đốm theo beat, vùng sáng, trần tốc độ),
+  `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
 - Chưa có code: lưu tiến trình trong `core/`, pha tháo lắp, hội thoại, thị trấn.
 
@@ -311,8 +319,10 @@ chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 
 Một pattern là danh sách sự kiện theo beat. **Thêm pattern mới = thêm file dữ liệu trong `data/patterns/`**
 (xuất một `Pattern`), rồi truyền vào `new DodgePhase(input, audio, bodySize, pattern)`; không sửa code engine.
 `DodgePhase` mặc định dùng `TEST_PATTERN`. `main.ts` đang truyền `PLAYTEST_PATTERN` (đổi một dòng để chơi pattern kia).
-Pattern của cô bé đặt `gallery: true`: hết mỗi vòng, khung và đạn mờ đi, chỉ còn tranh (`SKETCH_FEEL.revealSeconds`),
-rồi nhịp chạy tiếp từ đúng mốc vừa khép. Pattern không có cờ này thì vòng chạy liền và đồng hồ không bị giữ.
+Pattern của cô bé đặt `gallery: true` và `guide` (đường gấp khúc, mỗi điểm một beat). Hết mỗi vòng, khung và đạn
+mờ đi, nét người chơi đã vẽ được tua lại trong `GUIDE_FEEL.replaySeconds` (cả vết tẩy), rồi giữ tranh
+`SKETCH_FEEL.revealSeconds`. Không hiện hình mẫu. Nhịp chạy tiếp từ đúng mốc vừa khép. Pattern không có `gallery`
+thì vòng chạy liền và đồng hồ không bị giữ. Pattern không có `guide` thì bút không chạm giấy.
 
 ```ts
 export const MY_PATTERN: Pattern = {
@@ -401,8 +411,13 @@ Nét chì và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640
 | Nét gãy / mịn (khoảng lấy mẫu)                 | `sampleDistance`, `slowSampleDistance`        |
 | Mỗi lần chạm tẩy mất bao nhiêu đường đi        | `eraseLength`                                 |
 | Cục gôm chạy ngược nhanh/chậm                  | `eraserSpeed`                                 |
-| Vết tẩy còn thấy hay biến mất (0 = mất hẳn)    | `erasedAlpha`                                 |
-| Tranh hiện bao lâu cuối mỗi vòng               | `revealSeconds`                               |
+| Vết tẩy còn thấy hay biến mất lúc lộ tranh (0 = mất hẳn) | `erasedAlpha`                          |
+| Tua lại nét đã vẽ bao lâu                      | `GUIDE_FEEL.replaySeconds`                    |
+| Giữ tranh bao lâu sau khi tua xong             | `SKETCH_FEEL.revealSeconds`                   |
+| Đuôi nét lúc chơi dài bao lâu                  | `GUIDE_FEEL.tailSeconds`                      |
+| Vùng sáng rộng bao nhiêu thì còn vẽ được       | `GUIDE_FEEL.radius`                           |
+| Đốm được đi nhanh đến đâu trên khúc thường     | `GUIDE_FEEL.speedRatio` (nhân `PLAYER_FEEL.speed`) |
+| Hướng dẫn nhìn trước bao nhiêu beat            | `GUIDE_FEEL.lookAheadBeats`                   |
 | Lực hút đạn xao nhãng (0 = tắt)                | `DISTRACTION_FEEL.pull`                       |
 | Đạn xao nhãng bay nhanh/chậm, to/nhỏ           | `DISTRACTION_FEEL.speed`, `radius`            |
 

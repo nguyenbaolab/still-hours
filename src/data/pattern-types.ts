@@ -11,6 +11,8 @@
  * - Chỗ nào không khai báo thì lấy mặc định ở rhythm-feel.ts.
  */
 
+import type { GuideFigure } from "./guide";
+
 export type Side = "left" | "right" | "top" | "bottom";
 
 interface EventBase {
@@ -141,9 +143,11 @@ export interface Pattern {
   /** Hết vòng thì lặp lại (BPM trở về `bpm` ở đầu vòng mới). */
   loop: boolean;
   /**
-   * Cuối mỗi vòng, dừng nhịp và chỉ hiện nét chì trong `SKETCH_FEEL.revealSeconds`.
+   * Cuối mỗi vòng: tua lại nét đã vẽ (`replaySeconds`) rồi giữ tranh (`revealSeconds`).
    * Pattern không bật cờ này thì vòng chạy liền, đồng hồ không bị giữ.
    */
   gallery?: boolean;
+  /** Đốm sáng dẫn đường. Không có thì bút không chạm giấy. */
+  guide?: GuideFigure;
   events: readonly PatternEvent[];
 }
