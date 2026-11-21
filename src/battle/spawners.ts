@@ -1,6 +1,7 @@
 import type { Rect } from "../core/math";
-import type { AimedEvent, BulletEvent, BurstEvent, Side, StraightEvent, SweepEvent } from "../data/pattern-types";
-import type { BulletFeel } from "../data/rhythm-feel";
+import type { AimedEvent, BulletEvent, BurstEvent, Side, StraightEvent, SweepEvent, WordEvent } from "../data/pattern-types";
+import { WORD_FEEL, wordBox, type BulletFeel } from "../data/rhythm-feel";
+import { NEGATIVE_PHRASES } from "../data/words";
 import type { BulletWorld } from "./bullets";
 
 /**
@@ -25,7 +26,7 @@ export interface EventHandler<E extends BulletEvent> {
    * Tạo hình cảnh báo nhấp nháy từ `warnTime` tới `fireTime` (giây, theo đồng hồ nhịp).
    * Nếu đạn nhắm vào người chơi, KHÓA hướng nhắm lúc này và trả về (rad) để người chơi có thời gian né; ngược lại trả null.
    */
-  warn(ctx: SpawnContext, event: E, warnTime: number, fireTime: number): number | null;
+  warn(ctx: SpawnContext, event: E, warnTime: number, fireTime: number, fireBeat: number): number | null;
   /** Sinh đạn thật. `lockedAim` là hướng đã khóa lúc cảnh báo (null nếu không có cảnh báo: nhắm ngay bây giờ). */
   spawn(ctx: SpawnContext, event: E, lockedAim: number | null, fireTime: number, fireBeat: number): void;
 }
@@ -63,21 +64,29 @@ function edgePoint(arena: Rect, from: Side, at: number, offset: number): EdgePoi
 }
 
 /** Dải đánh dấu nằm sát mép trong của khung, ngay chỗ đạn sẽ chui ra. */
-function addEdgeMark(ctx: SpawnContext, from: Side, at: number, radius: number, warnTime: number, fireTime: number): void {
+function addEdgeMark(
+  ctx: SpawnContext,
+  from: Side,
+  at: number,
+  radius: number,
+  warnTime: number,
+  fireTime: number,
+  fireBeat: number,
+): void {
   const { arena, world } = ctx;
   const p = edgePoint(arena, from, at, 0);
   switch (from) {
     case "left":
-      world.addTelegraph("box", arena.x, p.y - radius, EDGE_MARK, 2 * radius, false, warnTime, fireTime);
+      world.addTelegraph("box", arena.x, p.y - radius, EDGE_MARK, 2 * radius, false, warnTime, fireTime, fireBeat);
       break;
     case "right":
-      world.addTelegraph("box", arena.x + arena.w - EDGE_MARK, p.y - radius, EDGE_MARK, 2 * radius, false, warnTime, fireTime);
+      world.addTelegraph("box", arena.x + arena.w - EDGE_MARK, p.y - radius, EDGE_MARK, 2 * radius, false, warnTime, fireTime, fireBeat);
       break;
     case "top":
-      world.addTelegraph("box", p.x - radius, arena.y, 2 * radius, EDGE_MARK, false, warnTime, fireTime);
+      world.addTelegraph("box", p.x - radius, arena.y, 2 * radius, EDGE_MARK, false, warnTime, fireTime, fireBeat);
       break;
     case "bottom":
-      world.addTelegraph("box", p.x - radius, arena.y + arena.h - EDGE_MARK, 2 * radius, EDGE_MARK, false, warnTime, fireTime);
+      world.addTelegraph("box", p.x - radius, arena.y + arena.h - EDGE_MARK, 2 * radius, EDGE_MARK, false, warnTime, fireTime, fireBeat);
       break;
   }
 }
@@ -85,11 +94,11 @@ function addEdgeMark(ctx: SpawnContext, from: Side, at: number, radius: number, 
 const straight: EventHandler<StraightEvent> = {
   needsTelegraph: (event, feel) => (event.radius ?? feel.radius) >= feel.bigRadius,
 
-  warn(ctx, event, warnTime, fireTime) {
+  warn(ctx, event, warnTime, fireTime, fireBeat) {
     const radius = event.radius ?? ctx.feel.radius;
     const spacing = event.spacing ?? 0.2;
     for (let i = 0; i < (event.count ?? 1); i++) {
-      addEdgeMark(ctx, event.from, event.at + i * spacing, radius, warnTime, fireTime);
+      addEdgeMark(ctx, event.from, event.at + i * spacing, radius, warnTime, fireTime, fireBeat);
     }
     return null;
   },
@@ -107,12 +116,12 @@ const straight: EventHandler<StraightEvent> = {
 const aimed: EventHandler<AimedEvent> = {
   needsTelegraph: (event, feel) => (event.radius ?? feel.radius) >= feel.bigRadius,
 
-  warn(ctx, event, warnTime, fireTime) {
+  warn(ctx, event, warnTime, fireTime, fireBeat) {
     const radius = event.radius ?? ctx.feel.radius;
     const origin = edgePoint(ctx.arena, event.from, event.at, radius + SPAWN_MARGIN);
     const aim = Math.atan2(ctx.playerY - origin.y, ctx.playerX - origin.x);
 
-    addEdgeMark(ctx, event.from, event.at, radius, warnTime, fireTime);
+    addEdgeMark(ctx, event.from, event.at, radius, warnTime, fireTime, fireBeat);
     for (const angle of fanAngles(aim, event)) {
       ctx.world.addTelegraph(
         "line",
@@ -123,6 +132,7 @@ const aimed: EventHandler<AimedEvent> = {
         true,
         warnTime,
         fireTime,
+        fireBeat,
       );
     }
     return aim;
@@ -164,17 +174,27 @@ function burstOrigin(ctx: SpawnContext, event: BurstEvent): { x: number; y: numb
 const burst: EventHandler<BurstEvent> = {
   needsTelegraph: () => true,
 
-  warn(ctx, event, warnTime, fireTime) {
+  warn(ctx, event, warnTime, fireTime, fireBeat) {
     const { x, y } = burstOrigin(ctx, event);
     const center = event.aimed ? Math.atan2(ctx.playerY - y, ctx.playerX - x) : degToRad(event.angleDeg ?? 0);
 
-    ctx.world.addTelegraph("ring", x, y, BURST_RING_RADIUS, 0, false, warnTime, fireTime);
+    ctx.world.addTelegraph("ring", x, y, BURST_RING_RADIUS, 0, false, warnTime, fireTime, fireBeat);
     if (degToRad(event.arcDeg ?? 360) < FULL_CIRCLE - 1e-9) {
       // Quạt: vạch hai rìa của cung để người chơi thấy hướng bắn.
       const angles = burstAngles(center, event);
       for (const angle of [angles[0], angles[angles.length - 1]]) {
         if (angle === undefined) continue;
-        ctx.world.addTelegraph("line", x, y, x + Math.cos(angle) * AIM_LINE, y + Math.sin(angle) * AIM_LINE, true, warnTime, fireTime);
+        ctx.world.addTelegraph(
+          "line",
+          x,
+          y,
+          x + Math.cos(angle) * AIM_LINE,
+          y + Math.sin(angle) * AIM_LINE,
+          true,
+          warnTime,
+          fireTime,
+          fireBeat,
+        );
       }
     }
     return event.aimed ? center : null;
@@ -199,13 +219,23 @@ const sweepOrigin = (ctx: SpawnContext, event: SweepEvent): { x: number; y: numb
 const sweep: EventHandler<SweepEvent> = {
   needsTelegraph: () => true,
 
-  warn(ctx, event, warnTime, fireTime) {
+  warn(ctx, event, warnTime, fireTime, fireBeat) {
     const { x, y } = sweepOrigin(ctx, event);
     const hands = event.hands ?? 1;
-    ctx.world.addTelegraph("ring", x, y, 6, 0, false, warnTime, fireTime);
+    ctx.world.addTelegraph("ring", x, y, 6, 0, false, warnTime, fireTime, fireBeat);
     for (let i = 0; i < hands; i++) {
       const angle = degToRad(event.startAngleDeg) + (i * FULL_CIRCLE) / hands;
-      ctx.world.addTelegraph("line", x, y, x + Math.cos(angle) * event.length, y + Math.sin(angle) * event.length, true, warnTime, fireTime);
+      ctx.world.addTelegraph(
+        "line",
+        x,
+        y,
+        x + Math.cos(angle) * event.length,
+        y + Math.sin(angle) * event.length,
+        true,
+        warnTime,
+        fireTime,
+        fireBeat,
+      );
     }
     return null;
   },
@@ -228,11 +258,28 @@ const sweep: EventHandler<SweepEvent> = {
   },
 };
 
+const word: EventHandler<WordEvent> = {
+  needsTelegraph: () => true,
+
+  warn(ctx, event, warnTime, fireTime, fireBeat) {
+    addEdgeMark(ctx, event.from, event.at, WORD_FEEL.fontSize / 2, warnTime, fireTime, fireBeat);
+    return null;
+  },
+
+  spawn(ctx, event, _aim, fireTime) {
+    const phrase = NEGATIVE_PHRASES[event.phrase] ?? "";
+    const box = wordBox(phrase);
+    const p = edgePoint(ctx.arena, event.from, event.at, box.h / 2 + SPAWN_MARGIN);
+    ctx.world.spawnWord(p.x, p.y, p.inward, event.speed ?? WORD_FEEL.speed, phrase, box, fireTime);
+  },
+};
+
 const HANDLERS: { [K in BulletEvent["type"]]: EventHandler<Extract<BulletEvent, { type: K }>> } = {
   straight,
   aimed,
   burst,
   sweep,
+  word,
 };
 
 /** Handler của một sự kiện đạn, theo `event.type`. */

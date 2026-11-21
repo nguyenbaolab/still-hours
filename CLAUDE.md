@@ -16,27 +16,17 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     cảnh báo công bằng, pool). Có bộ test Vitest (`npm test`) cho đồng bộ nhịp và quy tắc cảnh báo.
   - Bước (2b): độ phân giải logic 640×360. Mọi số pixel nhân đôi; sprite placeholder `scale` 2. Cảm giác chơi
     (thời gian đi hết khung, thời gian đạn bay qua khung, độ khó né sát) giữ nguyên.
-- **Bước tiếp theo: (3a)**, lời tiêu cực của cư dân 3 trong pha né đạn (làm chậm nhịp). Chưa có gì của pha tháo
-  lắp. Hiện `main.ts` chạy thẳng `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
+  - Bước (3a): lời tiêu cực của cư dân 3 trong pha né đạn. Hệ số nhịp là lớp chung (`TempoMap.setPace`); đạn
+    `word` không trừ máu. `main.ts` đang chọn `RESIDENT3_PATTERN` qua hằng `PLAYTEST_PATTERN`.
+- **Bước tiếp theo: (3b)**, nét vẽ của cô bé trong pha né đạn. Chưa có gì của pha tháo lắp. Hiện `main.ts` chạy thẳng
+  `DodgePhase` (máy trạng thái cảnh là bước 5), và hết máu chỉ reset (chưa có màn thua).
 - **Vấn đề còn mở:**
-  1. **Làm chậm nhịp của cư dân 3 mà vẫn trở lại tempo kịch bản.** Đã chọn hướng (a): hệ số chậm tách riêng, nhân lên
-     tempo kịch bản, rồi hồi về 1. Không dùng `clock.tempo.change` cho việc này: `change` cắt bỏ mọi tempo kịch bản
-     sau beat đó (kể cả vòng kế mà `PatternRunner` đã triển khai trước) và runner không biết để làm lại. Ràng buộc:
-     - Hệ số chậm là **hằng số theo đoạn**. Nhân với đoạn BPM tuyến tính vẫn ra đoạn tuyến tính, nên `TempoMap` giữ
-       được công thức đóng beat ↔ giây. Ramp tuyến tính của hệ số sẽ ra bậc hai, không được.
-     - Hệ số luôn trong (0, 1]. Cảnh báo đã triển khai chỉ dài thêm theo giây, không ngắn hơn `telegraphMinSeconds`.
-     - Trúng thì giảm từ beat kế tiếp. Hồi phục áp dụng ở đầu ô nhịp (từng nấc hằng số, không phải dốc liên tục).
-       Cần thêm `beatsPerBar` vào `data/rhythm-feel.ts` (hiện chưa có).
-     - Tiếng và đạn phải đọc cùng một `TempoMap`. `TickScheduler` đã tự hẹn lại khi `version` đổi (có test). Phần mới
-       phải có test đồng bộ tương tự và được kiểm bằng cách phá code có chủ đích.
-  2. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
+  1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
      con thì `wrangler dev` tự khởi động lại `workerd`. Cách dọn: tìm chủ cổng bằng `Get-NetTCPConnection -State Listen
      -LocalPort <cổng>`, kiểm tra dòng lệnh có `still-hours` (không đụng tiến trình khác, ví dụ MCP server), rồi
      `taskkill /PID <pid> /T /F` trên tiến trình trên cùng của cây, và kiểm lại cổng đã trống. Trước khi bật server nền,
      kiểm cổng trống và dùng `--strictPort` để xung đột báo lỗi rõ thay vì chạy nhầm server cũ.
-  3. Nhỏ: `npm run deploy` chỉ build rồi deploy, **không chạy `npm test`**. Cân nhắc thêm `npm test &&` vào script nếu
-     muốn chặn deploy khi test vỡ. Độ trễ loa (đặc biệt Bluetooth) chỉnh bằng `visualDelaySeconds`.
 
 ## Quy trình làm việc (cho mọi trợ lý AI: Claude Code, Cursor...)
 
@@ -85,8 +75,12 @@ Mỗi trận xen kẽ hai pha:
 3. **Cư dân bị lời người khác ám ảnh.** Đạn là những câu nói tiêu cực; đỡ trúng thì nhịp tích tắc của người
    chơi bị chậm lại (mất thời gian vì điều không đáng). Lời tiêu cực **không trừ máu**; cái giá là thời gian.
    Ghi chú khi chơi thử: nhịp chậm thì đạn sinh thưa hơn, trận dễ hơn nhưng dài hơn; để ý người chơi có cố tình
-   ăn đạn không. Kể cả bị trúng liên tục, trận không dài quá ~1,25 lần độ dài kịch bản; chọn sàn và mức hồi
-   theo ràng buộc này.
+   ăn đạn không. Kể cả bị trúng liên tục, trận không dài quá ~1,25 lần độ dài kịch bản. Sàn 0,8 và mỗi nấc 0,1
+   (`PACE_FEEL`) chọn theo ràng buộc đó. Câu tạm (2–5 chữ) nằm ở `data/words.ts`; câu thật viết sau.
+   - Cần kiểm lại ở bước 4: sàn 0,8 (tối đa 100 → 80 BPM) có đủ để nghe ra nhịp kéo lê không. Nếu không, đổi
+     ràng buộc: người ăn khoảng một nửa số câu thì trận ≤ 1,25 lần; người ăn hết thì ≤ ~1,6 lần (sàn ~0,62).
+   - `RESIDENT3_PATTERN` chỉ toàn chữ nên không có áp lực ngoài thời gian. Cân nhắc ở bước 4: thêm đạn thường,
+     hoặc một mặt đồng hồ nhỏ trong khung có kim tụt lại sau nhịp kịch bản mỗi khi ôm một câu.
 4. **Cô bé yêu thích vẽ nhưng chưa đạt được ước mơ**, giờ phải học trái ngành, nản vì thấy mình chưa làm được
    gì, rồi lại để thời gian trôi vào những việc khác.
    - Cơ chế: đường di chuyển của người chơi khi né đạn **để lại nét chì**; cuối trận các nét ghép thành một bức
@@ -147,7 +141,7 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
 | `npm run build`    | Kiểm tra kiểu (`tsc --noEmit`) rồi build ra `dist/`               |
 | `npm run preview`  | Xem bản build bằng Vite                                           |
 | `npm test`         | Chạy test (Vitest, không cần trình duyệt, ~0,3 giây)               |
-| `npm run deploy`   | Build rồi `wrangler deploy` (chủ dự án chạy)                      |
+| `npm run deploy`   | `npm test`, rồi build, rồi `wrangler deploy` (chủ dự án chạy)    |
 | `npx wrangler dev` | Phục vụ `dist/` bằng runtime Workers, giống môi trường production |
 
 ## Cấu trúc thư mục
@@ -176,17 +170,20 @@ Hiện đã có:
   `clamp`, `lerp`), `input.ts` (lớp trừu tượng hành động), `keyboard.ts` (nguồn input bàn phím),
   `tempo-map.ts` (đổi qua lại beat ↔ giây khi BPM thay đổi), `beat-clock.ts` (đồng hồ nhịp của một trận).
 - `audio/`: `audio-engine.ts` (AudioContext: mở khóa, tắt/bật tiếng, **nguồn thời gian chủ**), `tick-scheduler.ts`
-  (hẹn trước tiếng tích tắc theo đúng bản đồ tempo), `tick-sound.ts` (tổng hợp tiếng đồng hồ cơ).
+  (hẹn trước tiếng tích tắc theo đúng bản đồ tempo), `tick-sound.ts` (tổng hợp tiếng đồng hồ cơ), `cues.ts`
+  (tiếng ôm / nhả một câu).
 - `battle/`: `dodge-phase.ts` (pha né đạn: khung, thanh máu, lớp debug, ghép mọi thứ), `player.ts` (bánh răng),
   `pattern-runner.ts` (chạy pattern theo beat, kiểm tra tính công bằng), `spawners.ts` (một handler cho mỗi loại
-  đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng).
+  đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng), `pace.ts` (khi nào hạ / hồi hệ số nhịp).
 - `scenes/`: `scene.ts` (giao diện `Scene`), `press-start.ts` (màn "Nhấn phím bất kỳ để bắt đầu").
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
-  placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `patterns/test-pattern.ts` (pattern thử ~31 giây).
+  placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
+  `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây).
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
   (pattern fixture + hàm tính giờ độc lập). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
-  `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `core/renderer.test.ts` (hệ số phóng).
+  `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `battle/pace.test.ts`, `battle/words.test.ts`,
+  `core/renderer.test.ts` (hệ số phóng).
 - Chưa có code: lưu tiến trình trong `core/`, pha tháo lắp, hội thoại, thị trấn.
 
 ### Nền tảng kỹ thuật đã chốt
@@ -224,9 +221,9 @@ Hiện đã có:
 - **Cảm giác nằm ở `data/feel.ts`** (tốc độ, tốc độ khi giữ Shift, hitbox, thời gian bất tử, nhấp nháy, máu tối đa).
   Đơn vị: px/giây và giây; code tự quy ra tick. Không rải số "cảm giác" vào code.
 - **Lớp debug bật/tắt bằng F1** (vẫn có trong bản deploy): hiện hitbox bánh răng (xanh lá), khung hình vẽ (xám),
-  vùng va chạm của đạn và kim (hồng), toạ độ, số tick, **beat hiện tại, BPM, vòng pattern, số đạn và cảnh báo đang
-  hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0), **hệ số phóng** (`phóng`), và một dòng mẫu dấu
-  tiếng Việt ở cỡ 8, 12, 16, 20 để chọn cỡ nhỏ nhất còn đọc rõ. Chưa chọn font.
+  vùng va chạm của đạn, kim và chữ (hồng), toạ độ, số tick, **beat hiện tại, BPM hiệu dụng, hệ số nhịp, vòng
+  pattern, số đạn và cảnh báo đang hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0), **hệ số phóng**
+  (`phóng`), và một dòng mẫu dấu tiếng Việt ở cỡ 8, 12, 16, 20 để chọn cỡ nhỏ nhất còn đọc rõ. Chưa chọn font.
 - Windows có "Sticky Keys" bật lên khi bấm Shift 5 lần liên tiếp, có thể làm gián đoạn lúc chơi; đây là cài đặt của
   hệ điều hành, game không chặn được. Nếu thành vấn đề, thêm phím phụ cho `slow` trong `keybindings.ts`.
 
@@ -276,15 +273,26 @@ BPM mô tả theo đoạn: đứng yên, hoặc đổi tuyến tính THEO BEAT t
 `atBeat` (tức thì nếu `overBeats` = 0). Mỗi lần đổi, `version` tăng và `TickScheduler` tự hủy các tiếng đã hẹn mà
 chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 BPM giữa trận không phát đôi).
 
-- Tempo kịch bản nằm trong pattern (sự kiện `tempo`). Hết mỗi vòng, BPM trở về `pattern.bpm`.
-- **Cư dân 3 làm chậm nhịp (bước 3a):** đã chọn hướng (a). Không dùng `clock.tempo.change` để làm chậm, vì `change`
-  cắt bỏ tempo kịch bản phía sau. Hệ số chậm là lớp riêng, nhân lên tempo kịch bản. Chi tiết và ràng buộc ở vấn đề mở 1.
+- Tempo kịch bản nằm trong pattern (sự kiện `tempo`). Hết mỗi vòng, BPM trở về `pattern.bpm`. `change` không đụng hệ số nhịp.
+- **Hệ số nhịp** (`setPace(atBeat, factor)`): lớp riêng, dùng chung, không gắn một cư dân. Nhân lên BPM kịch bản.
+  Cư dân 3 hạ/hồi qua `battle/pace.ts`; cư dân 2 (đứng yên thì đạn chậm) sẽ gọi cùng `setPace` ở bước 6.
+  - Hệ số **hằng theo đoạn**, luôn trong (0, 1]. Nhân với đoạn BPM tuyến tính vẫn ra đoạn tuyến tính, nên công thức
+    đóng giữ nguyên. Ramp tuyến tính của hệ số ra bậc hai, không dùng. `setPace` với hệ số ngoài (0, 1] thì ném lỗi.
+  - `timeAtBeat` / `bpmAtBeat` là thời gian và BPM **nghe được** (đã nhân hệ số). `scriptTimeAtBeat` là tempo kịch bản
+    (hệ số 1). Tiếng và đạn cùng đọc bản đồ nghe được. `version` tăng khi hệ số đổi; `TickScheduler` hẹn lại.
+  - Không đổi gì thì không tăng `version`.
+- **Cảnh báo khi nhịp đổi:** `PatternRunner` chỉ lưu beat, giờ nghe được tính lúc cảnh báo và lúc bắn. Độ dài cảnh báo
+  đo trên tempo kịch bản, nên khi hệ số hồi về 1 cảnh báo không ngắn hơn `telegraphMinSeconds`. Hệ số dưới 1 chỉ làm
+  cảnh báo dài thêm. Cảnh báo hết theo beat bắn, không theo giây đã đóng băng.
+- **Chính sách cư dân 3** (`Pace`): ôm một câu thì hạ `PACE_FEEL.drop` từ beat nguyên kế tiếp; câu đi hết khung không
+  chạm thì hồi `PACE_FEEL.recover` ở đầu nhịp kế (`beatsPerBar`). Cùng một beat: hạ trước, rồi hồi, một lần `setPace`.
+  Hệ số kẹp trong [`floor`, 1]. Sàn 0,8 vì 1 / 0,8 = 1,25.
 
 ### Định dạng pattern (`data/pattern-types.ts`)
 
 Một pattern là danh sách sự kiện theo beat. **Thêm pattern mới = thêm file dữ liệu trong `data/patterns/`**
 (xuất một `Pattern`), rồi truyền vào `new DodgePhase(input, audio, bodySize, pattern)`; không sửa code engine.
-`DodgePhase` hiện mặc định dùng `TEST_PATTERN`.
+`DodgePhase` mặc định dùng `TEST_PATTERN`. `main.ts` đang truyền `PLAYTEST_PATTERN` (đổi một dòng để chơi pattern kia).
 
 ```ts
 export const MY_PATTERN: Pattern = {
@@ -295,6 +303,7 @@ export const MY_PATTERN: Pattern = {
     { beat: 18, type: "burst", x: 0.5, y: 0.5, count: 12 },                          // vòng tròn 12 viên từ giữa
     { beat: 20, type: "sweep", x: 0.5, y: 0.5, length: 80, startAngleDeg: -90,
       degreesPerBeat: 45, durationBeats: 8 },                                         // kim đồng hồ quay quanh tâm
+    { beat: 22, type: "word", from: "left", at: 0.4, phrase: 0 },                     // câu số 0 trong NEGATIVE_PHRASES
     { beat: 24, type: "tempo", bpm: 160, overBeats: 16 },                             // tăng dần lên 160 BPM
   ],
 };
@@ -306,7 +315,8 @@ export const MY_PATTERN: Pattern = {
 | `aimed`    | từ một điểm trên cạnh, nhắm vào người chơi             | `from`, `at`, `count`, `spreadDeg` (xòe quạt)                    |
 | `burst`    | tỏa từ một điểm trong khung: vòng tròn hoặc quạt       | `x`, `y`, `count`, `angleDeg`, `arcDeg` (360 = vòng), `aimed`    |
 | `sweep`    | kim đồng hồ quay quanh tâm (quay theo BEAT)            | `x`, `y`, `length`, `startAngleDeg`, `degreesPerBeat`, `durationBeats`, `hands` |
-| `tempo`    | đổi BPM                                                | `bpm`, `overBeats` (0 = ngay)                                    |
+| `tempo`    | đổi BPM kịch bản                                       | `bpm`, `overBeats` (0 = ngay)                                    |
+| `word`     | một câu ngắn bay từ mép khung; trúng không trừ máu     | `from`, `at`, `phrase` (chỉ số trong `data/words.ts`), `speed`   |
 
 Quy ước: `beat` là lúc đạn XUẤT HIỆN (có thể lẻ, ví dụ 40.5); vị trí trong khung là **tỉ lệ 0..1** (đổi kích thước khung
 không hỏng pattern); góc tính bằng độ (0° = sang phải, 90° = xuống); `speed`, `radius`, `damage` tùy chọn, mặc định ở
@@ -315,10 +325,10 @@ trong `battle/spawners.ts` (TypeScript buộc phải có handler cho mọi `type
 
 ### Công bằng: cảnh báo trước
 
-- Đạn **lớn** (`radius ≥ bigRadius`), **vòng tròn/quạt** (`burst`) và **kim** (`sweep`) BẮT BUỘC có cảnh báo nhấp
-  nháy trước khi xuất hiện: mặc định `telegraphBeats` = 1 beat nhưng không ngắn hơn `telegraphMinSeconds` (BPM cao
-  thì 1 beat quá ngắn). `validatePattern` từ chối pattern đặt `telegraphBeats` ≤ 0 cho các loại này (ném lỗi khi tạo
-  `PatternRunner`). Đạn nhỏ mặc định không cảnh báo, có thể bật bằng `telegraphBeats`.
+- Đạn **lớn** (`radius ≥ bigRadius`), **vòng tròn/quạt** (`burst`), **kim** (`sweep`) và **chữ** (`word`) BẮT BUỘC
+  có cảnh báo nhấp nháy trước khi xuất hiện: mặc định `telegraphBeats` = 1 beat nhưng không ngắn hơn
+  `telegraphMinSeconds` (BPM cao thì 1 beat quá ngắn). `validatePattern` từ chối pattern đặt `telegraphBeats` ≤ 0 cho
+  các loại này (ném lỗi khi tạo `PatternRunner`). Đạn nhỏ mặc định không cảnh báo, có thể bật bằng `telegraphBeats`.
 - Hình cảnh báo: dải ở mép khung (đạn lớn), vòng ở tâm (burst/kim), đường nét đứt (hướng nhắm, rìa quạt, hướng kim).
 - Đạn nhắm KHÓA hướng lúc BẮT ĐẦU cảnh báo (người chơi thấy đường ngắm và kịp rời đi); không có cảnh báo thì khóa lúc bắn.
 - Đã kiểm (bằng bot tạm, KHÔNG nằm trong repo): một bot né đạn nhìn thấy cảnh báo bị trúng 0 lần qua 3 vòng pattern thử (3 lần chạy khác nhau); khi cho
@@ -327,7 +337,7 @@ trong `battle/spawners.ts` (TypeScript buộc phải có handler cho mọi `type
 
 ### Object pool
 
-`BulletWorld` cấp phát sẵn pool đạn chấm (`maxBullets` = 256), kim (32) và cảnh báo (64); giữa trận không tạo đối tượng
+`BulletWorld` cấp phát sẵn pool đạn chấm (`maxBullets` = 256), kim (32), chữ (`WORD_FEEL.maxWords` = 32) và cảnh báo (64); giữa trận không tạo đối tượng
 mới nên không giật GC khi nhiều đạn. Hết chỗ thì bỏ qua đạn mới và đếm vào `dropped` (hiện ở lớp debug, nên là 0).
 Duyệt pool không tạo closure: xem ghi chú đầu `battle/pool.ts`.
 
@@ -354,6 +364,10 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
 | Tiếng đanh/ấm hơn                              | `softnessHz` (thấp = ấm), `tickHz`, `tockHz`  |
 | Đạn xuất hiện sớm/muộn hơn tiếng "tích"        | `visualDelaySeconds` (sớm → tăng, muộn → giảm) |
 | Thời gian dạo đầu trước beat 0                 | `leadInSeconds`                               |
+| Một nhịp dài bao nhiêu beat (lúc hồi hệ số)    | `beatsPerBar`                                 |
+| Sàn nhịp / mỗi câu hạ / mỗi câu hồi            | `PACE_FEEL.floor`, `drop`, `recover`          |
+| Chữ to/nhỏ, bay nhanh/chậm, hitbox chữ         | `WORD_FEEL.fontSize` (16), `speed`, `hitboxScale` |
+| Câu tan / câu nổ lâu hay mau                   | `WORD_FEEL.fadeSeconds`, `absorbSeconds`      |
 
 ## Quy ước code
 

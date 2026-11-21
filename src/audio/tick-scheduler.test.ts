@@ -117,6 +117,33 @@ describe("TickScheduler: lên lịch tiếng tích tắc bằng giờ của Audi
     }
   });
 
+  it("hệ số nhịp làm tiếng thưa ra theo đúng timeAtBeat, không theo tempo kịch bản", () => {
+    const { audio, clock, frame } = setup(100);
+    let applied = false;
+    simulate({
+      seconds: 16,
+      audio,
+      step: () => {
+        frame();
+        if (!applied && clock.beat >= 4) {
+          clock.tempo.setPace(5, 0.5);
+          applied = true;
+        }
+      },
+    });
+    expect(applied).toBe(true);
+
+    const played = audio.plays.filter((p) => !p.cancelled);
+    expect(played.length).toBeGreaterThan(8);
+    for (const p of played) {
+      const beat = beatOf(clock, p.time);
+      // Beat 5 là mốc: trước đó 0,6 s/beat, từ đó 1,2 s/beat. Tempo kịch bản thì lúc nào cũng 0,6.
+      const expected = beat <= 5 ? beat * 0.6 : 5 * 0.6 + (beat - 5) * 1.2;
+      expect(p.time).toBeCloseTo(ORIGIN + expected, 6);
+      expect(Math.abs(p.time - (ORIGIN + beat * 0.6))).toBeGreaterThan(beat > 6 ? 0.2 : -1);
+    }
+  });
+
   it("không có nơi phát tiếng (trình duyệt không hỗ trợ): vẫn chạy, không lỗi", () => {
     const audio = new FakeAudio();
     const clock = new BeatClock(audio, 100, ORIGIN);

@@ -1,7 +1,7 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { TickScheduler } from "../audio/tick-scheduler";
 import { BeatClock } from "../core/beat-clock";
-import { GAME_HEIGHT, GAME_WIDTH } from "../core/config";
+import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
 import { lerp } from "../core/math";
 import type { Renderer } from "../core/renderer";
@@ -9,9 +9,10 @@ import { BATTLE_LAYOUT } from "../data/battle-layout";
 import { PLAYER_FEEL } from "../data/feel";
 import type { Pattern } from "../data/pattern-types";
 import { TEST_PATTERN } from "../data/patterns/test-pattern";
-import { BULLET_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
+import { BULLET_FEEL, PACE_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
 import type { Scene } from "../scenes/scene";
 import { BulletWorld } from "./bullets";
+import { Pace } from "./pace";
 import { PatternRunner } from "./pattern-runner";
 import { Player } from "./player";
 import type { SpawnContext } from "./spawners";
@@ -31,7 +32,11 @@ const COLOR = {
   debugText: "#9fb3a8",
   debugBody: "#5b6b73",
   debugPlayerHitbox: "#3cff7a",
+  absorb: "#fff8ee",
 } as const;
+
+/** Bao lâu bánh răng nháy sáng sau khi ôm một câu. Không kèm bất tử. */
+const ABSORB_FLASH_SECONDS = 0.2;
 
 /**
  * Pha né đạn: khung chiến đấu ở giữa màn hình, bánh răng di chuyển trong khung, thanh máu bên dưới.
@@ -42,8 +47,9 @@ const COLOR = {
  *  2. người chơi di chuyển;
  *  3. đạn cũ được đưa tới thời điểm mới;
  *  4. pattern sinh cảnh báo/đạn mới (đặt đúng chỗ theo thời gian của beat, không theo tick);
- *  5. tiếng tích tắc được hẹn trước;
- *  6. kiểm tra va chạm.
+ *  5. câu chữ: ôm hoặc nhả, rồi áp hệ số nhịp;
+ *  6. tiếng tích tắc được hẹn theo bản đồ vừa cập nhật;
+ *  7. kiểm tra va chạm đạn (câu không trừ máu).
  */
 export class DodgePhase implements Scene {
   private readonly arena = BATTLE_LAYOUT.arena;
@@ -51,10 +57,12 @@ export class DodgePhase implements Scene {
   private readonly clock: BeatClock;
   private readonly world: BulletWorld;
   private readonly runner: PatternRunner;
+  private readonly pace: Pace;
   private readonly ticks: TickScheduler;
   private readonly spawnContext: SpawnContext;
   private tick = 0;
   private debug = false;
+  private absorbFlash = 0;
 
   /** `bodySize`: cạnh sprite bánh răng (px). */
   constructor(
@@ -72,6 +80,7 @@ export class DodgePhase implements Scene {
     this.world = new BulletWorld(this.arena, BULLET_FEEL);
     this.spawnContext = { arena: this.arena, world: this.world, feel: BULLET_FEEL, playerX: 0, playerY: 0 };
     this.runner = new PatternRunner(pattern, this.clock.tempo, BULLET_FEEL, RHYTHM_FEEL.defaultBpm);
+    this.pace = new Pace(this.clock.tempo, PACE_FEEL, RHYTHM_FEEL.beatsPerBar);
     this.ticks = new TickScheduler(this.clock, () => audio.contextTime(), audio.tickSink);
   }
 
@@ -87,9 +96,26 @@ export class DodgePhase implements Scene {
     this.spawnContext.playerX = this.player.x;
     this.spawnContext.playerY = this.player.y;
     this.runner.update(this.clock.beat, this.spawnContext);
-    this.ticks.update();
 
-    // Player.hit tự bỏ qua nếu đang bất tử. Chỉ tính một lần trúng mỗi tick.
+    // Câu không trừ máu. Ôm thì nhịp chậm từ beat sau; đi qua thì hồi ở đầu nhịp kế.
+    // Đổi hệ số trước khi hẹn tiếng, để tick này đã dùng bản đồ mới.
+    const absorbed = this.world.absorbWords(this.player.hitbox);
+    this.world.commitWords();
+    for (let i = 0; i < absorbed; i++) {
+      this.pace.absorb(this.clock.beat);
+      this.audio.playCue("wordAbsorb");
+    }
+    for (const signal of this.world.signals) {
+      if (signal !== "release") continue;
+      this.pace.release(this.clock.beat);
+      this.audio.playCue("wordRelease");
+    }
+    this.pace.update(this.clock.beat);
+    this.ticks.update();
+    if (absorbed > 0) this.absorbFlash = ABSORB_FLASH_SECONDS;
+    else this.absorbFlash = Math.max(0, this.absorbFlash - 1 / TICK_RATE);
+
+    // Player.hit tự bỏ qua nếu đang bất tử. Chỉ tính một lần trúng mỗi tick. Đạn chữ không đi qua đây.
     const damage = this.world.hit(this.player.hitbox);
     if (damage > 0) this.player.hit(damage);
 
@@ -114,6 +140,7 @@ export class DodgePhase implements Scene {
     const py = lerp(player.prevY, player.y, alpha);
     const half = player.bodySize / 2;
     if (player.visible) renderer.sprite("gear", px - half, py - half);
+    if (this.absorbFlash > 0) renderer.rectOutline(px - half - 2, py - half - 2, player.bodySize + 4, player.bodySize + 4, COLOR.absorb);
 
     this.renderHpBar(renderer);
     if (this.audio.muted) {
@@ -151,7 +178,7 @@ export class DodgePhase implements Scene {
     const lines = [
       `DEBUG (F1)  tick ${this.tick}  phóng ${scaleText}`,
       `x ${player.x.toFixed(1)}  y ${player.y.toFixed(1)}  ${player.invincible ? "bất tử" : ""}`,
-      `beat ${clock.beat.toFixed(2)}  BPM ${clock.bpm.toFixed(1)}  vòng ${this.runner.cycle + 1}`,
+      `beat ${clock.beat.toFixed(2)}  BPM ${clock.bpm.toFixed(1)}  hệ số ${clock.tempo.paceAtBeat(clock.beat).toFixed(2)}  vòng ${this.runner.cycle + 1}`,
       `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}`,
     ];
     lines.forEach((line, i) => renderer.text(line, 8, 8 + i * 20, { size: 16, color: COLOR.debugText }));

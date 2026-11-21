@@ -16,6 +16,11 @@ export interface RhythmFeel {
    * thấy MUỘN hơn → giảm (có thể âm, ví dụ -0.05).
    */
   visualDelaySeconds: number;
+  /**
+   * Số beat một nhịp. Hồi hệ số nhịp áp ở đầu nhịp, một bước hằng, không tăng dần trong nhịp.
+   * Cư dân 2 (bước 6) dùng chung hệ số này.
+   */
+  beatsPerBar: number;
 }
 
 export interface BulletFeel {
@@ -54,7 +59,59 @@ export const RHYTHM_FEEL: RhythmFeel = {
   defaultBpm: 100,
   leadInSeconds: 2.0,
   visualDelaySeconds: 0,
+  beatsPerBar: 4,
 };
+
+/**
+ * Hệ số nhịp: nhân lên BPM kịch bản, luôn nằm trong (0, 1]. Dùng chung, không gắn một cư dân.
+ * Trúng câu hạ ngay từ beat nguyên kế tiếp; câu đi qua hồi một nấc ở đầu nhịp kế.
+ * Sàn 0,8 vì 1 / 0,8 = 1,25: kể cả bị trúng liên tục, trận không dài quá 1,25 lần kịch bản.
+ */
+export interface PaceFeel {
+  floor: number;
+  drop: number;
+  recover: number;
+}
+
+export const PACE_FEEL: PaceFeel = {
+  floor: 0.8,
+  drop: 0.1,
+  recover: 0.1,
+};
+
+/** Đạn chữ: một câu ngắn bay qua khung. Trúng không trừ máu, chỉ hạ hệ số nhịp. */
+export interface WordFeel {
+  fontSize: number;
+  /** Bề ngang một ký tự so với cỡ chữ. Font monospace, đủ để không đo chữ trong update. */
+  advanceEm: number;
+  /** Hitbox = khung chữ nhân hệ số này, cùng nguyên tắc hitbox nhỏ hơn hình vẽ. */
+  hitboxScale: number;
+  speed: number;
+  /** Câu đi hết khung thì tan trong bấy nhiêu giây. */
+  fadeSeconds: number;
+  /** Câu bị ôm thì nổ trong bấy nhiêu giây. */
+  absorbSeconds: number;
+  maxWords: number;
+  color: string;
+}
+
+export const WORD_FEEL: WordFeel = {
+  fontSize: 16,
+  advanceEm: 0.6,
+  hitboxScale: 0.7,
+  speed: 100,
+  fadeSeconds: 0.4,
+  absorbSeconds: 0.28,
+  maxWords: 32,
+  color: "#d8c4b0",
+};
+
+/** Khung chữ và hitbox, tính từ số ký tự. Không gọi measureText. */
+export function wordBox(phrase: string, feel: WordFeel = WORD_FEEL): { w: number; h: number; hitW: number; hitH: number } {
+  const w = phrase.length * feel.fontSize * feel.advanceEm;
+  const h = feel.fontSize;
+  return { w, h, hitW: w * feel.hitboxScale, hitH: h * feel.hitboxScale };
+}
 
 export const BULLET_FEEL: BulletFeel = {
   speed: 140,

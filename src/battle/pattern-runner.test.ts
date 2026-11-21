@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TempoMap } from "../core/tempo-map";
 import { BATTLE_LAYOUT } from "../data/battle-layout";
 import type { Pattern, StraightEvent } from "../data/pattern-types";
+import { RESIDENT3_PATTERN } from "../data/patterns/resident-3";
 import { TEST_PATTERN } from "../data/patterns/test-pattern";
 import { BULLET_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
 import { SYNC_FIXTURE } from "../testing/fixtures";
@@ -14,6 +15,7 @@ const { arena } = BATTLE_LAYOUT;
 describe("validatePattern: dữ liệu thật và quy tắc công bằng", () => {
   it("pattern thử trong src/data/patterns hợp lệ (bắt lỗi khi bạn sửa pattern)", () => {
     expect(validatePattern(TEST_PATTERN, BULLET_FEEL)).toEqual([]);
+    expect(validatePattern(RESIDENT3_PATTERN, BULLET_FEEL)).toEqual([]);
   });
 
   it("fixture của test hợp lệ", () => {
@@ -40,6 +42,19 @@ describe("validatePattern: dữ liệu thật và quy tắc công bằng", () =>
     expect(problems).toMatch(/sự kiện 1.*bắt buộc có cảnh báo/);
     expect(problems).toMatch(/sự kiện 2.*bắt buộc có cảnh báo/);
     expect(problems).toMatch(/sự kiện 3.*bắt buộc có cảnh báo/);
+  });
+
+  it("từ chối câu chữ không có cảnh báo", () => {
+    const problems = validatePattern(
+      {
+        name: "chữ",
+        lengthBeats: 8,
+        loop: false,
+        events: [{ beat: 2, type: "word", from: "left", at: 0.5, phrase: 0, telegraphBeats: 0 }],
+      },
+      BULLET_FEEL,
+    ).join("\n");
+    expect(problems).toMatch(/word.*bắt buộc có cảnh báo/);
   });
 
   it("đạn nhỏ được phép không cảnh báo; đạn lớn để mặc định thì tự có cảnh báo", () => {

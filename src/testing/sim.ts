@@ -3,6 +3,7 @@
  * và tích phân số độc lập để đối chiếu với công thức của engine.
  */
 import type { AudioPort } from "../audio/audio-engine";
+import type { CueName } from "../audio/cues";
 import type { TickKind, TickSink } from "../audio/tick-scheduler";
 
 /** Bộ sinh số giả ngẫu nhiên xác định (cùng seed → cùng dãy), để test lặp lại được. */
@@ -34,6 +35,7 @@ export class FakeAudio implements AudioPort {
   t: number;
   muted = false;
   readonly plays: PlayRecord[] = [];
+  readonly cues: CueName[] = [];
   readonly tickSink: TickSink;
 
   constructor(
@@ -65,6 +67,10 @@ export class FakeAudio implements AudioPort {
 
   toggleMute(): void {
     this.muted = !this.muted;
+  }
+
+  playCue(cue: CueName): void {
+    this.cues.push(cue);
   }
 }
 

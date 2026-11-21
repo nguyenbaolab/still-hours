@@ -7,7 +7,11 @@ import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import { KEY_BINDINGS } from "./data/keybindings";
 import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
+import { RESIDENT3_PATTERN } from "./data/patterns/resident-3";
 import { SPRITES } from "./data/sprites";
+
+// Pattern đang chơi thử. Đổi thành TEST_PATTERN (data/patterns/test-pattern) để về pattern đạn cũ.
+const PLAYTEST_PATTERN = RESIDENT3_PATTERN;
 import { PressStartScene } from "./scenes/press-start";
 import type { Scene } from "./scenes/scene";
 
@@ -31,7 +35,7 @@ startLoop({
     input.poll();
     scene.update();
     if (scene === pressStart && pressStart.ready) {
-      scene = new DodgePhase(input, audio, renderer.sprites.size("gear").width);
+      scene = new DodgePhase(input, audio, renderer.sprites.size("gear").width, PLAYTEST_PATTERN);
     }
   },
   render(alpha) {

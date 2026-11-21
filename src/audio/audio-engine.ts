@@ -1,6 +1,7 @@
 import type { TimeSource } from "../core/beat-clock";
 import { clamp } from "../core/math";
 import type { AudioFeel } from "../data/rhythm-feel";
+import { playCue as synthCue, type CueName } from "./cues";
 import { createTickSink } from "./tick-sound";
 import type { TickSink } from "./tick-scheduler";
 
@@ -11,6 +12,8 @@ export interface AudioPort extends TimeSource {
   readonly tickSink: TickSink | null;
   readonly muted: boolean;
   toggleMute(): void;
+  /** Tiếng phản hồi ngay lập tức (ôm / nhả một câu). Đi qua gain tổng, nên tắt tiếng là tắt luôn. */
+  playCue(cue: CueName): void;
 }
 
 /** Độ trễ đầu ra (giây) tối đa chấp nhận; số báo cáo vô lý hơn thế bị cắt. */
@@ -78,6 +81,11 @@ export class AudioEngine implements AudioPort {
   toggleMute(): void {
     this._muted = !this._muted;
     this.applyVolume();
+  }
+
+  playCue(cue: CueName): void {
+    if (!this.ctx || !this.master || !this.unlocked) return;
+    synthCue(this.ctx, this.master, cue, this.ctx.currentTime);
   }
 
   contextTime(): number {

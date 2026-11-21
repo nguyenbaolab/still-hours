@@ -15,6 +15,8 @@ export interface TextOptions {
   /** Cỡ chữ theo pixel logic (không phải pixel màn hình). */
   size?: number;
   align?: CanvasTextAlign;
+  /** 1 = đục. Dùng cho câu tan dần. */
+  alpha?: number;
 }
 
 /**
@@ -125,12 +127,14 @@ export class Renderer {
     this.ctx.restore();
   }
 
-  text(content: string, x: number, y: number, { color = "#fff", size = 16, align = "left" }: TextOptions = {}): void {
+  text(content: string, x: number, y: number, { color = "#fff", size = 16, align = "left", alpha = 1 }: TextOptions = {}): void {
     this.ctx.font = `${size}px ${FONT_FAMILY}`;
     this.ctx.textAlign = align;
     this.ctx.textBaseline = "top";
     this.ctx.fillStyle = color;
+    this.ctx.globalAlpha = alpha;
     this.ctx.fillText(content, x, y);
+    this.ctx.globalAlpha = 1;
   }
 
   /** Vẽ sprite theo id; (x, y) là góc trên trái. Toạ độ được làm tròn để pixel luôn khớp lưới. */

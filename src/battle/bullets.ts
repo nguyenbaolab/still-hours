@@ -1,6 +1,6 @@
-import { circleIntersectsRect, lerp, type Rect, segmentIntersectsBox } from "../core/math";
+import { circleIntersectsRect, lerp, overlaps, type Rect, segmentIntersectsBox } from "../core/math";
 import type { Renderer } from "../core/renderer";
-import type { BulletFeel } from "../data/rhythm-feel";
+import { WORD_FEEL, type BulletFeel } from "../data/rhythm-feel";
 import { Pool } from "./pool";
 
 const COLOR = {
@@ -68,13 +68,43 @@ export class Telegraph {
   dashed = false;
   startTime = 0;
   endTime = 0;
+  /** Hết ở beat bắn. Hết theo beat chứ không theo giây đã đóng băng, để nhịp chậm không cắt cảnh báo trước đạn. */
+  endBeat = 0;
+}
+
+type WordState = "fly" | "absorbed" | "fading";
+
+/** Một câu bay qua khung. Vị trí là hàm của thời gian, giống đạn chấm. */
+export class WordBullet {
+  phrase = "";
+  x = 0;
+  y = 0;
+  prevX = 0;
+  prevY = 0;
+  originX = 0;
+  originY = 0;
+  vx = 0;
+  vy = 0;
+  fireTime = 0;
+  boxW = 0;
+  boxH = 0;
+  hitW = 0;
+  hitH = 0;
+  state: WordState = "fly";
+  /** Tâm đã qua mép kia của khung trong tick này, chưa chốt là "đi qua" cho tới khi không bị ôm. */
+  pendingExit = false;
+  /** Giây (đồng hồ nhịp) lúc bắt đầu tan hoặc nổ. */
+  markTime = 0;
 }
 
 /** Toàn bộ đạn và cảnh báo đang hoạt động trong khung né. */
 export class BulletWorld {
   readonly dots: Pool<DotBullet>;
   readonly hands: Pool<HandBullet>;
+  readonly words: Pool<WordBullet>;
   readonly telegraphs: Pool<Telegraph>;
+  /** Câu vừa đi hết khung mà không chạm, trong tick này. */
+  readonly signals: "release"[] = [];
   /** Số lần phải bỏ qua đạn/cảnh báo vì pool đầy (nên là 0; tăng `maxBullets` nếu khác 0). */
   dropped = 0;
 
@@ -88,11 +118,12 @@ export class BulletWorld {
   ) {
     this.dots = new Pool(feel.maxBullets, () => new DotBullet());
     this.hands = new Pool(32, () => new HandBullet());
+    this.words = new Pool(WORD_FEEL.maxWords, () => new WordBullet());
     this.telegraphs = new Pool(64, () => new Telegraph());
   }
 
   get activeBullets(): number {
-    return this.dots.size + this.hands.size;
+    return this.dots.size + this.hands.size + this.words.size;
   }
 
   /** Đưa mọi thứ đang có tới thời điểm mới, và dọn những gì đã hết hạn. Gọi mỗi tick, TRƯỚC khi sinh đạn mới. */
@@ -134,8 +165,26 @@ export class BulletWorld {
       i++;
     }
 
+    for (let i = 0; i < this.words.size; ) {
+      const word = this.words.at(i);
+      word.prevX = word.x;
+      word.prevY = word.y;
+      if (word.state === "fly") {
+        const age = Math.max(0, time - word.fireTime);
+        word.x = word.originX + word.vx * age;
+        word.y = word.originY + word.vy * age;
+        if (this.hasLeft(word)) word.pendingExit = true;
+      }
+      const elapsed = time - word.markTime;
+      const done =
+        (word.state === "fading" && elapsed >= WORD_FEEL.fadeSeconds) ||
+        (word.state === "absorbed" && elapsed >= WORD_FEEL.absorbSeconds);
+      if (done) this.words.release(i);
+      else i++;
+    }
+
     for (let i = 0; i < this.telegraphs.size; ) {
-      if (time >= this.telegraphs.at(i).endTime) this.telegraphs.release(i);
+      if (beat >= this.telegraphs.at(i).endBeat) this.telegraphs.release(i);
       else i++;
     }
   }
@@ -188,7 +237,17 @@ export class BulletWorld {
     hand.angle = hand.prevAngle = startAngle + angularVelocity * (this.beat - fireBeat);
   }
 
-  addTelegraph(shape: TelegraphShape, x: number, y: number, w: number, h: number, dashed: boolean, startTime: number, endTime: number): void {
+  addTelegraph(
+    shape: TelegraphShape,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    dashed: boolean,
+    startTime: number,
+    endTime: number,
+    endBeat: number,
+  ): void {
     const telegraph = this.telegraphs.acquire();
     if (!telegraph) {
       this.dropped++;
@@ -202,6 +261,88 @@ export class BulletWorld {
     telegraph.dashed = dashed;
     telegraph.startTime = startTime;
     telegraph.endTime = endTime;
+    telegraph.endBeat = endBeat;
+  }
+
+  /** Sinh một câu. (x, y) là tâm lúc `fireTime`. Hitbox nhỏ hơn khung chữ. */
+  spawnWord(
+    x: number,
+    y: number,
+    angle: number,
+    speed: number,
+    phrase: string,
+    box: { w: number; h: number; hitW: number; hitH: number },
+    fireTime: number,
+  ): void {
+    const word = this.words.acquire();
+    if (!word) {
+      this.dropped++;
+      return;
+    }
+    word.phrase = phrase;
+    word.originX = x;
+    word.originY = y;
+    word.vx = Math.cos(angle) * speed;
+    word.vy = Math.sin(angle) * speed;
+    word.fireTime = fireTime;
+    word.boxW = box.w;
+    word.boxH = box.h;
+    word.hitW = box.hitW;
+    word.hitH = box.hitH;
+    word.state = "fly";
+    word.pendingExit = false;
+    word.markTime = 0;
+    const age = Math.max(0, this.time - fireTime);
+    word.x = word.prevX = x + word.vx * age;
+    word.y = word.prevY = y + word.vy * age;
+  }
+
+  /**
+   * Ôm những câu đang bay mà hitbox chồng lên `hitbox`. Không trừ máu.
+   * Câu đã chạm thì không còn tính là "đi qua".
+   */
+  absorbWords(hitbox: Rect): number {
+    let count = 0;
+    for (let i = 0; i < this.words.size; i++) {
+      const word = this.words.at(i);
+      if (word.state !== "fly") continue;
+      if (!overlaps(this.wordHitbox(word), hitbox)) continue;
+      word.state = "absorbed";
+      word.pendingExit = false;
+      word.markTime = this.time;
+      count++;
+    }
+    return count;
+  }
+
+  /**
+   * Chốt các câu đã ra khỏi khung mà không bị ôm trong tick này: tan dần và báo một lần "nhả".
+   * Gọi sau `absorbWords`, để câu vừa chạm vừa chạm mép vẫn tính là ôm.
+   */
+  commitWords(): void {
+    this.signals.length = 0;
+    for (let i = 0; i < this.words.size; i++) {
+      const word = this.words.at(i);
+      if (word.state !== "fly" || !word.pendingExit) continue;
+      word.state = "fading";
+      word.pendingExit = false;
+      word.markTime = this.time;
+      this.signals.push("release");
+    }
+  }
+
+  private wordHitbox(word: WordBullet): Rect {
+    return { x: word.x - word.hitW / 2, y: word.y - word.hitH / 2, w: word.hitW, h: word.hitH };
+  }
+
+  /** Tâm đã qua mép đối diện, theo hướng bay. Phần chữ còn trong khung nên tan vẫn nhìn thấy. */
+  private hasLeft(word: WordBullet): boolean {
+    const { arena } = this;
+    if (word.vx > 0 && word.x > arena.x + arena.w) return true;
+    if (word.vx < 0 && word.x < arena.x) return true;
+    if (word.vy > 0 && word.y > arena.y + arena.h) return true;
+    if (word.vy < 0 && word.y < arena.y) return true;
+    return false;
   }
 
   /** Máu mất nếu hitbox đang chạm đạn nào đó (0 = không trúng). Cảnh báo không gây sát thương. */
@@ -258,6 +399,26 @@ export class BulletWorld {
       renderer.line(hand.cx, hand.cy, tipX, tipY, hand.thickness, COLOR.hand);
       renderer.disc(hand.cx, hand.cy, hand.thickness + 1, COLOR.handHub);
       if (debug) renderer.line(hand.cx, hand.cy, tipX, tipY, 2, COLOR.debugBullet);
+    }
+
+    for (let i = 0; i < this.words.size; i++) {
+      const word = this.words.at(i);
+      const x = lerp(word.prevX, word.x, alpha);
+      const y = lerp(word.prevY, word.y, alpha);
+      const life =
+        word.state === "fly" ? 0 : Math.min(1, Math.max(0, (this.time - word.markTime) / (word.state === "fading" ? WORD_FEEL.fadeSeconds : WORD_FEEL.absorbSeconds)));
+      const fade = word.state === "fly" ? 1 : 1 - life;
+      if (word.state === "absorbed") {
+        renderer.disc(x, y, lerp(4, word.boxW * 0.45, life), "#fff8ee");
+      }
+      renderer.text(word.phrase, x - word.boxW / 2, y - word.boxH / 2, {
+        size: WORD_FEEL.fontSize,
+        color: word.state === "absorbed" ? "#fff8ee" : WORD_FEEL.color,
+        alpha: fade,
+      });
+      if (debug && word.state === "fly") {
+        renderer.rectOutline(x - word.hitW / 2, y - word.hitH / 2, word.hitW, word.hitH, COLOR.debugBullet);
+      }
     }
 
     renderer.unclip();

@@ -72,6 +72,19 @@ export interface BurstEvent extends EventBase, BulletOptions {
   aimed?: boolean;
 }
 
+/**
+ * Một câu ngắn bay từ mép khung vào trong. `phrase` là chỉ số trong `NEGATIVE_PHRASES`.
+ * Luôn có cảnh báo (đạn lớn). Trúng không trừ máu: giá phải trả là nhịp chậm lại.
+ */
+export interface WordEvent extends EventBase {
+  type: "word";
+  from: Side;
+  /** Vị trí dọc theo cạnh (0..1). */
+  at: number;
+  phrase: number;
+  speed?: number;
+}
+
 /** Kim đồng hồ quét quay quanh một tâm. Quay theo BEAT nên tempo tăng thì kim quay nhanh theo. Luôn có cảnh báo. */
 export interface SweepEvent extends EventBase {
   type: "sweep";
@@ -101,7 +114,7 @@ export interface TempoEvent {
   overBeats?: number;
 }
 
-export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent;
+export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent;
 export type PatternEvent = BulletEvent | TempoEvent;
 
 export interface Pattern {

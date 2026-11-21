@@ -1,16 +1,18 @@
 import type { TempoMap } from "../core/tempo-map";
 import type { BulletEvent, Pattern, PatternEvent, TempoEvent } from "../data/pattern-types";
 import type { BulletFeel } from "../data/rhythm-feel";
+import { NEGATIVE_PHRASES } from "../data/words";
 import { handlerFor, type SpawnContext } from "./spawners";
 
-/** Một sự kiện đạn đã được xếp lịch (beat/giờ tuyệt đối trong cả trận, không phải trong một vòng). */
+/**
+ * Một sự kiện đạn đã được xếp lịch. Chỉ lưu BEAT: giờ nghe được tính lúc cảnh báo và lúc bắn,
+ * vì hệ số nhịp có thể đổi sau khi triển khai. Khoảng beat của cảnh báo thì tính trên tempo kịch bản
+ * (hệ số 1), nên khi nhịp hồi về 1 cảnh báo không ngắn hơn telegraphMinSeconds.
+ */
 interface Scheduled {
   readonly event: BulletEvent;
   readonly fireBeat: number;
-  /** Giây (theo đồng hồ nhịp, tính từ beat 0). */
-  readonly fireTime: number;
   readonly warnBeat: number;
-  readonly warnTime: number;
   /** Hướng nhắm đã khóa lúc bắt đầu cảnh báo (rad), nếu có. */
   aim: number | null;
 }
@@ -60,6 +62,13 @@ export function validatePattern(pattern: Pattern, feel: BulletFeel): string[] {
         if (!(event.length > 0)) fail(i, "sweep: length phải > 0");
         if (!(event.durationBeats > 0)) fail(i, "sweep: durationBeats phải > 0");
         if (!((event.hands ?? 1) >= 1)) fail(i, "sweep: hands phải >= 1");
+        break;
+      case "word":
+        if (!fraction(event.at)) fail(i, `at ${event.at} phải trong [0, 1]`);
+        if (!Number.isInteger(event.phrase) || event.phrase < 0 || event.phrase >= NEGATIVE_PHRASES.length) {
+          fail(i, "word: phrase không có trong danh sách");
+        }
+        if (event.speed !== undefined && !(event.speed > 0)) fail(i, "word: speed phải > 0");
         break;
     }
 
@@ -123,14 +132,17 @@ export class PatternRunner {
       const scheduled = this.warnQueue[this.warnCursor] as Scheduled;
       if (scheduled.warnBeat > beat) break;
       this.warnCursor++;
-      const aim = handlerFor(scheduled.event).warn(ctx, scheduled.event, scheduled.warnTime, scheduled.fireTime);
+      const warnTime = this.tempo.timeAtBeat(scheduled.warnBeat);
+      const fireTime = this.tempo.timeAtBeat(scheduled.fireBeat);
+      const aim = handlerFor(scheduled.event).warn(ctx, scheduled.event, warnTime, fireTime, scheduled.fireBeat);
       scheduled.aim = aim;
     }
     while (this.fireCursor < this.fireQueue.length) {
       const scheduled = this.fireQueue[this.fireCursor] as Scheduled;
       if (scheduled.fireBeat > beat) break;
       this.fireCursor++;
-      handlerFor(scheduled.event).spawn(ctx, scheduled.event, scheduled.aim, scheduled.fireTime, scheduled.fireBeat);
+      const fireTime = this.tempo.timeAtBeat(scheduled.fireBeat);
+      handlerFor(scheduled.event).spawn(ctx, scheduled.event, scheduled.aim, fireTime, scheduled.fireBeat);
     }
 
     // Dọn phần đã xử lý để hàng đợi không phình mãi khi lặp lâu.
@@ -156,19 +168,18 @@ export class PatternRunner {
     const fires: Scheduled[] = [];
     for (const event of this.bulletEvents) {
       const fireBeat = base + event.beat;
-      const fireTime = this.tempo.timeAtBeat(fireBeat);
       const warnBeats = event.telegraphBeats ?? (handlerFor(event).needsTelegraph(event, this.feel) ? this.feel.telegraphBeats : 0);
 
       let warnBeat = fireBeat;
-      let warnTime = fireTime;
       if (warnBeats > 0) {
-        // Cảnh báo kéo dài `warnBeats` beat nhưng không ngắn hơn telegraphMinSeconds (BPM cao thì 1 beat quá ngắn).
-        const seconds = Math.max(fireTime - this.tempo.timeAtBeat(fireBeat - warnBeats), this.feel.telegraphMinSeconds);
-        warnTime = fireTime - seconds;
-        warnBeat = this.tempo.beatAtTime(warnTime);
+        // Đo trên tempo kịch bản (hệ số 1): cảnh báo không ngắn hơn telegraphMinSeconds kể cả khi nhịp đang chậm
+        // rồi hồi về 1. Hệ số chỉ làm khoảng này dài thêm, không bao giờ ngắn hơn.
+        const scriptFire = this.tempo.scriptTimeAtBeat(fireBeat);
+        const seconds = Math.max(scriptFire - this.tempo.scriptTimeAtBeat(fireBeat - warnBeats), this.feel.telegraphMinSeconds);
+        warnBeat = this.tempo.scriptBeatAtTime(scriptFire - seconds);
       }
 
-      const scheduled: Scheduled = { event, fireBeat, fireTime, warnBeat, warnTime, aim: null };
+      const scheduled: Scheduled = { event, fireBeat, warnBeat, aim: null };
       fires.push(scheduled);
       if (warnBeats > 0) warns.push(scheduled);
     }
