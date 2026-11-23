@@ -1,5 +1,6 @@
 import "./style.css";
 import { AudioEngine } from "./audio/audio-engine";
+import { DisassemblePhase } from "./battle/disassemble-phase";
 import { DodgePhase } from "./battle/dodge-phase";
 import { Input } from "./core/input";
 import { attachKeyboard } from "./core/keyboard";
@@ -7,6 +8,7 @@ import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import { KEY_BINDINGS } from "./data/keybindings";
 import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
+import { CLOCKWORK } from "./data/mechanisms/clockwork";
 import { RESIDENT4_PATTERN } from "./data/patterns/resident-4";
 import { SPRITES } from "./data/sprites";
 import { PressStartScene } from "./scenes/press-start";
@@ -16,19 +18,28 @@ import type { Scene } from "./scenes/scene";
 // (import từ data/patterns/resident-3 hoặc data/patterns/test-pattern).
 const PLAYTEST_PATTERN = RESIDENT4_PATTERN;
 
+// Pha đang chơi thử. "disassemble" = tháo lắp, "dodge" = né đạn.
+const PLAYTEST_PHASE: "dodge" | "disassemble" = "disassemble";
+
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
 
 const renderer = new Renderer(canvas);
 renderer.sprites.definePixels("gear", SPRITES.gear);
 renderer.sprites.definePixels("distraction", SPRITES.distraction);
+renderer.sprites.definePixels("screw", SPRITES.screw);
+renderer.sprites.definePixels("clock-face", SPRITES["clock-face"]);
+renderer.sprites.definePixels("cover", SPRITES.cover);
+renderer.sprites.definePixels("cog", SPRITES.cog);
+renderer.sprites.definePixels("spring", SPRITES.spring);
+renderer.sprites.definePixels("balance", SPRITES.balance);
 
 const input = new Input();
 attachKeyboard(input, KEY_BINDINGS);
 const audio = new AudioEngine(AUDIO_FEEL, RHYTHM_FEEL.visualDelaySeconds);
 
-// Tạm thời main tự đổi cảnh: chờ người dùng tương tác (mở khóa âm thanh) rồi vào thẳng pha né đạn.
-// Máy trạng thái cảnh thật sẽ có ở bước 5.
+// Tạm thời main tự đổi cảnh: chờ người dùng tương tác (mở khóa âm thanh) rồi vào pha đang chơi thử.
+// Máy trạng thái cảnh thật sẽ có ở bước 5. Hai pha chưa gọi nhau.
 const pressStart = new PressStartScene(audio);
 let scene: Scene = pressStart;
 
@@ -37,7 +48,10 @@ startLoop({
     input.poll();
     scene.update();
     if (scene === pressStart && pressStart.ready) {
-      scene = new DodgePhase(input, audio, renderer.sprites.size("gear").width, PLAYTEST_PATTERN);
+      scene =
+        PLAYTEST_PHASE === "disassemble"
+          ? new DisassemblePhase(input, audio, CLOCKWORK)
+          : new DodgePhase(input, audio, renderer.sprites.size("gear").width, PLAYTEST_PATTERN);
     }
   },
   render(alpha) {

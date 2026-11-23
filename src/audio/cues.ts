@@ -5,14 +5,15 @@
 
 const FLOOR = 0.0001;
 
-export type CueName = "wordAbsorb" | "wordRelease";
+export type CueName = "wordAbsorb" | "wordRelease" | "unscrew" | "lift" | "unhook" | "clack";
 
 export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName, time: number): void {
-  if (cue === "wordAbsorb") {
-    thud(ctx, destination, time);
-    return;
-  }
-  breath(ctx, destination, time);
+  if (cue === "wordAbsorb") thud(ctx, destination, time);
+  else if (cue === "wordRelease") breath(ctx, destination, time);
+  else if (cue === "unscrew") click(ctx, destination, time, 1400);
+  else if (cue === "lift") scrape(ctx, destination, time);
+  else if (cue === "unhook") click(ctx, destination, time, 880);
+  else knock(ctx, destination, time);
 }
 
 /** "Ôm" một câu: một nhịp trầm cụp xuống, nghe ra ngay là vừa đỡ trúng. */
@@ -52,4 +53,59 @@ function breath(ctx: AudioContext, destination: AudioNode, time: number): void {
   source.connect(filter).connect(gain).connect(destination);
   source.start(time);
   source.stop(time + seconds);
+}
+
+/** Một tiếng kim loại ngắn: vặn một nấc, hoặc móc vừa rời (nốt thấp hơn). */
+function click(ctx: AudioContext, destination: AudioNode, time: number, hz: number): void {
+  const osc = ctx.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(hz, time);
+  osc.frequency.exponentialRampToValueAtTime(hz / 2, time + 0.04);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(FLOOR, time);
+  gain.gain.exponentialRampToValueAtTime(0.18, time + 0.002);
+  gain.gain.exponentialRampToValueAtTime(FLOOR, time + 0.05);
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 2400;
+  osc.connect(filter).connect(gain).connect(destination);
+  osc.start(time);
+  osc.stop(time + 0.06);
+}
+
+/** Nhấc: một nhát gỗ ngắn, trầm hơn tiếng vặn. */
+function scrape(ctx: AudioContext, destination: AudioNode, time: number): void {
+  const seconds = 0.12;
+  const noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * seconds), ctx.sampleRate);
+  const samples = noise.getChannelData(0);
+  for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+  const source = ctx.createBufferSource();
+  source.buffer = noise;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.setValueAtTime(900, time);
+  filter.frequency.exponentialRampToValueAtTime(280, time + seconds);
+  filter.Q.value = 0.8;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(FLOOR, time);
+  gain.gain.exponentialRampToValueAtTime(0.22, time + 0.01);
+  gain.gain.exponentialRampToValueAtTime(FLOOR, time + seconds);
+  source.connect(filter).connect(gain).connect(destination);
+  source.start(time);
+  source.stop(time + seconds);
+}
+
+/** Lệch nhịp: một cú gõ đục, không có tiếng kim loại. */
+function knock(ctx: AudioContext, destination: AudioNode, time: number): void {
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(110, time);
+  osc.frequency.exponentialRampToValueAtTime(55, time + 0.08);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(FLOOR, time);
+  gain.gain.exponentialRampToValueAtTime(0.4, time + 0.004);
+  gain.gain.exponentialRampToValueAtTime(FLOOR, time + 0.09);
+  osc.connect(gain).connect(destination);
+  osc.start(time);
+  osc.stop(time + 0.1);
 }

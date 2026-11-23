@@ -21,7 +21,10 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
 - **Bước (3b) đã xong và đã push:** nét vẽ của cô bé trong pha né đạn, chốt ở trống giấy (vòng 3).
   `PLAYTEST_PATTERN` vẫn là `RESIDENT4_PATTERN`.
   - Cơ chế đèn dẫn (vòng 2, commit `a0c7eeb`) đã bỏ, thay bằng trống giấy.
-- **Bước tiếp theo: (3c)**, bản thô pha tháo lắp. Hết máu vẫn chỉ reset (chưa có màn thua).
+- **Bước (3c) đã commit và push, chưa chơi thử:** pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK`.
+  `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
+- **Bước tiếp theo: (4)**, vertical slice một cư dân hoàn chỉnh, gồm ghép pha né với pha tháo lắp.
+  Hết máu vẫn chỉ reset (chưa có màn thua). Máy trạng thái cảnh là bước 5.
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -117,6 +120,41 @@ Mỗi trận xen kẽ hai pha:
      khe 36 px thì không trúng. Độ khó một vòng ~34 giây: chưa ghi.
 5. **Boss: người thợ đồng hồ đã phí cả đời.** Không cần thắng, chỉ cần bước ra khỏi vòng lặp.
 
+## Pha tháo lắp
+
+Bản thô dùng chung cho mọi cư dân. Chưa ghép với pha né đạn (đó là bước 4). Mỗi cỗ máy là dữ liệu
+trong `src/data/mechanisms/`. Pha này tự dựng `BeatClock` và tiếng tích tắc, cùng cách pha né: beat là hàm của
+giờ nghe được.
+
+- Một bộ phận có `id`, id sprite, vị trí (tỉ lệ 0..1 của vùng tháo), vùng chọn, `blockedBy` (phải tháo trước),
+  kiểu thao tác, và tùy chọn một câu ký ức. Đúng một bộ phận `core`.
+- Con trỏ nhảy theo mũi tên: một lần bấm (`wasPressed`) chọn bộ phận còn lại gần nhất trong nửa mặt phẳng của
+  hướng đó. Giữ phím không trượt, vì lớp input không nhận lại phím đang giữ.
+- Ba kiểu:
+  - `unscrew`: mỗi lần bấm confirm trong cửa sổ nhịp thì một nấc, đủ `unscrewSteps` nấc thì rời.
+  - `lift`: giữ confirm đủ `liftBeats` beat nghe được. Nhả sớm thì đếm lại từ đầu.
+  - `unhook`: một lần bấm trong cửa sổ.
+- Cửa sổ là `beatWindow` (nửa bề rộng, theo beat): khoảng cách từ beat nghe được (`beatAtTime`) tới beat nguyên
+  gần nhất. Không đếm tick, không dùng beat kịch bản. Hệ số nhịp dưới 1 chỉ làm mỗi beat dài hơn.
+- Bấm lệch nhịp phát tiếng `clack` và không tiến. Không trừ máu, không phạt gì khác.
+- `rhythmic: false` tắt cửa sổ của `unscrew` và `unhook` (cư dân 1, chậm và êm). `lift` vẫn phải giữ đủ số beat,
+  vì đó là thao tác nhấc, không phải cửa sổ nhịp.
+- Chọn bộ phận đang bị chặn: mọi bộ phận chặn còn lắp sáng trong `blockFlashBeats` beat. Không tiếng cạch, không phạt.
+- Tháo xong bộ phận có câu ký ức: hiện câu đó, chạy với `memoryCharsPerSecond`. Confirm lúc chữ chưa hiện hết thì
+  hiện nốt; confirm lúc đã hiện hết thì đóng. Lần bấm vừa tháo xong không đóng câu.
+- Tháo xong `core`: hiện "xong". Confirm sau đó chơi lại cùng cỗ máy. Nếu core có câu ký ức thì đọc câu trước,
+  đóng câu rồi mới tới "xong".
+- Tiếng `unscrew`, `lift`, `unhook`, `clack` là tổng hợp procedural, phát qua `playCue` theo tên, cùng gain với
+  tiếng tích tắc.
+- Hình là sprite placeholder theo id. Cỗ máy thử `CLOCKWORK`: 4 ốc (`unscrew`) → mặt đồng hồ (`lift`) → tấm che
+  (`lift`) → 2 bánh răng (`unhook`) → lò xo (`lift`) → bánh lắc (`unhook`, `core`). Ba câu ký ức tạm. Cỗ máy thử
+  để `rhythmic: true` để nghe cửa sổ; cư dân 1 sẽ đặt `false`.
+- `main.ts` chọn pha chơi thử bằng `PLAYTEST_PHASE` (`"dodge"` hoặc `"disassemble"`), cùng kiểu với
+  `PLAYTEST_PATTERN`. Hai pha không gọi nhau.
+- Kiểm lúc tạo máy: id trong `blockedBy` có thật, không trùng id, không có vòng, đúng một `core`, và có thứ tự
+  tháo tới được `core`.
+- Con số cảm giác ở `src/data/disassembly-feel.ts`, vùng tháo ở `DISASSEMBLY_LAYOUT`, pixel logic 640×360.
+
 ## Thông điệp và nguyên tắc kể chuyện
 
 Thông điệp: biết quý trọng thời gian, và quan trọng nhất là **VẪN CHƯA MUỘN để bắt đầu lại**. Sống có ý nghĩa,
@@ -196,12 +234,12 @@ Hiện đã có:
   `tempo-map.ts` (đổi qua lại beat ↔ giây khi BPM thay đổi), `beat-clock.ts` (đồng hồ nhịp của một trận).
 - `audio/`: `audio-engine.ts` (AudioContext: mở khóa, tắt/bật tiếng, **nguồn thời gian chủ**), `tick-scheduler.ts`
   (hẹn trước tiếng tích tắc theo đúng bản đồ tempo), `tick-sound.ts` (tổng hợp tiếng đồng hồ cơ), `cues.ts`
-  (tiếng ôm / nhả một câu).
+  (tiếng ôm / nhả một câu, tiếng vặn, nhấc, gỡ, cạch).
 - `battle/`: `dodge-phase.ts` (pha né đạn: khung, thanh máu, lớp debug, ghép mọi thứ), `player.ts` (bánh răng),
   `pattern-runner.ts` (chạy pattern theo beat, kiểm tra tính công bằng), `spawners.ts` (một handler cho mỗi loại
   đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng), `pace.ts` (khi nào hạ / hồi hệ số nhịp),
   `sketch.ts` (danh sách đoạn nét chì, tẩy ngược, tua lại), `paper.ts` (giấy theo beat, bút, kiểm tranh, sinh kim),
-  `tail.ts` (đuôi nét lúc chơi).
+  `tail.ts` (đuôi nét lúc chơi), `mechanism.ts` (thứ tự tháo, nhịp, con trỏ), `disassemble-phase.ts` (pha tháo lắp).
 - `scenes/`: `scene.ts` (giao diện `Scene`), `press-start.ts` (màn "Nhấn phím bất kỳ để bắt đầu").
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
@@ -209,15 +247,18 @@ Hiện đã có:
   `sketch-feel.ts` (**độ dày nét, tẩy, đuôi, giấy, khe kim, sáp màu, đung đưa**),
   `paper.ts` (kiểu tranh giấy), `figures/child-drawing.ts` (tranh trẻ con thử),
   `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
-  `patterns/resident-4.ts` (trống giấy, ~34 giây, `gallery` + `paper`).
+  `patterns/resident-4.ts` (trống giấy, ~34 giây, `gallery` + `paper`),
+  `disassembly-feel.ts` (cửa sổ nhịp, số nấc, số beat giữ, chữ ký ức),
+  `mechanisms/clockwork.ts` (bộ máy đồng hồ thử).
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
   (pattern fixture + hàm tính giờ độc lập). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
   `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `battle/pace.test.ts`, `battle/words.test.ts`,
   `battle/sketch.test.ts` (tẩy ngược, cắt đoạn, khoảng lấy mẫu, thứ tự tua lại),
   `battle/paper.test.ts` (giấy theo beat, bút, khóa ngang, kim, kiểm tranh),
+  `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: lưu tiến trình trong `core/`, pha tháo lắp, hội thoại, thị trấn.
+- Chưa có code: lưu tiến trình trong `core/`, hội thoại, thị trấn, ghép pha né với pha tháo lắp.
 
 ### Nền tảng kỹ thuật đã chốt
 
@@ -439,6 +480,18 @@ Nét chì và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640
 | Lực hút đạn xao nhãng (0 = tắt)                | `DISTRACTION_FEEL.pull`                       |
 | Đạn xao nhãng bay nhanh/chậm, to/nhỏ           | `DISTRACTION_FEEL.speed`, `radius`            |
 
+Pha tháo lắp nằm ở `data/disassembly-feel.ts`:
+
+| Muốn…                                          | Chỉnh                                        |
+| ---------------------------------------------- | -------------------------------------------- |
+| Cửa sổ đúng nhịp rộng hay hẹp                  | `DISASSEMBLY_FEEL.beatWindow`                 |
+| Vặn bao nhiêu nấc thì ốc rời                   | `DISASSEMBLY_FEEL.unscrewSteps`               |
+| Giữ bao nhiêu beat thì nhấc được               | `DISASSEMBLY_FEEL.liftBeats`                  |
+| Bộ phận chặn sáng bao lâu                      | `DISASSEMBLY_FEEL.blockFlashBeats`            |
+| Câu ký ức hiện nhanh hay chậm                  | `DISASSEMBLY_FEEL.memoryCharsPerSecond`      |
+| Tắt hẳn yêu cầu đúng nhịp của một máy          | `rhythmic: false` trên cỗ máy                 |
+| Nhịp tích tắc của pha tháo                     | `bpm` trên cỗ máy                             |
+
 ## Quy ước code
 
 - **Nội dung là dữ liệu, không code cứng.** Pattern đạn theo beat, hội thoại, bản đồ thị trấn, sprite đều nằm
@@ -465,7 +518,7 @@ Nét chì và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640
 2b. Nâng độ phân giải logic từ 320×180 lên 640×360, giữ nguyên cảm giác chơi.
 3a. Lời tiêu cực của cư dân 3 trong pha né đạn (làm chậm nhịp).
 3b. Nét vẽ của cô bé trong pha né đạn.
-3c. Bản thô pha tháo lắp, dùng chung cho mọi cư dân (thiết kế sẽ chốt trước khi làm).
+3c. Bản thô pha tháo lắp, dùng chung cho mọi cư dân. Thiết kế ở mục "Pha tháo lắp". Chưa ghép với pha né đạn (bước 4).
 4. Vertical slice một cư dân hoàn chỉnh.
 5. Máy trạng thái cảnh + thị trấn + lưu tiến trình.
 6. Nội dung các cư dân còn lại và boss.

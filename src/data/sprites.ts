@@ -32,4 +32,40 @@ export const SPRITES = {
       "...#...",
     ],
   },
+  /** Ốc trên bộ máy. */
+  screw: {
+    scale: 2,
+    palette: { "#": "#d7d2c8", o: "#8d887e" },
+    rows: ["..#..", ".###.", "#o.o#", ".###.", "..#.."],
+  },
+  /** Mặt đồng hồ, chưa có kim. */
+  "clock-face": {
+    scale: 2,
+    palette: { "#": "#f4efe4", o: "#c4b8a4" },
+    rows: ["..#####..", ".#######.", "##o...o##", "#.......#", "#...o...#", "#.......#", "##o...o##", ".#######.", "..#####.."],
+  },
+  /** Tấm che bánh răng. */
+  cover: {
+    scale: 2,
+    palette: { "#": "#b7c0c4", o: "#6d787c" },
+    rows: ["###########", "#o.......o#", "#.........#", "#o.......o#", "###########"],
+  },
+  /** Bánh răng trong máy, nhỏ hơn bánh răng người chơi. */
+  cog: {
+    scale: 2,
+    palette: { "#": "#e0b04a", o: "#9c6b24" },
+    rows: ["..#.#..", ".#####.", "##o.o##", ".#...#.", "##o.o##", ".#####.", "..#.#.."],
+  },
+  /** Lò xo. */
+  spring: {
+    scale: 2,
+    palette: { "#": "#e8eef2" },
+    rows: [".#.#.#.", "#.#.#.#", ".#.#.#.", "#.#.#.#"],
+  },
+  /** Bánh lắc, bộ phận core của máy thử. */
+  balance: {
+    scale: 2,
+    palette: { "#": "#f2d23c", o: "#9c6b24" },
+    rows: ["...#...", ".#####.", "##o.o##", "...#...", "##o.o##", ".#####.", "...#..."],
+  },
 } as const satisfies Record<string, PixelSpriteData>;
