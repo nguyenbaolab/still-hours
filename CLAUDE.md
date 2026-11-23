@@ -90,7 +90,8 @@ Mỗi trận xen kẽ hai pha:
 - **Pha né kết thúc thế nào** (`Pattern.finish`, mục "Định dạng pattern"):
   - `length` (mặc định, cư dân 1, 2, 3): `loop: false`, xong khi beat nghe được ≥ `lengthBeats`. Đạn còn lại mờ đi
     trong `FLOW_FEEL.clearSeconds` và không trừ máu. Tác giả pattern để trống 2 beat cuối.
-  - `page` (cư dân 4): `loop: true`, xong khi đã vẽ đủ `drawBeats` beat (xem cư dân 4).
+  - `page` (cư dân 4): `loop: true`, xong khi đã vẽ đủ `drawBeats` beat, hoặc khi hết `DRAW_FEEL.maxLoops` vòng
+    pattern dù chưa vẽ đủ (xem cư dân 4, "Trang luôn khép được").
   - `exit` (boss): `loop: true`, xong khi bánh răng bước ra khỏi khung qua khe cửa (xem boss).
 - **Máu:** đầy lại ở đầu mỗi pha né. Máu tối đa giữ `PLAYER_FEEL.maxHp` (20).
 - **Chuyển cảnh:** mờ đen `FLOW_FEEL.fadeSeconds` (0,4 giây) giữa mọi cảnh và giữa các pha. Đồng hồ nhịp của pha mới
@@ -100,14 +101,21 @@ Mỗi trận xen kẽ hai pha:
 ### Thua
 
 - Chỉ thua được ở pha né, khi máu về 0. Pha tháo không thua được.
-- Màn thua: khung và đạn dừng hình, bánh răng nứt (sprite `gear-cracked`), mọi thứ mờ về đen trong
-  `FLOW_FEEL.fadeSeconds`, giữa màn hiện một dòng **"Chưa muộn."** (cỡ 24, màu `#d8c9a3`) trong
-  `FLOW_FEEL.loseHoldSeconds` (1,2 giây). Confirm bỏ qua phần giữ. Không có lựa chọn, không có "thoát".
+- **Màn thua không có chữ.** Khung và đạn dừng hình, bánh răng nứt (sprite `gear-cracked`). Mọi thứ trừ bánh răng mờ
+  về đen trong `FLOW_FEEL.fadeSeconds`. Bánh răng nứt nằm yên giữa màn tối, không tiếng, trong
+  `FLOW_FEEL.loseHoldSeconds` (1,2 giây). Rồi vết nứt khép lại (đổi sprite về `gear`) cùng cue `mend` (một tiếng cạch
+  nhỏ, rồi một tiếng tích), và pha né mờ vào lại. Confirm bỏ qua phần giữ. Không có lựa chọn, không có "thoát".
+- **Vì sao không dùng chữ** (chốt 2026-11-24, thay bản trước dùng "Chưa muộn."): câu "Vẫn chưa muộn." chỉ được xuất hiện
+  **một lần** trong cả game, ở màn kết. Nếu màn thua nói gần cùng câu, người chơi đọc nó hàng chục lần và câu cuối thành
+  câu quen tai, mất sức nặng. Ý "bắt đầu lại được" ở màn thua đi bằng hành động: người thợ tự sửa bánh răng của mình
+  (cơ chế mang thông điệp, không lời). Phương án bỏ: một câu khác như "Lại nào." (vẫn là chữ, vẫn mòn khi lặp, dễ
+  nghe thành lời động viên); cắt thẳng về beat 0 không có gì (mất một nhịp thở sau khi thua, người chơi không kịp
+  hiểu chuyện gì xảy ra).
 - Rồi **chơi lại đúng pha né vừa thua, từ beat 0**, máu đầy, cùng pattern. Không chơi lại pha tháo trước đó, không
   chơi lại lượt trước. Số lần thua không được đếm hay hiện ở đâu.
 - Ngoại lệ của cư dân 4: tranh (mọi nét) và số beat đã vẽ của lượt hiện tại **giữ nguyên** khi thua; bút về chỗ
   đặt ban đầu, chưa cầm. Lý do: mọi nét đều được tính, kể cả nét vẽ trước khi ngã.
-- Ngoại lệ của boss: thua là "vòng lặp quay lại từ đầu", cùng màn "Chưa muộn."; số vòng đã qua (dùng để mở rộng khe
+- Ngoại lệ của boss: thua là "vòng lặp quay lại từ đầu", cùng màn bánh răng nứt rồi lành; số vòng đã qua (dùng để mở rộng khe
   cửa) **không** đặt lại.
 - Code: `DodgePhase.outcome` là `"playing" | "won" | "lost"`. `BattleScene` đọc và quyết định; pha không tự dựng lại
   chính nó.
@@ -251,11 +259,22 @@ một quãng, phải đi nhặt lại. Một mặt đồng hồ nhỏ của cô 
    (`veil`, như hiện nay), **tua lại nét của lượt này** theo đúng thứ tự vẽ bằng nét sáp (`SKETCH_FEEL.crayonWidth`,
    `crayonColor`) trong `SKETCH_FEEL.replaySeconds` (2,8 giây), nét các lượt trước hiện sẵn bằng sáp, rồi giữ tranh
    `SKETCH_FEEL.revealSeconds` (3,5 giây). Không viền, không điểm, không lời nhận xét. Rồi `outcome = "won"`.
+   **Trang luôn khép được (không có trạng thái kẹt).** Nếu beat nghe được của lần chơi này đạt
+   `DRAW_FEEL.maxLoops` × `lengthBeats` (mặc định 3 vòng, ~58 giây ở 100 BPM, ~53 giây ở 108 BPM) mà `drawnBeats` vẫn
+   chưa đủ, trang vẫn khép y như khi xong: cùng màn lộ tranh, cùng `outcome = "won"`, sang pha tháo. Áp dụng cho mọi
+   trường hợp: không bao giờ nhặt bút, cầm bút mà đứng yên, hay vẽ quá ít. Đồng hồ của cô bé dừng ở chỗ kim đang chỉ,
+   không nhảy cho đủ vòng. Màn lộ tranh chiếu đúng những gì có: chưa có nét nào thì chỉ là tờ giấy trắng giữ trong
+   `revealSeconds`, không chữ, không nhận xét. Lý do: thời gian vẫn trôi khi không làm, và trang trắng là chính cái giá
+   đó, nói bằng hình chứ không bằng phạt hay lời. 3 vòng dài hơn hẳn một lượt vẽ bình thường (~26 giây) nên không ai có
+   lợi khi đứng chờ. Đếm từ beat 0 của lần chơi hiện tại: thua rồi chơi lại thì đếm lại từ đầu (tranh và `drawnBeats`
+   vẫn giữ như mục "Thua").
 9. **Một tờ giấy cho cả trận.** Ba lượt vẽ tiếp trên cùng một trang (`PageState`, do `BattleScene` giữ). Thua giữ
    nguyên trang (mục "Thua").
 10. **Kết.** Hội thoại khép trận xong, cảnh kết ở bàn học: tờ giấy trên bàn hiện **chính tranh người chơi vừa vẽ**
     (thu nhỏ vào khung 160×64), cô bé cầm cây bút chì lên (sprite `r4-pencil`, nhấc bút lên 6 px trong 0,5 giây). Không
     chữ. Tranh được giản lược và lưu vào `SaveData.drawing`; sau đó treo trên tường nhà cô trong thị trấn.
+    Người chơi không vẽ nét nào cả trận: tờ giấy trên bàn trắng, cô bé vẫn cầm bút lên như thường, `drawing` lưu mảng
+    rỗng, trên tường treo một tờ giấy trắng. Kết thúc mở vẫn đúng: cô cầm bút, chưa vẽ gì cũng được.
 
 **Vì sao cơ chế này truyền đúng thông điệp**
 
@@ -320,6 +339,7 @@ một quãng, phải đi nhặt lại. Một mặt đồng hồ nhỏ của cô 
 | Nét lúc chơi đậm/nhạt | `DRAW_FEEL.liveInkAlpha` (0,45) |
 | Trần số đoạn nét | `DRAW_FEEL.maxSegments` (6000) |
 | Bao nhiêu beat vẽ thì xong trang | `finish.drawBeats` trong từng lượt của `resident-4.ts` |
+| Sau bao nhiêu vòng pattern thì trang tự khép dù chưa đủ | `DRAW_FEEL.maxLoops` (3) |
 | Nét mảnh/đậm, gãy/mịn | `SKETCH_FEEL.width`, `slowWidth`, `sampleDistance`, `slowSampleDistance` (giữ) |
 | Tua lại / giữ tranh bao lâu | `SKETCH_FEEL.replaySeconds` (2,8), `revealSeconds` (3,5) |
 | Nét sáp dày bao nhiêu, màu gì | `SKETCH_FEEL.crayonWidth` (9), `crayonColor` |
@@ -595,7 +615,7 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
   một thao tác của người dùng.
 - **Nhạc nền (chốt 2026-11-24):** pha né và pha tháo không có nhạc giai điệu; tiếng tích tắc chính là nhạc. Thị trấn có
   một lớp nền procedural rất nhỏ: gió (nhiễu lọc thấp) và một tiếng tích xa ở 40 BPM. Màn bắt đầu: một tiếng tích mỗi
-  giây. Màn kết: các lớp tích tắc chồng dần. Cue mới (đều procedural, phát qua `playCue`): `blip`, `pencilUp`,
+  giây. Màn kết: các lớp tích tắc chồng dần. Cue mới (đều procedural, phát qua `playCue`): `blip`, `mend`, `pencilUp`,
   `pencilDrop`, `drawTick`, `ring`, `hum`, `bird`, `chime`. Chưa dùng file âm thanh thật.
 - **Độ trễ loa (chốt):** không làm màn hiệu chỉnh; giữ `visualDelaySeconds`. Ghi vào PLAYTEST.md để chủ dự án chỉnh.
 - **Font (chốt 2026-11-24): VT323** của Peter Hull, giấy phép **SIL Open Font License 1.1**. Metadata Google Fonts

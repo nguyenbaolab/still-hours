@@ -83,7 +83,8 @@ Quy ước chung cho mọi mốc:
 **3b.2 Bút, trang và đồng hồ của cô bé.** Thêm `finish` (`length`, `page`) và `pencil` vào `Pattern`, cùng luật trong
 `validatePattern`. Thêm `DRAW_FEEL`. Viết `battle/page.ts` (logic thuần). Ghép vào `DodgePhase`: bút nằm và lóe, nhặt,
 vẽ khi cầm, nét hiện mờ suốt lúc chơi, rơi bút khi chạm xao nhãng, đồng hồ của cô bé, câu tự nhủ, trang xong → lộ
-tranh → `outcome = "won"`. Thêm `DodgePhase.outcome` (`playing` / `won` / `lost`; hết máu → `lost`, không còn
+tranh → `outcome = "won"`, và trang tự khép sau `DRAW_FEEL.maxLoops` vòng dù chưa vẽ đủ (mục cư dân 4, "Trang luôn khép
+được"). Thêm `DodgePhase.outcome` (`playing` / `won` / `lost`; hết máu → `lost`, không còn
 `resetHealth`). `finish: length` → `won` khi beat ≥ `lengthBeats`. Thêm `options` cho constructor
 (`{ page?: PageState }`). Cue `pencilUp`, `pencilDrop`, `drawTick` (procedural, ngắn). Sprite `pencil`.
 - Test (`battle/page.test.ts` và mở rộng `distraction.test.ts`, `pattern-runner.test.ts`):
@@ -99,11 +100,19 @@ tranh → `outcome = "won"`. Thêm `DodgePhase.outcome` (`playing` / `won` / `lo
   6. mô phỏng `DodgePhase` thật với bot "đi tới bút rồi đi vòng chữ nhật": `outcome` thành `won` trong ≤ 60 giây âm
      thanh giả; truyền cùng một `PageState` vào `DodgePhase` mới sau khi `lost` thì số đoạn nét và `drawnBeats` giữ
      nguyên;
-  7. `finish: length`: mô phỏng bot đứng yên ở pattern fixture không có đạn → `won` đúng lúc beat ≥ `lengthBeats`.
+  7. `finish: length`: mô phỏng bot đứng yên ở pattern fixture không có đạn → `won` đúng lúc beat ≥ `lengthBeats`;
+  8. **không kẹt** (pattern fixture `page` chỉ có `distraction`, không có đạn trừ máu, `drawBeats` lớn hơn số beat của
+     `maxLoops` vòng): (a) bot không bao giờ bấm phím → `outcome` thành `won` ngay sau khi beat đạt `maxLoops` ×
+     `lengthBeats` cộng thời gian lộ tranh (sai lệch ≤ 1 tick), số đoạn nét là 0; (b) bot đi tới bút, cầm, rồi đứng yên
+     → cũng `won` đúng mốc đó, `drawnBeats` gần 0; (c) bot vẽ đủ trước mốc → `won` sớm, không chờ tới mốc; (d) thua rồi
+     dựng `DodgePhase` mới với cùng `PageState` → mốc đếm lại từ beat 0 của lần mới. Phá có chủ đích: tắt điều kiện
+     `maxLoops` và chắc (a) vỡ vì hết thời gian mô phỏng mà vẫn `playing`.
+- Điều kiện xong thêm: không còn đường nào để pha né của một pattern `page` chạy mãi (test 8 xanh).
 - Commit: `feat: pick-up-the-pencil drawing page for resident 4`.
 
 **3b.3 Pattern ba lượt của cư dân 4.** Viết `R4_ROUNDS` theo bảng "Pattern dự kiến" ở mục cư dân 4.
-- Test: cả ba lượt qua `validatePattern`; không có đạn hay xao nhãng nào xuất hiện trong bán kính 40 px quanh `pencil`
+- Test: cả ba lượt qua `validatePattern`; với từng lượt, `maxLoops` × độ dài vòng ≤ 70 giây trên tempo kịch bản;
+  không có đạn hay xao nhãng nào xuất hiện trong bán kính 40 px quanh `pencil`
   trong 4 beat đầu mỗi vòng (kiểm vị trí sinh bằng handler thật); bot của 3b.2 hoàn thành từng lượt trong ≤ 60 giây.
 - Cập nhật CLAUDE.md: bảng "Con số nên chỉnh" phần nét chì, "Định dạng pattern", "Trạng thái hiện tại".
 - Commit: `feat: three drawing rounds for resident 4`.
@@ -123,7 +132,8 @@ tầng 1 → 2 → 3 trên cùng một `Workbench`.
 
 **4.1 Dữ liệu cư dân và trận.** `data/residents/types.ts` (`ResidentData`), `data/flow-feel.ts` (`FLOW_FEEL`).
 `scenes/battle-scene.ts`: chạy 3 lượt (pha né → mờ → pha tháo tầng n → mờ → …), giữ `Workbench`, `PageState`, đọc
-`outcome`. Thua: màn "Chưa muộn." (mục "Thua") rồi dựng lại đúng pha né đó. Sprite `gear-cracked`. Tạm thời chưa có
+`outcome`. Thua: màn bánh răng nứt rồi lành, không chữ (mục "Thua"), rồi dựng lại đúng pha né đó. Sprite
+`gear-cracked`, cue `mend`. Tạm thời chưa có
 hội thoại: vào thẳng lượt 1, xong tầng 3 thì hiện "hết" (sẽ thay ở 4.3).
 - Test (`scenes/battle-scene.test.ts`, đồng hồ giả, thay pha thật bằng pha giả có `outcome` điều khiển được): thứ tự
   né1 → tháo1 → né2 → tháo2 → né3 → tháo3 → `finished`; `lost` ở né2 → dựng lại né2 (không quay về né1, không chạy lại
