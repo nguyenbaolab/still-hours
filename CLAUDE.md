@@ -18,9 +18,9 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     (thời gian đi hết khung, thời gian đạn bay qua khung, độ khó né sát) giữ nguyên.
   - Bước (3a): lời tiêu cực của cư dân 3 trong pha né đạn. Hệ số nhịp là lớp chung (`TempoMap.setPace`); đạn
     `word` không trừ máu. `main.ts` chọn pattern chơi thử qua hằng `PLAYTEST_PATTERN`.
-  - Bước (3b) vòng 1–3: nét chì, đạn xao nhãng, rồi trống giấy (commit `3a1614b`). Cơ chế đèn dẫn (vòng 2, commit
+  - Bước (3b) vòng 1–3: nét chì, đạn xao nhãng, rồi trống giấy (commit `b506d7c`). Cơ chế đèn dẫn (vòng 2, commit
     `a0c7eeb`) đã bỏ, thay bằng trống giấy. **Trống giấy cũng sẽ bị thay** (xem dưới).
-  - Bước (3c): pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK` (commit `f918942`). Chưa chơi thử.
+  - Bước (3c): pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK` (commit `1a057f3`). Chưa chơi thử.
     `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
 - **Phiên thiết kế 2026-11-24 (chỉ tài liệu, không code):** thiết kế lại cư dân 4 thành **"Nhặt bút"** (mục cư dân 4),
   chốt mọi quyết định còn mở (cấu trúc trận, thua, màn bắt đầu/mở đầu/kết, thị trấn, hội thoại, cư dân 1–3 và boss,
