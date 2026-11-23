@@ -1,29 +1,32 @@
 import type { Pattern } from "../pattern-types";
-import { TOWN_HORIZON } from "../figures/town-horizon";
+import { CHILD_DRAWING } from "../figures/child-drawing";
 
 /**
- * Pattern thử của cô bé. Đốm sáng đi theo chân trời; đạn xao nhãng kéo bánh răng ra khỏi đường đó.
- * 100 BPM, 60 beat = 36 giây, có lặp. Cuối vòng tua lại nét thật rồi giữ tranh.
+ * Pattern thử của cô bé. Kim kẹp khe được sinh từ `paper` lúc tạo trận, không viết trong danh sách.
+ * Đạn xao nhãng treo và đung đưa. Đạn thường khép dải trên và dải dưới.
+ * 100 BPM, 56 beat ≈ 34 giây, bốn vòng giấy.
  *
- * Chơi thử: `PLAYTEST_PATTERN` trong src/main.ts. Pattern đạn cũ là TEST_PATTERN,
- * pattern lời tiêu cực là RESIDENT3_PATTERN.
+ * Chơi thử: `PLAYTEST_PATTERN` trong src/main.ts.
  */
 export const RESIDENT4_PATTERN: Pattern = {
-  name: "nét chì",
+  name: "trống giấy",
   bpm: 100,
-  lengthBeats: 60,
+  lengthBeats: 56,
   loop: true,
   gallery: true,
-  guide: TOWN_HORIZON,
+  paper: CHILD_DRAWING,
   events: [
-    { beat: 3, type: "distraction", from: "top", at: 0.14 },
-    { beat: 7, type: "distraction", from: "top", at: 0.22 },
-    { beat: 12, type: "distraction", from: "bottom", at: 0.36 },
-    { beat: 16, type: "distraction", from: "top", at: 0.48 },
-    { beat: 20, type: "distraction", from: "top", at: 0.6 },
-    { beat: 26, type: "distraction", from: "right", at: 0.5 },
-    { beat: 35, type: "distraction", from: "top", at: 0.71 },
-    { beat: 44, type: "distraction", from: "left", at: 0.46 },
-    { beat: 53, type: "distraction", from: "top", at: 0.92 },
+    { beat: 4, type: "distraction", from: "top", at: 0.3, hang: true },
+    { beat: 18, type: "distraction", from: "top", at: 0.72, hang: true },
+    { beat: 32, type: "distraction", from: "top", at: 0.4, hang: true },
+    { beat: 46, type: "distraction", from: "top", at: 0.66, hang: true },
+    { beat: 8, type: "straight", from: "right", at: 0.06 },
+    { beat: 8, type: "straight", from: "left", at: 0.94 },
+    { beat: 22, type: "straight", from: "right", at: 0.08 },
+    { beat: 22, type: "straight", from: "left", at: 0.92 },
+    { beat: 36, type: "straight", from: "right", at: 0.05 },
+    { beat: 36, type: "straight", from: "left", at: 0.95 },
+    { beat: 50, type: "straight", from: "right", at: 0.07 },
+    { beat: 50, type: "straight", from: "left", at: 0.93 },
   ],
 };

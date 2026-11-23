@@ -55,25 +55,55 @@ export const DISTRACTION_FEEL: DistractionFeel = {
   max: 32,
 };
 
-export interface GuideFeel {
-  /** Bánh răng trong bán kính này (px) quanh đốm sáng thì bút mới chạm giấy. */
-  radius: number;
-  /** Đuôi nét sau bánh răng, chỉ lúc đang vẽ (giây). */
+export interface PaperFeel {
+  /** 0 = bánh răng chỉ đi lên xuống, khóa đúng cột giữa. */
+  horizontalRange: number;
+  /** Một vòng giấy dài bao nhiêu beat. Hết vòng thì giấy quay lại. */
+  beatsPerPass: number;
+  /** Bút chạm giấy khi điểm dưới ngòi cách nét của vòng hiện tại không quá bấy nhiêu px. */
+  penRadius: number;
+  /** Đuôi nét sau bánh răng lúc chơi (giây). */
   tailSeconds: number;
-  /** Khúc thường: đốm sáng không nhanh hơn bấy nhiêu lần `PLAYER_FEEL.speed`. */
-  speedRatio: number;
   /** Tua lại nét đã vẽ lúc lộ tranh (giây). */
   replaySeconds: number;
-  /** Hiện hướng sắp đi xa bấy nhiêu beat. */
-  lookAheadBeats: number;
-  lightColor: string;
+  /** Độ dày nét lúc lộ tranh, chất sáp màu. */
+  crayonWidth: number;
+  crayonColor: string;
+  /** Cứ bấy nhiêu px dọc nét thì một cặp kim. */
+  handSpacing: number;
+  /** Độ cao khe giữa hai đầu kim (px). Lớn hơn hitbox. */
+  gap: number;
+  /** Kim giật theo mỗi beat (px). Khe dịch cả khối, không khép lại. */
+  twitch: number;
+  /** Bề dày kim (px). */
+  handThickness: number;
+  /** Chấm khép góc ở hai đầu khe (px). */
+  tipRadius: number;
+  /** Sợi chỉ thả từ mép trên (px). */
+  threadLength: number;
+  /** Biên độ đung đưa của đạn xao nhãng (px). */
+  swingAmplitude: number;
+  /** Đung đưa nhanh bấy nhiêu radian mỗi beat. */
+  swingPerBeat: number;
+  /** Đạn treo tồn tại bao nhiêu beat. */
+  hangBeats: number;
 }
 
-export const GUIDE_FEEL: GuideFeel = {
-  radius: 28,
-  tailSeconds: 0.4,
-  speedRatio: 0.7,
-  replaySeconds: 2.4,
-  lookAheadBeats: 1,
-  lightColor: "#ffe08a",
+export const PAPER_FEEL: PaperFeel = {
+  horizontalRange: 0,
+  beatsPerPass: 14,
+  penRadius: 16,
+  tailSeconds: 0.35,
+  replaySeconds: 2.8,
+  crayonWidth: 9,
+  crayonColor: "#f0b429",
+  handSpacing: 36,
+  gap: 36,
+  twitch: 4,
+  handThickness: 6,
+  tipRadius: 4,
+  threadLength: 72,
+  swingAmplitude: 40,
+  swingPerBeat: 0.85,
+  hangBeats: 8,
 };

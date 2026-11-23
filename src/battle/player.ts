@@ -45,14 +45,18 @@ export class Player {
     this.y = this.prevY = y;
   }
 
-  /** Di chuyển theo input, giữ trong `arena`, và đếm lùi thời gian bất tử. */
-  update(input: Input, arena: Rect): void {
+  /**
+   * Di chuyển theo input, giữ trong `arena`, và đếm lùi thời gian bất tử.
+   * `column`: khóa ngang quanh một cột. `range` 0 thì không đi ngang.
+   */
+  update(input: Input, arena: Rect, column?: { x: number; range: number }): void {
     this.prevX = this.x;
     this.prevY = this.y;
 
     // Chuẩn hóa chỉ khi vượt quá 1: đi chéo không nhanh hơn đi thẳng, còn input analog (sau này) nhỏ hơn 1 vẫn giữ nguyên.
     let dx = input.move.x;
     let dy = input.move.y;
+    if (column && !(column.range > 0)) dx = 0;
     const length = Math.hypot(dx, dy);
     if (length > 1) {
       dx /= length;
@@ -63,8 +67,17 @@ export class Player {
     const half = this.bodySize / 2;
     this.x = clamp(this.x + dx * step, arena.x + half, arena.x + arena.w - half);
     this.y = clamp(this.y + dy * step, arena.y + half, arena.y + arena.h - half);
+    if (column) this.keepColumn(column.x, column.range, arena);
 
     if (this.invincibleTicks > 0) this.invincibleTicks--;
+  }
+
+  /** Kéo x về cột. `range` 0 thì dính đúng cột. */
+  keepColumn(home: number, range: number, arena: Rect): void {
+    const half = this.bodySize / 2;
+    const min = Math.max(arena.x + half, home - range);
+    const max = Math.min(arena.x + arena.w - half, home + range);
+    this.x = clamp(this.x, min, max);
   }
 
   /** Xê dịch thêm trong tick này (lực hút), không đụng `prev`, vẫn kẹp trong khung. */

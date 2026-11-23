@@ -11,7 +11,7 @@
  * - Chỗ nào không khai báo thì lấy mặc định ở rhythm-feel.ts.
  */
 
-import type { GuideFigure } from "./guide";
+import type { PaperFigure } from "./paper";
 
 export type Side = "left" | "right" | "top" | "bottom";
 
@@ -87,6 +87,8 @@ export interface DistractionEvent extends EventBase {
   sprite?: string;
   speed?: number;
   radius?: number;
+  /** Treo trên sợi chỉ từ mép trên và đung đưa, thay vì bay thẳng. */
+  hang?: boolean;
 }
 
 /**
@@ -122,6 +124,20 @@ export interface SweepEvent extends EventBase {
   damage?: number;
 }
 
+/**
+ * Cặp kim kẹp một khe, trôi cùng giấy. Sinh từ hình, không viết tay.
+ * `beat` là lúc cặp kim xuất hiện (đã ở trong khung hoặc vừa chạm mép phải).
+ */
+export interface HandsEvent extends EventBase {
+  type: "hands";
+  /** Vị trí trên giấy, 0..1. */
+  x: number;
+  /** Độ cao tâm khe, 0..1. */
+  at: number;
+  /** Vòng giấy, bắt đầu từ 1. Hết vòng này thì kim biến mất. */
+  pass: number;
+}
+
 /** Đổi BPM kể từ `beat`: tức thì, hoặc tăng/giảm dần trong `overBeats` beat. */
 export interface TempoEvent {
   type: "tempo";
@@ -131,7 +147,7 @@ export interface TempoEvent {
   overBeats?: number;
 }
 
-export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent | DistractionEvent;
+export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent | DistractionEvent | HandsEvent;
 export type PatternEvent = BulletEvent | TempoEvent;
 
 export interface Pattern {
@@ -147,7 +163,7 @@ export interface Pattern {
    * Pattern không bật cờ này thì vòng chạy liền, đồng hồ không bị giữ.
    */
   gallery?: boolean;
-  /** Đốm sáng dẫn đường. Không có thì bút không chạm giấy. */
-  guide?: GuideFigure;
+  /** Tranh giấy. Không có thì bút không chạm giấy và bánh răng đi bốn hướng. */
+  paper?: PaperFigure;
   events: readonly PatternEvent[];
 }

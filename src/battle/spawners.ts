@@ -1,7 +1,7 @@
 import type { Rect } from "../core/math";
-import type { AimedEvent, BulletEvent, BurstEvent, DistractionEvent, Side, StraightEvent, SweepEvent, WordEvent } from "../data/pattern-types";
+import type { AimedEvent, BulletEvent, BurstEvent, DistractionEvent, HandsEvent, Side, StraightEvent, SweepEvent, WordEvent } from "../data/pattern-types";
 import { WORD_FEEL, wordBox, type BulletFeel } from "../data/rhythm-feel";
-import { DISTRACTION_FEEL } from "../data/sketch-feel";
+import { DISTRACTION_FEEL, PAPER_FEEL } from "../data/sketch-feel";
 import { NEGATIVE_PHRASES } from "../data/words";
 import type { BulletWorld } from "./bullets";
 
@@ -274,18 +274,53 @@ const distraction: EventHandler<DistractionEvent> = {
     return null;
   },
 
-  spawn(ctx, event, _aim, fireTime) {
+  spawn(ctx, event, _aim, fireTime, fireBeat) {
     const radius = event.radius ?? DISTRACTION_FEEL.radius;
+    const sprite = event.sprite ?? DISTRACTION_FEEL.sprite;
+    if (event.hang) {
+      const x = ctx.arena.x + event.at * ctx.arena.w;
+      ctx.world.spawnSwinger(
+        x,
+        ctx.arena.y,
+        PAPER_FEEL.threadLength,
+        PAPER_FEEL.swingAmplitude,
+        PAPER_FEEL.swingPerBeat,
+        fireBeat,
+        fireBeat + PAPER_FEEL.hangBeats,
+        radius,
+        sprite,
+      );
+      return;
+    }
     const p = edgePoint(ctx.arena, event.from, event.at, radius + SPAWN_MARGIN);
-    ctx.world.spawnDistraction(
-      p.x,
-      p.y,
-      p.inward,
-      event.speed ?? DISTRACTION_FEEL.speed,
-      radius,
-      event.sprite ?? DISTRACTION_FEEL.sprite,
+    ctx.world.spawnDistraction(p.x, p.y, p.inward, event.speed ?? DISTRACTION_FEEL.speed, radius, sprite, fireTime);
+  },
+};
+
+const hands: EventHandler<HandsEvent> = {
+  needsTelegraph: () => true,
+
+  warn(ctx, event, warnTime, fireTime, fireBeat) {
+    const y = ctx.arena.y + event.at * ctx.arena.h;
+    ctx.world.addTelegraph(
+      "box",
+      ctx.arena.x + ctx.arena.w - 6,
+      y - PAPER_FEEL.gap / 2,
+      6,
+      PAPER_FEEL.gap,
+      false,
+      warnTime,
       fireTime,
+      fireBeat,
     );
+    return null;
+  },
+
+  spawn(ctx, event, _aim, _fireTime, fireBeat) {
+    const paperX = event.x * ctx.arena.w;
+    const gapY = ctx.arena.y + event.at * ctx.arena.h;
+    const remain = event.pass * PAPER_FEEL.beatsPerPass - event.beat;
+    ctx.world.spawnClamp(paperX, gapY, fireBeat + remain, ctx.feel.damage);
   },
 };
 
@@ -312,6 +347,7 @@ const HANDLERS: { [K in BulletEvent["type"]]: EventHandler<Extract<BulletEvent, 
   sweep,
   word,
   distraction,
+  hands,
 };
 
 /** Handler của một sự kiện đạn, theo `event.type`. */

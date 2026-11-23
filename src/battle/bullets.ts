@@ -1,7 +1,8 @@
 import { circleIntersectsRect, lerp, overlaps, type Rect, segmentIntersectsBox } from "../core/math";
 import type { Renderer } from "../core/renderer";
 import { WORD_FEEL, type BulletFeel } from "../data/rhythm-feel";
-import { DISTRACTION_FEEL } from "../data/sketch-feel";
+import { DISTRACTION_FEEL, PAPER_FEEL } from "../data/sketch-feel";
+import { handTwitch } from "./paper";
 import { Pool } from "./pool";
 
 const COLOR = {
@@ -56,7 +57,7 @@ export class HandBullet {
   damage = 0;
 }
 
-/** Đạn xao nhãng: bay thẳng như đạn chấm, chạm thì không trừ máu. */
+/** Đạn xao nhãng: bay thẳng, hoặc treo trên sợi chỉ và đung đưa. Chạm thì không trừ máu. */
 export class DistractionBullet {
   x = 0;
   y = 0;
@@ -69,6 +70,28 @@ export class DistractionBullet {
   fireTime = 0;
   radius = 0;
   sprite = DISTRACTION_FEEL.sprite;
+  /** Treo từ mép trên, đung đưa theo beat. */
+  swing = false;
+  anchorX = 0;
+  anchorY = 0;
+  length = 0;
+  amplitude = 0;
+  perBeat = 0;
+  fireBeat = 0;
+  endBeat = 0;
+}
+
+/**
+ * Cặp kim kẹp một khe, trôi cùng giấy. `paperX` là vị trí trên giấy (px).
+ * X trên màn hình là hàm của beat: cột giữa + paperX − quãng giấy đã trôi.
+ */
+export class ClampBullet {
+  paperX = 0;
+  gapY = 0;
+  passEnd = 0;
+  x = 0;
+  prevX = 0;
+  damage = 0;
 }
 
 export type TelegraphShape = "box" | "line" | "ring";
@@ -119,6 +142,7 @@ export class BulletWorld {
   readonly hands: Pool<HandBullet>;
   readonly words: Pool<WordBullet>;
   readonly distractions: Pool<DistractionBullet>;
+  readonly clamps: Pool<ClampBullet>;
   readonly telegraphs: Pool<Telegraph>;
   /** Câu vừa đi hết khung mà không chạm, trong tick này. */
   readonly signals: "release"[] = [];
@@ -137,11 +161,12 @@ export class BulletWorld {
     this.hands = new Pool(32, () => new HandBullet());
     this.words = new Pool(WORD_FEEL.maxWords, () => new WordBullet());
     this.distractions = new Pool(DISTRACTION_FEEL.max, () => new DistractionBullet());
+    this.clamps = new Pool(64, () => new ClampBullet());
     this.telegraphs = new Pool(64, () => new Telegraph());
   }
 
   get activeBullets(): number {
-    return this.dots.size + this.hands.size + this.words.size + this.distractions.size;
+    return this.dots.size + this.hands.size + this.words.size + this.distractions.size + this.clamps.size;
   }
 
   /** Đưa mọi thứ đang có tới thời điểm mới, và dọn những gì đã hết hạn. Gọi mỗi tick, TRƯỚC khi sinh đạn mới. */
@@ -187,6 +212,14 @@ export class BulletWorld {
       const item = this.distractions.at(i);
       item.prevX = item.x;
       item.prevY = item.y;
+      if (item.swing) {
+        const phase = (beat - item.fireBeat) * item.perBeat;
+        item.x = item.anchorX + Math.sin(phase) * item.amplitude;
+        item.y = item.anchorY + item.length;
+        if (beat >= item.endBeat) this.distractions.release(i);
+        else i++;
+        continue;
+      }
       const age = Math.max(0, time - item.fireTime);
       item.x = item.originX + item.vx * age;
       item.y = item.originY + item.vy * age;
@@ -198,6 +231,22 @@ export class BulletWorld {
         item.y > arena.y + arena.h + margin;
       const leaving = (item.x - centerX) * item.vx + (item.y - centerY) * item.vy > 0;
       if ((outside && leaving) || age > MAX_LIFETIME_SECONDS) this.distractions.release(i);
+      else i++;
+    }
+
+    const homeX = arena.x + arena.w / 2;
+    const pass = PAPER_FEEL.beatsPerPass;
+    const into = beat >= 0 ? beat - Math.floor(beat / pass) * pass : 0;
+    const scroll = pass > 0 ? (into / pass) * arena.w : 0;
+    for (let i = 0; i < this.clamps.size; ) {
+      const clamp = this.clamps.at(i);
+      if (beat >= clamp.passEnd) {
+        this.clamps.release(i);
+        continue;
+      }
+      clamp.prevX = clamp.x;
+      clamp.x = homeX + clamp.paperX - scroll;
+      if (clamp.x < arena.x - 24) this.clamps.release(i);
       else i++;
     }
 
@@ -347,9 +396,63 @@ export class BulletWorld {
     item.fireTime = fireTime;
     item.radius = radius;
     item.sprite = sprite;
+    item.swing = false;
     const age = Math.max(0, this.time - fireTime);
     item.x = item.prevX = x + item.vx * age;
     item.y = item.prevY = y + item.vy * age;
+  }
+
+  /** Đạn xao nhãng treo trên sợi chỉ, đung đưa theo beat. */
+  spawnSwinger(
+    anchorX: number,
+    anchorY: number,
+    length: number,
+    amplitude: number,
+    perBeat: number,
+    fireBeat: number,
+    endBeat: number,
+    radius: number,
+    sprite: string,
+  ): void {
+    const item = this.distractions.acquire();
+    if (!item) {
+      this.dropped++;
+      return;
+    }
+    item.swing = true;
+    item.anchorX = anchorX;
+    item.anchorY = anchorY;
+    item.length = length;
+    item.amplitude = amplitude;
+    item.perBeat = perBeat;
+    item.fireBeat = fireBeat;
+    item.endBeat = endBeat;
+    item.radius = radius;
+    item.sprite = sprite;
+    item.vx = 0;
+    item.vy = 0;
+    const phase = (this.beat - fireBeat) * perBeat;
+    item.x = item.prevX = anchorX + Math.sin(phase) * amplitude;
+    item.y = item.prevY = anchorY + length;
+  }
+
+  /** Cặp kim gắn với một điểm trên giấy. Sống tới hết vòng giấy của nó. */
+  spawnClamp(paperX: number, gapY: number, passEnd: number, damage: number): void {
+    const clamp = this.clamps.acquire();
+    if (!clamp) {
+      this.dropped++;
+      return;
+    }
+    const { arena } = this;
+    const homeX = arena.x + arena.w / 2;
+    const pass = PAPER_FEEL.beatsPerPass;
+    const into = this.beat >= 0 ? this.beat - Math.floor(this.beat / pass) * pass : 0;
+    const scroll = pass > 0 ? (into / pass) * arena.w : 0;
+    clamp.paperX = paperX;
+    clamp.gapY = gapY;
+    clamp.passEnd = passEnd;
+    clamp.damage = damage;
+    clamp.x = clamp.prevX = homeX + paperX - scroll;
   }
 
   /** Chạm đạn xao nhãng thì lấy nó ra khỏi khung. Không trừ máu. Trả về số viên vừa chạm. */
@@ -436,7 +539,30 @@ export class BulletWorld {
       );
       if (hit) return hand.damage;
     }
+    for (let i = 0; i < this.clamps.size; i++) {
+      const clamp = this.clamps.at(i);
+      if (this.clampHits(clamp, hitbox)) return clamp.damage;
+    }
     return 0;
+  }
+
+  /** Kim trên, kim dưới, và hai chấm ở mép khe. Khe mở không tính là trúng. */
+  private clampHits(clamp: ClampBullet, hitbox: Rect): boolean {
+    const { arena } = this;
+    const twitch = handTwitch(this.beat, PAPER_FEEL.twitch);
+    const half = PAPER_FEEL.gap / 2;
+    const top = clamp.gapY - half + twitch;
+    const bottom = clamp.gapY + half + twitch;
+    const pad = PAPER_FEEL.handThickness / 2;
+    const left = hitbox.x - pad;
+    const right = hitbox.x + hitbox.w + pad;
+    const topBox = hitbox.y - pad;
+    const botBox = hitbox.y + hitbox.h + pad;
+    const upper = segmentIntersectsBox(clamp.x, arena.y, clamp.x, top, left, topBox, right, botBox);
+    const lower = segmentIntersectsBox(clamp.x, bottom, clamp.x, arena.y + arena.h, left, topBox, right, botBox);
+    if (upper || lower) return true;
+    const tip = PAPER_FEEL.tipRadius;
+    return circleIntersectsRect(clamp.x, top, tip, hitbox) || circleIntersectsRect(clamp.x, bottom, tip, hitbox);
   }
 
   /** Vẽ cảnh báo và đạn, cắt trong khung (đạn "chui" ra từ mép khung). `debug` thêm vùng va chạm thật. */
@@ -491,10 +617,28 @@ export class BulletWorld {
       }
     }
 
+    for (let i = 0; i < this.clamps.size; i++) {
+      const clamp = this.clamps.at(i);
+      const x = lerp(clamp.prevX, clamp.x, alpha);
+      const twitch = handTwitch(this.beat, PAPER_FEEL.twitch);
+      const half = PAPER_FEEL.gap / 2;
+      const top = clamp.gapY - half + twitch;
+      const bottom = clamp.gapY + half + twitch;
+      renderer.line(x, arena.y, x, top, PAPER_FEEL.handThickness, COLOR.hand);
+      renderer.line(x, bottom, x, arena.y + arena.h, PAPER_FEEL.handThickness, COLOR.hand);
+      renderer.disc(x, top, PAPER_FEEL.tipRadius, COLOR.handHub);
+      renderer.disc(x, bottom, PAPER_FEEL.tipRadius, COLOR.handHub);
+      if (debug) {
+        renderer.line(x, arena.y, x, top, 2, COLOR.debugBullet);
+        renderer.line(x, bottom, x, arena.y + arena.h, 2, COLOR.debugBullet);
+      }
+    }
+
     for (let i = 0; i < this.distractions.size; i++) {
       const item = this.distractions.at(i);
       const x = lerp(item.prevX, item.x, alpha);
       const y = lerp(item.prevY, item.y, alpha);
+      if (item.swing) renderer.line(item.anchorX, item.anchorY, x, y, 2, COLOR.handHub);
       const sprite = renderer.sprites.size(item.sprite);
       renderer.sprite(item.sprite, x - sprite.width / 2, y - sprite.height / 2);
       if (debug) renderer.ring(x, y, item.radius, COLOR.debugBullet);
