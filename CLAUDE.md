@@ -18,13 +18,15 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     (thời gian đi hết khung, thời gian đạn bay qua khung, độ khó né sát) giữ nguyên.
   - Bước (3a): lời tiêu cực của cư dân 3 trong pha né đạn. Hệ số nhịp là lớp chung (`TempoMap.setPace`); đạn
     `word` không trừ máu. `main.ts` chọn pattern chơi thử qua hằng `PLAYTEST_PATTERN`.
-- **Bước (3b) đã xong và đã push:** nét vẽ của cô bé trong pha né đạn, chốt ở trống giấy (vòng 3).
-  `PLAYTEST_PATTERN` vẫn là `RESIDENT4_PATTERN`.
-  - Cơ chế đèn dẫn (vòng 2, commit `a0c7eeb`) đã bỏ, thay bằng trống giấy.
-- **Bước (3c) đã commit và push, chưa chơi thử:** pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK`.
-  `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
-- **Bước tiếp theo: (4)**, vertical slice một cư dân hoàn chỉnh, gồm ghép pha né với pha tháo lắp.
-  Hết máu vẫn chỉ reset (chưa có màn thua). Máy trạng thái cảnh là bước 5.
+  - Bước (3b) vòng 1–3: nét chì, đạn xao nhãng, rồi trống giấy (commit `3a1614b`). Cơ chế đèn dẫn (vòng 2, commit
+    `a0c7eeb`) đã bỏ, thay bằng trống giấy. **Trống giấy cũng sẽ bị thay** (xem dưới).
+  - Bước (3c): pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK` (commit `f918942`). Chưa chơi thử.
+    `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
+- **Phiên thiết kế 2026-11-24 (chỉ tài liệu, không code):** thiết kế lại cư dân 4 thành **"Nhặt bút"** (mục cư dân 4),
+  chốt mọi quyết định còn mở (cấu trúc trận, thua, màn bắt đầu/mở đầu/kết, thị trấn, hội thoại, cư dân 1–3 và boss,
+  lưu tiến trình, font VT323, phím nhảy cóc), và tạo `AUTOPILOT.md` với kế hoạch từng mốc.
+- **Bước tiếp theo:** mốc 3b.1 trong `AUTOPILOT.md` (xóa trống giấy, chuẩn bị "Nhặt bút"). Code hiện tại vẫn là trống
+  giấy; hết máu vẫn chỉ reset (chưa có màn thua).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -42,6 +44,8 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
 - Không tự bật `npm run dev`, `npx wrangler dev` hay tiến trình nền nào; chủ dự án tự chạy trong terminal của họ.
 - Được tự chạy: `npm run build`, `npm test`.
 - Gặp quyết định thiết kế chưa có trong file này: hỏi, không tự chốt.
+- **Ngoại lệ:** trong lượt chạy tự động theo `AUTOPILOT.md`, file đó có hiệu lực cao hơn mục này (làm liên tục,
+  commit và push sau mỗi mốc, tự quyết và ghi vào `DECISIONS.md`).
 - Kết thúc mỗi bước: build sạch, `npm test` xanh, hướng dẫn chạy thử, danh sách con số nên chỉnh (file + tên hằng),
   cập nhật "Trạng thái hiện tại".
 - Trả lời chủ dự án bằng tiếng Việt.
@@ -61,7 +65,7 @@ Mỗi trận xen kẽ hai pha:
 - Tổng thời gian chơi khoảng **20–25 phút**; người chơi chậm (đọc kỹ, thua nhiều) khoảng **30 phút**.
 - Phân bổ dự kiến:
   - Mở đầu ~2 phút.
-  - 4 cư dân + 1 boss, mỗi trận ~3 phút.
+  - 4 cư dân + 1 boss, mỗi trận ~2,5–3 phút (chi tiết ở "Cấu trúc một trận").
   - Đi lại trong thị trấn và hội thoại giữa các trận ~1–2 phút mỗi lần.
   - Kết thúc ~2 phút.
 - Thị trấn là một khu nhỏ có thể đi lại, có những chỗ để dừng lại ngắm cảnh. Những khoảng lặng này là một
@@ -72,57 +76,317 @@ Mỗi trận xen kẽ hai pha:
   - Không cày cuốc, không câu giờ.
 - **Tự động lưu tiến trình sau mỗi cư dân** (localStorage), để người chơi dừng giữa chừng và quay lại được.
 
+## Cấu trúc một trận
+
+*(Chốt ở phiên thiết kế 2026-11-24. Áp dụng cho mọi cư dân và boss.)*
+
+- **Một trận = 3 lượt.** Mỗi lượt là một pha né rồi một pha tháo: né 1 → tháo tầng 1 → né 2 → tháo tầng 2 → né 3 →
+  tháo tầng 3 (tầng 3 chứa `core`). Tháo xong `core` và đọc xong câu ký ức của nó thì trận kết thúc.
+- **Trình tự đầy đủ:** hội thoại mở trận (ở thị trấn, cạnh cư dân) → 3 lượt → hội thoại khép trận (trong cảnh trận,
+  nền tối) → cảnh kết của cư dân (ở thị trấn, ~10 giây, không bắt buộc có chữ) → tự động lưu → người chơi đi tiếp.
+- **Độ dài mục tiêu:** mỗi pha né 25–30 giây trên tempo kịch bản, mỗi pha tháo 3–4 bộ phận (~15 giây), hội thoại mở +
+  khép ≤ 30 giây đọc thường. Cộng lại ~2,5 phút một trận. Tổng game: mở đầu 2 + 5 trận × 2,5 + đi lại 4 × 1,5 + kết 2
+  ≈ 22,5 phút; người chậm ~30 phút.
+- **Pha né kết thúc thế nào** (`Pattern.finish`, mục "Định dạng pattern"):
+  - `length` (mặc định, cư dân 1, 2, 3): `loop: false`, xong khi beat nghe được ≥ `lengthBeats`. Đạn còn lại mờ đi
+    trong `FLOW_FEEL.clearSeconds` và không trừ máu. Tác giả pattern để trống 2 beat cuối.
+  - `page` (cư dân 4): `loop: true`, xong khi đã vẽ đủ `drawBeats` beat (xem cư dân 4).
+  - `exit` (boss): `loop: true`, xong khi bánh răng bước ra khỏi khung qua khe cửa (xem boss).
+- **Máu:** đầy lại ở đầu mỗi pha né. Máu tối đa giữ `PLAYER_FEEL.maxHp` (20).
+- **Chuyển cảnh:** mờ đen `FLOW_FEEL.fadeSeconds` (0,4 giây) giữa mọi cảnh và giữa các pha. Đồng hồ nhịp của pha mới
+  dựng sau khi mờ xong (dạo đầu `leadInSeconds` như hiện nay). Không có tiếng tích tắc trong lúc mờ.
+- **Pha tháo theo tầng:** xem mục "Pha tháo lắp", phần "Tầng".
+
+### Thua
+
+- Chỉ thua được ở pha né, khi máu về 0. Pha tháo không thua được.
+- Màn thua: khung và đạn dừng hình, bánh răng nứt (sprite `gear-cracked`), mọi thứ mờ về đen trong
+  `FLOW_FEEL.fadeSeconds`, giữa màn hiện một dòng **"Chưa muộn."** (cỡ 24, màu `#d8c9a3`) trong
+  `FLOW_FEEL.loseHoldSeconds` (1,2 giây). Confirm bỏ qua phần giữ. Không có lựa chọn, không có "thoát".
+- Rồi **chơi lại đúng pha né vừa thua, từ beat 0**, máu đầy, cùng pattern. Không chơi lại pha tháo trước đó, không
+  chơi lại lượt trước. Số lần thua không được đếm hay hiện ở đâu.
+- Ngoại lệ của cư dân 4: tranh (mọi nét) và số beat đã vẽ của lượt hiện tại **giữ nguyên** khi thua; bút về chỗ
+  đặt ban đầu, chưa cầm. Lý do: mọi nét đều được tính, kể cả nét vẽ trước khi ngã.
+- Ngoại lệ của boss: thua là "vòng lặp quay lại từ đầu", cùng màn "Chưa muộn."; số vòng đã qua (dùng để mở rộng khe
+  cửa) **không** đặt lại.
+- Code: `DodgePhase.outcome` là `"playing" | "won" | "lost"`. `BattleScene` đọc và quyết định; pha không tự dựng lại
+  chính nó.
+
+### Màn bắt đầu
+
+- `TitleScene` (thay `PressStartScene`, giữ cách chờ `audio.ready`): bánh răng, chữ "Still Hours", dòng nhấp nháy
+  "Nhấn phím bất kỳ để bắt đầu". Phím đầu tiên mở khóa âm thanh.
+- Sau đó: không có bản lưu → vào thẳng màn mở đầu. Có bản lưu → menu hai dòng **"Tiếp tục"** / **"Bắt đầu lại"**
+  (lên/xuống, confirm). "Bắt đầu lại" hỏi thêm một dòng "Xóa tiến trình cũ? Z: có · X: không".
+- Dòng gợi ý phím ở dưới (giữ như hiện nay): di chuyển, Shift, Z, X giữ để tua chữ, M, F1.
+
+### Màn mở đầu (~2 phút)
+
+1. **Cảnh mở (≈40 giây, `IntroScene`)**: nền đen, vài hình placeholder đơn giản (mặt đồng hồ, mái nhà). Tiếng tích tắc
+   chạy rồi dừng hẳn ở dòng 2. Hội thoại dẫn chuyện (`DIALOGUES.introOpening`), người dẫn không tên:
+   - "Thị trấn có một trăm hai mươi bảy chiếc đồng hồ."
+   - "Một buổi chiều, tất cả cùng dừng ở bốn giờ mười bảy phút."
+   - "Người ta vẫn đứng đó. Giữa câu nói. Giữa bước chân."
+   - "Chỉ còn một người thợ sửa đồng hồ."
+2. **Tiệm đồng hồ (≈60–80 giây, trong `TownScene`)**: người chơi bắt đầu trong tiệm ở đầu tây thị trấn. Trên bàn có tờ
+   giấy (đọc bằng Z): "Đồng hồ nào cũng mở ra được." Đây là lần duy nhất dạy cách tương tác; không có hướng dẫn chữ
+   khác. Đi ra cửa, đi tới cư dân 1.
+3. Xong cảnh mở thì lưu `seenIntro: true`. Lần sau "Tiếp tục" không chiếu lại.
+
+### Màn kết (~2 phút, `EndingScene`)
+
+1. Sau hội thoại khép trận của boss: camera thị trấn tự trôi chậm từ tháp đồng hồ về phía tây (~40 giây, không điều
+   khiển). Tiếng tích tắc trở lại, lớp chồng lớp khi đi ngang từng cư dân. Mỗi cư dân đang làm việc nhỏ của cảnh kết
+   riêng (gọi điện, ngẩng nhìn trời, ngân nga, cầm bút). Không chữ.
+2. Mờ đen. Giữa màn, cỡ 24: tổng thời gian chơi, dạng **"22 phút 41 giây"** (từ 60 phút trở lên: "1 giờ 3 phút").
+   2 giây sau, dòng dưới, cỡ 20: **"Vẫn chưa muộn."** Giữ tới khi người chơi bấm confirm (ít nhất 4 giây).
+3. Danh sách công trạng ngắn (tên game, font và giấy phép theo `CREDITS.md`), tự cuộn ~20 giây, confirm bỏ qua.
+4. Xóa bản lưu, về `TitleScene`.
+- Thời gian chơi: cộng số tick của mọi cảnh (1/60 giây mỗi tick), kể cả lúc đọc hội thoại và lúc ngắm cảnh; không tính
+  lúc tab ẩn (vòng lặp dừng). Lưu trong `SaveData.playSeconds`.
+
 ## Nhân vật
 
-1. **Cư dân lỡ hẹn với gia đình.** Tích tắc dồn dập khi né; pha tháo lắp chậm và êm. Mảnh ký ức là những bữa
-   cơm, cuộc gọi bị bỏ lỡ.
-2. **Cư dân cả đời chưa ngẩng đầu nhìn quanh.** Đứng yên vài giây thì cảnh đẹp hiện ra và đạn chậm lại.
-3. **Cư dân bị lời người khác ám ảnh.** Đạn là những câu nói tiêu cực; đỡ trúng thì nhịp tích tắc của người
-   chơi bị chậm lại (mất thời gian vì điều không đáng). Lời tiêu cực **không trừ máu**; cái giá là thời gian.
-   Ghi chú khi chơi thử: nhịp chậm thì đạn sinh thưa hơn, trận dễ hơn nhưng dài hơn; để ý người chơi có cố tình
-   ăn đạn không. Kể cả bị trúng liên tục, trận không dài quá ~1,25 lần độ dài kịch bản. Sàn 0,8 và mỗi nấc 0,1
-   (`PACE_FEEL`) chọn theo ràng buộc đó. Câu tạm (2–5 chữ) nằm ở `data/words.ts`; câu thật viết sau.
-   - Cần kiểm lại ở bước 4: sàn 0,8 (tối đa 100 → 80 BPM) có đủ để nghe ra nhịp kéo lê không. Nếu không, đổi
-     ràng buộc: người ăn khoảng một nửa số câu thì trận ≤ 1,25 lần; người ăn hết thì ≤ ~1,6 lần (sàn ~0,62).
-   - `RESIDENT3_PATTERN` chỉ toàn chữ nên không có áp lực ngoài thời gian. Cân nhắc ở bước 4: thêm đạn thường,
-     hoặc một mặt đồng hồ nhỏ trong khung có kim tụt lại sau nhịp kịch bản mỗi khi ôm một câu.
-4. **Cô bé yêu thích vẽ nhưng chưa đạt được ước mơ**, giờ phải học trái ngành, nản vì thấy mình chưa làm được
-   gì, rồi lại để thời gian trôi vào những việc khác.
-   - Cơ chế: đường di chuyển của người chơi khi né đạn **để lại nét chì**; cuối trận các nét ghép thành một bức
-     tranh ("mỗi bước nhỏ đều thành một nét vẽ").
-   - Đạn là những thứ xao nhãng, trông hấp dẫn và dễ bị hút vào; chạm vào thì **bị tẩy mất nét vẽ**. Đạn xao nhãng
-     **không trừ máu**; cái giá là mất nét vẽ. Lực hút `DISTRACTION_FEEL.pull` (mặc định 24 px/giây, 0 = tắt)
-     kéo **bánh răng về phía đạn**.
-   - Bức tranh cuối trận không cần hoàn hảo hay hoàn chỉnh, chỉ cần **có**.
-   - Kết: cô bé cầm bút chì lên.
-   - **Trống giấy**, pha né của cư dân này. Lúc chơi chỉ có đuôi nét (`tailSeconds`). Khúc tẩy lóe lúc chơi;
-     vết tẩy mờ (`erasedAlpha`) chỉ lúc lộ tranh. Tẩy ngược từ nét mới nhất. Đồng hồ bị giữ suốt lúc lộ tranh.
-     Ngòi bút mặc định chỉ đi lên xuống (`PAPER_FEEL.horizontalRange`, 0 = khóa cột giữa). Tốc độ và Shift giữ như cũ.
-     Giấy rộng bằng khung, trôi sang trái và quay vòng. Mỗi vòng dài `beatsPerPass` beat; vị trí giấy là hàm của beat
-     nghe được nên chậm theo hệ số nhịp. Hết các vòng của hình thì chỉ số vòng quay lại từ 1, để vòng pattern sau
-     vẫn vẽ được. Tọa độ trên giấy dưới ngòi = (x bánh răng − cột giữa) + quãng giấy đã trôi trong vòng hiện tại.
-     Hình là dữ liệu (`PaperFigure`): danh sách nét, mỗi nét là đường gấp khúc có x tăng dần (tỉ lệ 0..1 của khung)
-     và chỉ số vòng. Bút chạm giấy khi điểm dưới ngòi nằm trong một nét của vòng hiện tại (`penRadius`); ngoài ra
-     bút nhấc, không nối qua khoảng trống, không trừ máu. Nét lưu là đường thật, không nắn theo hình mẫu.
-     Đạn `hands`: cặp kim, một từ mép trên chĩa xuống, một từ mép dưới chĩa lên, hai đầu kẹp một khe; trôi cùng giấy;
-     giật nhẹ mỗi beat (`twitch`); trừ máu. Pattern sinh các cặp từ hình (mỗi `handSpacing` px trên nét, khe đúng độ
-     cao nét), không viết tay. Đạn xao nhãng treo sợi chỉ từ mép trên và đung đưa, vẫn hút và vẫn tẩy. Đạn thường
-     khép dải trên và dải dưới.
-     Lộ tranh: làm mờ khung và đạn, tua lại đúng thứ tự vẽ (các vòng hiện lần lượt), nét dày như sáp màu
-     (`crayonWidth`, `crayonColor`), rồi giữ tranh (`replaySeconds`, `revealSeconds`). Không hiện hình mẫu.
-     Kiểm lúc tạo hình, trên tempo kịch bản: x của mỗi nét tăng dần; các nét cùng vòng không chồng khoảng x; người
-     chơi kịp đi giữa hai khe liên tiếp và giữa hai nét liên tiếp. Hệ số nhịp chỉ làm dễ hơn.
-     Hình thử `CHILD_DRAWING`: ngôi nhà, mặt trời, hai người nắm tay. Vòng 1 viền trên, vòng 2 viền dưới, vòng 3
-     cửa và thân tam giác, vòng 4 tay nắm nhau.
-   - Ghi chú khi chơi thử: chủ dự án chơi bản trống giấy và ưng, chốt cơ chế này. Ba ý dưới đây chưa được người
-     chơi nói riêng; sửa trước khi coi là cảm nhận đã chốt. Tranh lúc lộ có nhận ra ngay ngôi nhà, mặt trời và hai
-     người hay không: chưa ghi. Đứng trong khe có bị nhói (kim giật chạm hitbox) hay không: chưa ghi; bot đứng giữa
-     khe 36 px thì không trúng. Độ khó một vòng ~34 giây: chưa ghi.
-5. **Boss: người thợ đồng hồ đã phí cả đời.** Không cần thắng, chỉ cần bước ra khỏi vòng lặp.
+*(Chốt ở phiên thiết kế 2026-11-24. Câu thoại và câu ký ức dưới đây là bản nháp đã chốt để dùng; chủ dự án có thể sửa
+chữ sau mà không đổi cơ chế. Câu ký ức ≤ 40 ký tự, câu thoại ≤ 2 dòng hộp thoại.)*
+
+Thứ tự gặp trong thị trấn cố định: 1 → 2 → 3 → 4 → boss (lý do ở mục "Thị trấn"). Mỗi cư dân có id dữ liệu `r1`…`r4`,
+boss là `boss`. Dữ liệu của mỗi người nằm ở `src/data/residents/<id>.ts` (kiểu `ResidentData`, mục "Dữ liệu cư dân").
+
+### 1. Bác Hòa, người lỡ hẹn với gia đình (`r1`)
+
+- **Khoảnh khắc bị kẹt:** đứng trước cửa cơ quan lúc bảy giờ tối, cặp trong tay, điện thoại sáng màn hình: "Thêm
+  một tiếng nữa thôi."
+- **Pha né: tích tắc dồn dập.** BPM cao và tăng dần trong lượt (sự kiện `tempo`), đạn `straight` thành chuỗi theo từng
+  beat xen hai bên, `aimed` 3 viên mỗi 4 beat, lượt 3 thêm `sweep`. Không có cơ chế riêng nào khác: cái khó là nhịp
+  dồn. `finish: length`.
+  - Lượt 1: 120 → 144 BPM trong 32 beat đầu, dài 60 beat (~27 giây).
+  - Lượt 2: 132 → 160 BPM, 64 beat.
+  - Lượt 3: 144 → 176 BPM, 68 beat, có 2 `sweep` (kim đồng hồ quay `degreesPerBeat` 30).
+- **Pha tháo: đồng hồ quả quýt (`POCKET_WATCH`), chậm và êm.** `rhythmic: false`, `bpm` 60. Phần lớn là `lift` và
+  `unhook`; không có `unscrew` (đỡ phải bấm nhiều). Tầng 1: nắp sau, vòng đệm. Tầng 2: mặt số, kim. Tầng 3: dây cót,
+  bánh lắc (`core`).
+- **Mảnh ký ức:** "Mâm cơm để phần, đã nguội." · "Ba cuộc gọi nhỡ. Con gái." · "Bánh sinh nhật chưa cắt." · core:
+  "Con hỏi: mai ba có về không?"
+- **Kết:** bác bấm số. Tiếng chuông chờ đổ (cue `ring`, procedural, 3 hồi). Mờ trước khi biết có ai nghe máy.
+- Hội thoại mở: "Thêm một tiếng nữa thôi. Rồi về." Khép: "...Mấy giờ rồi nhỉ."
+
+### 2. Chú Minh, người cả đời chưa ngẩng đầu nhìn quanh (`r2`)
+
+- **Khoảnh khắc bị kẹt:** người đưa thư cúi đầu đi vội trên cầu, mắt dán xuống đồng hồ đeo tay.
+- **Pha né: đứng yên thì thế giới hiện ra.** Pattern đặt `still` (mục "Định dạng pattern").
+  - "Đứng yên" = không có input di chuyển và bánh răng không bị kéo quá 0,5 px trong tick, liên tục
+    `STILL_FEEL.stillSeconds` (1,0 giây nghe được).
+  - Khi đủ: `setPace(beat nguyên kế tiếp, STILL_FEEL.pace)` với `pace` 0,75; cảnh nền (dữ liệu `Backdrop`: bầu trời,
+    mây, cánh chim, vẽ bằng hình khối) hiện dần sau đạn trong `STILL_FEEL.fadeInSeconds` (1,0 giây).
+  - Di chuyển lại: `setPace(beat nguyên kế tiếp, 1)`, cảnh nền tắt trong `STILL_FEEL.fadeOutSeconds` (0,3 giây).
+  - Ràng buộc: trận dài nhất 1 / 0,75 ≈ 1,33 lần kịch bản. Pattern có `aimed` mỗi 8 beat, nên không đứng yên mãi được.
+    Pattern có `still` không được có đạn `word` (hai nguồn cùng gọi `setPace`); `validatePattern` từ chối.
+  - Lớp chung, đặt ở `battle/stillness.ts` (lớp `Stillness`, cùng kiểu với `Pace`). Boss dùng lại.
+  - `finish: length`. Ba lượt, 100 BPM, 52 / 56 / 60 beat. Cảnh nền mỗi lượt một hình: hoàng hôn, mây, đàn chim.
+- **Pha tháo: đồng hồ bấm giờ (`STOPWATCH`).** `rhythmic: true`, `bpm` 96. Có `unscrew`.
+- **Mảnh ký ức:** "Con diều mắc trên dây điện." · "Mùa hoa sữa, năm nào cũng vội." · "Con mèo chờ ở bậc cửa." · core:
+  "Bầu trời hôm ấy rất xanh."
+- **Kết:** chú dừng lại, ngẩng đầu (sprite đổi sang `r2-up`). Ô trời phía trên chỗ chú có màu.
+- Hội thoại mở: "Trễ rồi, trễ rồi." Khép: "Ở đây... có cây phượng này từ bao giờ?"
+
+### 3. Chị Vân, người bị lời người khác ám ảnh (`r3`)
+
+- **Khoảnh khắc bị kẹt:** ngồi một mình trên ghế đá ở quảng trường, cạnh bảng tin dán kín giấy. Từng là người hát.
+- **Pha né: lời tiêu cực làm chậm nhịp** (đã có từ bước 3a). Lời **không trừ máu**; cái giá là thời gian.
+- **Chốt các điểm còn mở:**
+  - **Sàn nhịp đổi từ 0,8 thành 0,7** (`PACE_FEEL.floor`). Lý do: 100 → 80 BPM nghe ra chậm nhưng chưa ra "kéo lê";
+    70 BPM thì rõ. Ràng buộc mới: ôm hết mọi câu thì lượt dài tối đa 1 / 0,7 ≈ 1,43 lần kịch bản (lượt 26 giây
+    thành ~37 giây); ôm khoảng một nửa thì ≤ ~1,2 lần vì hồi ở mỗi câu đi qua. `drop` 0,1 và `recover` 0,1 giữ nguyên.
+  - **Không còn chỉ toàn chữ:** mỗi lượt có thêm đạn thường trừ máu (`straight`, `aimed`) khoảng mỗi 4 beat, thưa hơn
+    chữ, đặt sao cho né đạn đôi khi buộc phải chọn giữa né chữ và né đạn.
+  - **Có mặt đồng hồ trễ:** một mặt đồng hồ nhỏ (bán kính 14 px) ngay ngoài góc phải trên của khung. Kim mờ chỉ giờ
+    thật đã trôi (`clock.time`), kim sáng chỉ giờ kịch bản của beat đang nghe (`tempo.scriptTimeAtBeat(beat)`). Một
+    vòng = 60 giây. Ôm câu thì kim sáng tụt lại sau kim mờ. Không chữ, không số. Bật bằng `Pattern.lagClock: true`.
+- `finish: length`. Ba lượt, 100 BPM, 48 / 52 / 56 beat (kịch bản).
+- **Pha tháo: máy đếm nhịp (`METRONOME`).** `rhythmic: true`, `bpm` 88.
+- **Mảnh ký ức:** "Sân khấu trường, tràng vỗ tay đầu tiên." · "Cây đàn trên nóc tủ." · "Bài hát viết dở." · core:
+  "Giọng mình. Lâu rồi không nghe."
+- **Kết:** chị ngân nga khẽ: cue `hum` (4 nốt sin mềm, procedural). Không chữ.
+- Hội thoại mở: "Họ nói đúng mà." Khép: "Mình hát... dở lắm. Nhưng mình thích hát."
+- Câu của đạn chữ (thay câu tạm trong `data/words.ts`, 2–5 chữ): "hát gì mà hát", "ai thèm nghe", "lo học đi",
+  "mơ mộng hão", "để người khác lo", "biết thân biết phận", "chẳng ra gì", "phí thời gian".
+
+### 4. Linh, cô bé yêu vẽ (`r4`)
+
+- **Khoảnh khắc bị kẹt:** ngồi ở bàn học cạnh cửa sổ, sách chuyên ngành mở, tập vẽ gập lại, điện thoại sáng. Yêu vẽ
+  nhưng chưa thành, giờ học trái ngành, thấy mình chưa làm được gì, rồi để thời gian trôi vào việc khác.
+- **Thông điệp phải giữ:** *Cứ vẽ đi. Đừng quan tâm xấu hay đẹp. Quan trọng là cầm bút lên và làm.*
+
+#### Cơ chế đã chọn: "Nhặt bút"
+
+Khung né là một tờ giấy. Một cây bút chì nằm trên giấy. Bánh răng chạm vào bút thì cầm bút; từ lúc đó **mọi bước
+đi đều để lại nét chì**, không có hình mẫu, không chấm điểm. Chạm vào thứ xao nhãng thì **đánh rơi bút**: bút văng ra
+một quãng, phải đi nhặt lại. Một mặt đồng hồ nhỏ của cô bé **chỉ chạy khi đang vẽ**. Đủ một vòng thì trang xong.
+
+1. **Bút nằm yên.** Đầu mỗi lượt, bút nằm ở `Pattern.pencil` (tỉ lệ 0..1 của khung), bánh răng ở giữa khung, chưa cầm.
+   Bút lóe sáng mỗi `DRAW_FEEL.glintEveryBeats` beat (4) để người chơi để ý. Không có chữ hướng dẫn. Không tự cầm.
+2. **Cầm bút.** Tâm bánh răng cách tâm bút ≤ `DRAW_FEEL.pickupRadius` (14 px) thì cầm (cue `pencilUp`). Sau khi rơi,
+   phải chờ `DRAW_FEEL.pickupDelaySeconds` (0,3 giây) mới nhặt lại được, để không nhặt ngay tại chỗ va.
+3. **Vẽ.** Khi cầm bút, `Sketch.sample(x, y, slow)` mỗi tick như bản vòng 1: đứng yên không sinh đoạn, Shift cho nét
+   đậm và mịn (`SKETCH_FEEL.slowWidth`, `slowSampleDistance`). Nét lưu là đường thật trong toạ độ màn hình. Mọi nét
+   hiện suốt lúc chơi, màu chì `SKETCH_FEEL.color` với độ đậm `DRAW_FEEL.liveInkAlpha` (0,45), vẽ dưới đạn. Tối đa
+   `DRAW_FEEL.maxSegments` (6000) đoạn; quá thì thôi ghi nét nhưng vẫn tính tiến độ.
+4. **Đồng hồ của cô bé.** Mặt đồng hồ bán kính 14 px ngay ngoài góc phải trên của khung. Mỗi tick, nếu đang cầm bút
+   **và** bánh răng đã dịch ít nhất 0,5 px trong tick, cộng `beat − beatTickTrước` (beat nghe được) vào `drawnBeats`.
+   Kim chỉ `drawnBeats / drawBeats` × 360°. Mỗi lần qua một beat nguyên đã vẽ thì kim nhích (cue `drawTick`, rất nhỏ).
+   Thế giới vẫn tích tắc đều; chỉ kim của cô bé đứng khi không vẽ. Đó là chỗ người chơi *thấy* thời gian trôi qua
+   khi không làm.
+5. **Xao nhãng.** Đạn `distraction` giữ lực hút `DISTRACTION_FEEL.pull` (24 px/giây) và kiểu treo đung đưa (`hang`).
+   Chỉ khi **đang cầm bút** thì chạm mới có tác dụng: bút rơi (cue `pencilDrop`), `Sketch.lift()`, bút văng
+   `DRAW_FEEL.dropDistance` (56 px) theo hướng từ tâm đạn về tâm bánh răng, kẹp trong khung cách mép
+   `DRAW_FEEL.dropMargin` (20 px), đạn biến mất. Không cầm bút thì đạn bay xuyên qua (vẫn hút). **Không trừ máu, không
+   tẩy nét.**
+6. **Đạn thường** (`straight`, `aimed`, `burst`, `sweep`) trừ máu như mọi pha né. Bị trúng không làm rơi bút: đau
+   không làm cô dừng, xao nhãng mới làm.
+7. **Câu tự nhủ.** Nếu sau một vòng pattern trọn vẹn mà chưa từng cầm bút trong lượt, hiện một câu nhỏ (cỡ 16, màu
+   `#8a7f68`) ngay trên khung trong 3 giây, lấy lần lượt từ `R4_IDLE_LINES`: "Mai vẽ cũng được." · "Giờ vẽ thì muộn
+   rồi." · "Vẽ cũng chẳng đẹp." Đó là giọng trì hoãn của cô, không phải lời khuyên. Không lặp quá 3 câu mỗi lượt.
+8. **Trang xong.** `drawnBeats ≥ finish.drawBeats` → pha thắng: thôi sinh đạn, hủy tiếng đã hẹn, khung và đạn mờ đi
+   (`veil`, như hiện nay), **tua lại nét của lượt này** theo đúng thứ tự vẽ bằng nét sáp (`SKETCH_FEEL.crayonWidth`,
+   `crayonColor`) trong `SKETCH_FEEL.replaySeconds` (2,8 giây), nét các lượt trước hiện sẵn bằng sáp, rồi giữ tranh
+   `SKETCH_FEEL.revealSeconds` (3,5 giây). Không viền, không điểm, không lời nhận xét. Rồi `outcome = "won"`.
+9. **Một tờ giấy cho cả trận.** Ba lượt vẽ tiếp trên cùng một trang (`PageState`, do `BattleScene` giữ). Thua giữ
+   nguyên trang (mục "Thua").
+10. **Kết.** Hội thoại khép trận xong, cảnh kết ở bàn học: tờ giấy trên bàn hiện **chính tranh người chơi vừa vẽ**
+    (thu nhỏ vào khung 160×64), cô bé cầm cây bút chì lên (sprite `r4-pencil`, nhấc bút lên 6 px trong 0,5 giây). Không
+    chữ. Tranh được giản lược và lưu vào `SaveData.drawing`; sau đó treo trên tường nhà cô trong thị trấn.
+
+**Vì sao cơ chế này truyền đúng thông điệp**
+
+- *Cứ vẽ đi:* thứ duy nhất làm trang đầy là thời gian thật sự cầm bút và đi. Vẽ gì cũng được, nguệch ngoạc cũng được.
+- *Đừng quan tâm xấu hay đẹp:* không có hình mẫu, không có vùng "đúng", không đo độ giống, không điểm. Nét xấu và nét
+  đẹp làm kim chạy như nhau. Tranh cuối được tua lại và giữ trang trọng như mọi bức tranh.
+- *Cầm bút lên và làm:* hành động đầu tiên của mỗi lượt là đi tới và cầm bút. Chưa cầm thì kim đứng, thế giới vẫn
+  tích tắc. Cái cản là **không bắt đầu**.
+- *Bỏ dở vì xao nhãng:* xao nhãng không xóa những gì đã làm, nó làm cô **buông bút**. Cái giá là quãng phải quay lại
+  nhặt và quãng kim đứng yên. Bắt đầu lại luôn chỉ cách vài bước chân, đúng thông điệp chung "vẫn chưa muộn để bắt
+  đầu lại".
+- *Kết:* cô bé cầm bút chì lên chính là hành động người chơi đã làm suốt trận.
+
+**Phương án đã cân nhắc và bỏ**
+
+1. *Giữ trống giấy (vòng 3), bỏ chặn bút theo hình mẫu.* Bút luôn chạm giấy, giấy trôi, bánh răng khóa cột giữa. Bỏ
+   vì: khóa một chiều thì tranh chỉ còn là đường đồ thị nhấp nhô, không phải bức vẽ; cặp kim được sinh từ hình mẫu nên
+   bỏ hình mẫu là mất luôn đạn chính; và bản chất "đi theo nét có sẵn" là chấm điểm trá hình.
+2. *Giữ phím confirm để hạ bút.* Cầm bút = giữ Z trong lúc né. Bỏ vì: bắt người chơi giữ thêm một phím suốt pha né là
+   gánh nặng tay; "không bắt đầu" thành việc quên giữ phím chứ không phải một lựa chọn nhìn thấy được; xao nhãng không
+   có cách thể hiện "buông bút" rõ ràng.
+3. *Đã thử trước đó và bỏ:* tẩy nét khi chạm xao nhãng (vòng 1–3) và đèn dẫn (vòng 2). Tẩy nói rằng công sức đã làm
+   bị mất, trái với "mọi nét đều được tính"; đèn dẫn và trống giấy đều là hình mẫu đúng.
+
+**Pattern dự kiến** (3 file, `src/data/patterns/resident-4.ts` xuất `R4_ROUNDS`; mọi lượt `loop: true`,
+`finish: { kind: "page", drawBeats }`, vòng 32 beat; vị trí là tỉ lệ 0..1)
+
+- **Lượt 1** (`bpm` 100, `pencil` {x 0,25, y 0,5}, `drawBeats` 32; ước ~26 giây nếu vẽ ~75% thời gian):
+
+  | beat | sự kiện |
+  | ---- | ------- |
+  | 2    | `distraction` từ `top`, `at` 0,7, `hang` |
+  | 6    | `distraction` từ `right`, `at` 0,3 |
+  | 8    | `straight` từ `left` `at` 0,2 và từ `left` `at` 0,8 |
+  | 10   | `distraction` từ `right`, `at` 0,65 |
+  | 12   | `aimed` từ `top`, `at` 0,5, `count` 1 |
+  | 14   | `straight` từ `right`, `at` 0,5, `count` 3, `spacing` 24 |
+  | 16   | `distraction` từ `top`, `at` 0,3, `hang` |
+  | 18   | `aimed` từ `bottom`, `at` 0,3, `count` 2, `spreadDeg` 20 |
+  | 20   | `straight` từ `top` `at` 0,15 và từ `top` `at` 0,85 |
+  | 22   | `distraction` từ `left`, `at` 0,4 |
+  | 24   | `burst` `x` 0,5 `y` 0,5, `count` 8 |
+  | 26   | `aimed` từ `right`, `at` 0,5, `count` 3, `spreadDeg` 16 |
+  | 28   | `distraction` từ `top`, `at` 0,55, `hang` |
+  | 30   | `straight` từ `left`, `at` 0,5, `count` 2, `spacing` 32 |
+
+  8 beat đầu không có đạn trừ máu: chỗ để người chơi nhận ra cây bút.
+- **Lượt 2** (`bpm` 104, `pencil` {0,75, 0,3}, `drawBeats` 32): khung như lượt 1 nhưng 6 `distraction` mỗi vòng (beat 2,
+  7, 12, 17, 22, 27; xen `hang` và bay ngang), đạn thường mỗi 2 beat từ beat 4, thêm `aimed` `count` 3 ở beat 15 và 31.
+- **Lượt 3** (`bpm` 108, `pencil` {0,5, 0,8}, `drawBeats` 36): 6 `distraction`, đạn thường mỗi 2 beat, một `sweep` ở beat
+  16 (`x` 0,5, `y` 0,5, `length` 70, `degreesPerBeat` 30, `durationBeats` 8) để giữa khung thành vùng phải vòng quanh.
+- Không đặt `distraction` hay đạn trong bán kính 40 px quanh chỗ bút nằm trong 4 beat đầu của vòng.
+
+**Con số cảm giác** (mới: `DRAW_FEEL` trong `src/data/sketch-feel.ts`)
+
+| Muốn… | Chỉnh |
+| ----- | ----- |
+| Nhặt bút dễ/khó | `DRAW_FEEL.pickupRadius` (14) |
+| Chờ bao lâu mới nhặt lại được | `DRAW_FEEL.pickupDelaySeconds` (0,3) |
+| Bút văng xa bao nhiêu khi rơi | `DRAW_FEEL.dropDistance` (56), `dropMargin` (20) |
+| Bút lóe sáng thưa/dày | `DRAW_FEEL.glintEveryBeats` (4) |
+| Nét lúc chơi đậm/nhạt | `DRAW_FEEL.liveInkAlpha` (0,45) |
+| Trần số đoạn nét | `DRAW_FEEL.maxSegments` (6000) |
+| Bao nhiêu beat vẽ thì xong trang | `finish.drawBeats` trong từng lượt của `resident-4.ts` |
+| Nét mảnh/đậm, gãy/mịn | `SKETCH_FEEL.width`, `slowWidth`, `sampleDistance`, `slowSampleDistance` (giữ) |
+| Tua lại / giữ tranh bao lâu | `SKETCH_FEEL.replaySeconds` (2,8), `revealSeconds` (3,5) |
+| Nét sáp dày bao nhiêu, màu gì | `SKETCH_FEEL.crayonWidth` (9), `crayonColor` |
+| Lực hút, tốc độ, cỡ đạn xao nhãng | `DISTRACTION_FEEL.pull`, `speed`, `radius` (giữ) |
+| Đung đưa | `DISTRACTION_FEEL.threadLength`, `swingAmplitude`, `swingPerBeat`, `hangBeats` (chuyển từ `PAPER_FEEL`) |
+
+**Giữ lại từ code hiện có**
+
+- `battle/sketch.ts`: `Sketch` (`sample`, `lift`, `segments`, `count`) và `replayPieces` (bỏ cờ `erased` ra khỏi kết quả).
+- Đạn `distraction` và kiểu `hang` (handler trong `spawners.ts`, vẽ trong `bullets.ts`), lực hút `pullPlayer`.
+- Màn lộ tranh của `DodgePhase` (`veil`, `renderReplay`, giữ đồng hồ bằng `clock.hold`), đổi chỗ kích hoạt: từ "hết mỗi
+  vòng pattern có `gallery`" sang "trang xong".
+- `SKETCH_FEEL.width`, `slowWidth`, `sampleDistance`, `slowSampleDistance`, `revealSeconds`, `color`.
+
+**Xóa**
+
+- `battle/paper.ts`, `battle/paper.test.ts`, `data/paper.ts`, `data/figures/child-drawing.ts` (và thư mục `figures/`).
+- `battle/tail.ts` (nét hiện suốt nên không cần đuôi) và phần `tail` trong `testing/fixtures.ts` nếu chỉ dùng cho nó.
+- Loại đạn `hands` (`HandsEvent`, handler, phần vẽ và va chạm trong `bullets.ts`), `withPaperHands` trong
+  `pattern-runner.ts`, tham số `column` và `keepColumn` trong `player.ts`.
+- `Pattern.paper` và `Pattern.gallery` (thay bằng `pencil` và `finish`).
+- Tẩy: `Sketch.erase`, `EraserPlay`, `eraseGeneration`, cờ `erased`, test tẩy trong `sketch.test.ts`, và
+  `SKETCH_FEEL.eraseLength`, `eraserSpeed`, `erasedAlpha`, `eraserColor`.
+- `PAPER_FEEL`: xóa hẳn; `replaySeconds`, `crayonWidth`, `crayonColor` chuyển vào `SKETCH_FEEL`; bốn số đung đưa chuyển
+  vào `DISTRACTION_FEEL`.
+- `distraction.test.ts`: sửa lại cho luật mới (không trừ máu, có cảnh báo khi `pull` > 0, chỉ có tác dụng khi cầm bút).
+
+**Mã mới:** `battle/page.ts` (logic thuần, có test): `PageState { sketch, drawnBeats, pastSegments }`,
+`pencilPickup(...)`, `dropPoint(gear, distraction, arena, feel)`, `addDrawnBeats(...)`. `DodgePhase` nhận
+`options.page` (không có thì tự tạo khi pattern có `pencil`).
+
+- **Mảnh ký ức** (pha tháo `ALARM_CLOCK`, `rhythmic: true`, `bpm` 100): "Hộp chì màu mười hai cây." · "Con mèo vẽ
+  được dán lên tủ lạnh." · "Tập vẽ, trang đầu còn trắng." · core: "Hồi đó vẽ mà chẳng nghĩ gì."
+- Hội thoại mở: "Mai mình vẽ." Khép: "Xấu thật đấy." (dừng một nhịp) "...Nhưng là của mình."
+
+### 5. Ông Khải, người thợ đồng hồ đã phí cả đời (`boss`)
+
+- **Khoảnh khắc bị kẹt:** trong tháp đồng hồ, trước bàn thợ, tay cầm chiếc đồng hồ đang sửa dở từ nhiều năm. Không
+  nói ông là ai với người chơi; để ngỏ.
+- **Không cần thắng, chỉ cần bước ra khỏi vòng lặp.** Mỗi pha né là một vòng lặp y hệt nhau (`loop: true`), thua thì
+  vòng quay lại. Lối ra là **khe cửa** trên viền khung (`finish: { kind: "exit", ... }`):
+  - Khe nằm trên cạnh `side`, tâm ở `at` (tỉ lệ), mở ở `openBeat` của mỗi vòng, rộng `widths[k]` px trong
+    `openBeats[k]` beat, với `k` = số vòng đã qua (kẹp vào phần tử cuối). Mặc định `widths` [28, 44, 64],
+    `openBeats` [2, 4, 999]: vòng 3 trở đi khe mở rồi không đóng. Từ vòng 4 khe mở ngay từ beat 0.
+  - 1 beat trước khi mở, đoạn viền ở khe nhấp nháy (cảnh báo công bằng, cùng nhịp nháy `telegraphFlashSeconds`).
+  - Khi khe mở, `Player.update` không kẹp bánh răng ở cạnh đó trong khoảng khe. Tâm bánh răng ra khỏi viền ngoài khung
+    → pha thắng. Khe đóng khi bánh răng đang ở giữa khe thì đẩy về trong khung.
+  - Số vòng đã qua giữ qua các lần thua (do `BattleScene` giữ, truyền vào `options.loopsSeen`).
+  - Bảo đảm: chậm nhất đầu vòng 4 (≈ 3 × 20 giây) lối ra mở hẳn.
+- **Ba lượt, mỗi lượt nhắc lại hai cư dân, khe cửa ở cả ba:**
+  - Lượt 1 "giờ làm": tích tắc dồn (120 → 150 BPM, `straight` chuỗi, `aimed`), vòng 32 beat, khe `right` `at` 0,5,
+    `openBeat` 24.
+  - Lượt 2 "ngẩng lên": `still` với cảnh nền tháp nhìn ra thị trấn, `distraction` (không có bút nên chỉ hút), vòng
+    32 beat, khe `top` `at` 0,5, `openBeat` 20.
+  - Lượt 3 "vòng lặp": `word` và đạn thường, `lagClock`, vòng 32 beat, khe `left` `at` 0,5, `openBeat` 28.
+- **Pha tháo: máy tháp đồng hồ (`TOWER_CLOCK`).** `rhythmic: true`, `bpm` 72. `core` là bộ thoát (`escapement`):
+  tháo bộ thoát thì vòng lặp dừng.
+- **Mảnh ký ức:** "Tiệm chưa bao giờ đóng cửa sớm." · "Lá thư viết xong, chưa gửi." · "Sang năm. Sang năm nữa." ·
+  core: "Còn kịp không?"
+- **Kết:** ông đặt chiếc đồng hồ sửa dở xuống bàn, đứng dậy, bước ra cửa tháp. Nối thẳng vào màn kết.
+- Hội thoại mở: "Cậu cũng tới sửa à. Ta sửa nó suốt bao năm rồi." Khép: "Ta cứ nghĩ còn nhiều thời gian."
 
 ## Pha tháo lắp
 
-Bản thô dùng chung cho mọi cư dân. Chưa ghép với pha né đạn (đó là bước 4). Mỗi cỗ máy là dữ liệu
+Bản thô dùng chung cho mọi cư dân, đã làm ở bước 3c. Chưa ghép với pha né đạn (đó là bước 4). Phần "Tầng" ở cuối mục
+là thiết kế đã chốt nhưng chưa làm; khi làm xong, câu "Tháo xong `core`: hiện xong…" và `PLAYTEST_PHASE` bên dưới
+hết hiệu lực. Mỗi cỗ máy là dữ liệu
 trong `src/data/mechanisms/`. Pha này tự dựng `BeatClock` và tiếng tích tắc, cùng cách pha né: beat là hàm của
 giờ nghe được.
 
@@ -155,6 +419,23 @@ giờ nghe được.
   tháo tới được `core`.
 - Con số cảm giác ở `src/data/disassembly-feel.ts`, vùng tháo ở `DISASSEMBLY_LAYOUT`, pixel logic 640×360.
 
+### Tầng (chốt 2026-11-24, làm ở mốc 3c.1)
+
+- `Part.stage?: number` (số nguyên ≥ 1, mặc định 1). Một trận có 3 tầng; tầng cuối chứa `core`.
+- Một `Workbench` sống suốt trận (do `BattleScene` giữ); `removed` giữ qua các tầng. `Workbench.setStage(n)` mở tầng n.
+  Bộ phận có `stage` > tầng hiện tại vẫn được vẽ (chúng vẫn nằm trong máy) nhưng con trỏ bỏ qua, không chọn được.
+- `Workbench.stageComplete`: mọi bộ phận có `stage` ≤ tầng hiện tại đã tháo và không còn câu ký ức đang mở.
+- `DisassemblePhase` nhận `(input, audio, mechanism, bench, stage)` và có `outcome`: `"playing" | "done"`. Tầng xong
+  (đã đóng câu ký ức cuối) thì `done`; không còn chữ "xong" và không tự chơi lại. Con trỏ đầu tầng đặt vào bộ phận
+  chọn được gần góc trên trái nhất.
+- Kiểm lúc tạo máy (thêm vào `validateMechanism`): `blockedBy` chỉ trỏ tới bộ phận cùng tầng hoặc tầng trước; mỗi tầng
+  từ 1 tới tầng lớn nhất có ít nhất một bộ phận; `core` ở tầng lớn nhất; mỗi tầng tháo hết được chỉ với bộ phận của
+  các tầng ≤ nó.
+- Mỗi tầng 3–4 bộ phận, mỗi tầng ít nhất một câu ký ức (thường ở bộ phận tháo cuối của tầng). Bốn câu một trận:
+  tầng 1 một câu, tầng 2 một câu, tầng 3 hai câu (một câu trước core, một câu ở core).
+- Gợi ý phím ở đáy pha tháo: "Mũi tên chọn · Z thao tác" chỉ hiện ở tầng 1 của cư dân 1.
+- Cỗ máy thử `CLOCKWORK` được chia tầng: tầng 1 bốn ốc; tầng 2 mặt và tấm che; tầng 3 hai bánh răng, lò xo, bánh lắc.
+
 ## Thông điệp và nguyên tắc kể chuyện
 
 Thông điệp: biết quý trọng thời gian, và quan trọng nhất là **VẪN CHƯA MUỘN để bắt đầu lại**. Sống có ý nghĩa,
@@ -166,6 +447,142 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
   thì không viết nó thành câu thoại.
 - **Màn kết hiện tổng thời gian người chơi đã bỏ ra**, kèm một câu rất ngắn.
 
+## Thị trấn
+
+*(Chốt 2026-11-24. Làm ở bước 5.)*
+
+- **Góc nhìn từ trên xuống**, như Undertale. Lưới ô 32 px logic. Bản đồ **64 × 11 ô** (2048 × 352 px). Camera chỉ trôi
+  ngang theo người chơi, kẹp trong bản đồ; chiều dọc vừa màn (lệch xuống 4 px).
+- **Dữ liệu** (`src/data/town.ts`, kiểu `TownMap`): `rows` là 11 chuỗi dài 64 ký tự; `legend` ký tự → `{ solid, color,
+  sprite? }`; `spawns`, `npcs`, `spots`, `signs`, `gates` theo toạ độ ô. Ký tự đề xuất: `#` tường/mái (cứng), `D` cửa
+  (cứng, vẽ khác), `.` đường, `,` vỉa hè, `=` cầu, `~` kênh (cứng), `T` cây (cứng), `b` ghế đá (cứng), `S` bậc thang.
+  Hàng 0–2 là dãy nhà và cửa; hàng 3–7 là phố đi được; hàng 8–10 là vỉa hè, cây, kênh nhánh.
+- **Bố cục tây → đông** (x là cột ô):
+  - x 1–7: **tiệm đồng hồ** của người chơi. Điểm xuất phát (4, 5). Tờ giấy trên bàn ở (3, 3).
+  - x 12–16: nhà bác Hòa (`r1`) ở (14, 4), trước cửa cơ quan. Cổng (x 16, y 3–7).
+  - x 19–26: **kênh và cây cầu**. Chỗ ngắm cảnh 1 "lan can cầu" ở (23, 3). Chú Minh (`r2`) ở đầu cầu phía đông (27, 5).
+    Cổng (x 28).
+  - x 31–42: **quảng trường**, bảng tin dán kín giấy. Chị Vân (`r3`) ngồi ghế đá ở (38, 6). Chỗ ngắm cảnh 2 "ghế dưới gốc
+    cây" ở (34, 8). Cổng (x 42).
+  - x 45–51: nhà Linh (`r4`), cửa sổ có bàn học, Linh ở (48, 3). Cổng (x 51).
+  - x 54–63: **bậc thang lên tháp đồng hồ**. Chỗ ngắm cảnh 3 "đầu dốc nhìn mái nhà" ở (56, 2). Cửa tháp (61, 2) là
+    điểm gặp boss.
+- **Thứ tự gặp cư dân cố định 1 → 2 → 3 → 4 → boss.** Mỗi cư dân chưa giải thoát kèm một **cổng**: một cột ô cứng cắt
+  ngang phố, vẽ thành dải "khoảnh khắc đông cứng" (xám, lấp lánh chậm theo nhịp 40 BPM). Giải thoát xong cổng biến
+  mất. Lý do: độ khó tăng dần (cư dân 1 dạy pha tháo với `rhythmic: false`), và mỗi cơ chế được giới thiệu riêng.
+- **Đi lại:** `TOWN_FEEL.walkSpeed` 140 px/giây, không gia tốc, chuẩn hóa hướng chéo, Shift đi chậm 70 px/giây. Hitbox
+  chân 20 × 12 px. Sprite người thợ 16 × 24 px dữ liệu × `scale` 2, có hướng nhìn (4 hướng, placeholder).
+- **Tương tác:** Z khi đối tượng tương tác (cư dân, biển, tờ giấy, chỗ ngắm cảnh, cửa tháp) nằm trong
+  `TOWN_FEEL.interactRange` (28 px) theo hướng đang nhìn. Đối tượng gần nhất thắng.
+- **Cư dân chưa giải thoát:** vẽ bằng bảng màu xám, đứng yên tuyệt đối. Z → hội thoại mở → mờ → trận.
+  **Đã giải thoát:** có màu, đứng ở chỗ cũ với tư thế của cảnh kết; Z → một câu (`idle`): r1 "Chuông vẫn đang đổ.",
+  r2 "Ngoài này rộng thật.", r3 "Hừm... hừm...", r4 "Đang vẽ, đừng nhìn."
+- **Chỗ ngắm cảnh:** Z → người thợ ngồi xuống; khung cảnh (`Backdrop`, cùng kiểu với cảnh nền của cư dân 2) hiện toàn
+  màn sau 1 giây mờ, camera đứng yên. Không chữ, không bộ đếm, không phần thưởng, không bắt buộc. Bấm bất kỳ phím di
+  chuyển nào thì đứng dậy. Đó là khoảng lặng, không phải đoạn đệm.
+- **Thị trấn đổi dần khi cư dân được giải thoát** (mỗi người một lớp, dữ liệu `TOWN_AMBIENCE`):
+  r1 → cửa sổ các nhà sáng đèn vàng ấm; r2 → dải trời có màu; r3 → tiếng chim procedural thỉnh thoảng (6–12 giây một
+  lần); r4 → tranh người chơi vẽ treo trên tường nhà Linh (từ `SaveData.drawing`).
+- **Boss:** sau khi `r4` được giải thoát, cổng x 51 mở, đi lên bậc thang tới cửa tháp, Z → hội thoại mở của boss → trận.
+
+## Hội thoại
+
+*(Chốt 2026-11-24. Làm ở mốc 4.2.)*
+
+- **Dữ liệu** (`src/data/dialogues.ts`):
+
+  ```ts
+  export type SpeakerId = "narrator" | "note" | "r1" | "r2" | "r3" | "r4" | "boss";
+  export interface DialogueLine { speaker: SpeakerId; text: string }
+  export const SPEAKERS: Record<SpeakerId, { name: string; blipHz: number }> = { … };
+  export const DIALOGUES = { introOpening: [...], shopNote: [...], r1Open: [...], r1Close: [...], r1Idle: [...], … }
+    satisfies Record<string, readonly DialogueLine[]>;
+  export type DialogueId = keyof typeof DIALOGUES;
+  ```
+
+  `narrator` và `note` không hiện tên. Tên hiện: "Bác Hòa", "Chú Minh", "Chị Vân", "Linh", "Ông Khải". Người thợ (người
+  chơi) không bao giờ nói.
+- **Hộp thoại** (`scenes/dialogue-box.ts`, dùng chung cho thị trấn, trận và màn mở đầu): khung đen viền trắng 4 px,
+  x 16, y 252, rộng 608, cao 92. Tên người nói ở trên mép trái hộp, màu `#d8c9a3`. Đệm 12 px, chữ cỡ 20, cao dòng 22,
+  tối đa 3 dòng, ngắt
+  dòng theo từ bằng `Renderer.measureText` (thêm vào renderer). Lời dẫn của màn mở đầu dùng kiểu `narration`: không
+  khung, căn giữa màn.
+- **Hiện chữ:** chạy từng ký tự, `DIALOGUE_FEEL.charsPerSecond` 30; dừng thêm `commaPause` 0,12 giây sau dấu phẩy và
+  `stopPause` 0,3 giây sau `. ? ! …`. Tiếng `blip` (procedural, cao độ `blipHz` của người nói) mỗi 2 ký tự hiện ra.
+  Hết dòng thì tam giác nhỏ ở góc phải dưới nhấp nháy.
+- **Điều khiển:** Z khi chữ đang chạy → hiện hết dòng; Z khi đã hết → dòng sau; Z ở dòng cuối → đóng.
+  **Giữ X = tua nhanh:** chữ chạy nhanh gấp `DIALOGUE_FEEL.fastMultiplier` (8) và tự sang dòng sau
+  `fastHoldSeconds` (0,15 giây) khi hiện hết. Không có nút bỏ qua cả đoạn.
+- **Kiểm dữ liệu (test):** mọi dòng không rỗng, ≤ `DIALOGUE_FEEL.maxChars` (110) ký tự, người nói có trong `SPEAKERS`;
+  mọi `DialogueId` mà `RESIDENTS` tham chiếu đều có.
+
+## Dữ liệu cư dân
+
+- `src/data/residents/types.ts`:
+
+  ```ts
+  export type ResidentId = "r1" | "r2" | "r3" | "r4" | "boss";
+  export interface ResidentData {
+    id: ResidentId;
+    name: string;
+    rounds: readonly [Pattern, Pattern, Pattern];    // pha né của lượt 1, 2, 3
+    mechanism: Mechanism;                            // 3 tầng, core ở tầng 3
+    dialogue: { open: DialogueId; close: DialogueId; idle: DialogueId };
+    vignette: "phone" | "lookUp" | "hum" | "pencil" | "leave";   // cảnh kết ở thị trấn
+    town: { tile: { x: number; y: number }; gateX: number | null; sprite: string; freedSprite: string };
+  }
+  ```
+
+- `src/data/residents/index.ts` xuất `RESIDENTS` theo thứ tự gặp. Thêm cư dân = thêm file dữ liệu, không sửa engine.
+- `BattleScene` (`scenes/battle-scene.ts`) nhận một `ResidentData`, tự chạy 3 lượt, hội thoại khép trận, rồi báo
+  `finished`. Nó giữ `Workbench`, `PageState` (nếu lượt có `pencil`), `loopsSeen` (nếu `finish.kind` là `exit`).
+
+## Lưu tiến trình
+
+*(Chốt 2026-11-24. Làm ở mốc 5.2.)*
+
+- **Khóa localStorage:** `still-hours/save/v1` (tiến trình) và `still-hours/settings/v1` (`{ muted: boolean }`).
+- **Dữ liệu:**
+
+  ```ts
+  interface SaveData {
+    version: 1;
+    seenIntro: boolean;
+    freed: ResidentId[];        // theo thứ tự đã giải thoát
+    playSeconds: number;        // tổng thời gian chơi
+    drawing: number[] | null;   // tranh của r4: x, y xen kẽ, số nguyên trong khung 400×160; cặp -1, -1 = nhấc bút
+    finished: boolean;          // đã qua boss, đang ở màn kết
+  }
+  ```
+
+- **Khi nào lưu:** xong cảnh mở đầu (`seenIntro`); xong cảnh kết của mỗi cư dân (`freed`, `playSeconds`, `drawing`);
+  xong trận boss (`finished: true`); và khi `pagehide` hoặc `visibilitychange` sang ẩn (chỉ cập nhật `playSeconds`, và
+  chỉ khi đã có bản lưu). Giữa trận không lưu: thoát giữa trận thì lần sau vào lại từ thị trấn, trước cư dân đó.
+- **Khi nào tải:** ở `TitleScene`, ngay sau khi âm thanh mở khóa. JSON hỏng, sai `version` hay sai kiểu → coi như không
+  có bản lưu (không xóa, không crash). `localStorage` ném lỗi (chế độ riêng tư) → chơi không lưu, không báo lỗi.
+- **Tiếp tục:** `finished` → vào thẳng màn kết. Ngược lại vào thị trấn: đứng một ô bên phải chỗ của cư dân vừa giải
+  thoát gần nhất (hoặc ở tiệm nếu chưa ai).
+- **Xóa:** khi chọn "Bắt đầu lại" và xác nhận; khi màn kết chạy xong.
+- **Tranh của r4:** giản lược bằng Ramer–Douglas–Peucker, sai số `SAVE_FEEL.drawingEpsilon` (1,5 px), tối đa
+  `SAVE_FEEL.drawingMaxNumbers` (3000) số; quá thì tăng sai số gấp đôi tới khi vừa.
+- **Code:** `core/save.ts`, hàm thuần `parseSave(text)`, `serializeSave(data)`, và `SaveStore` nhận một đối tượng kiểu
+  `Storage` (test truyền bộ nhớ giả). Phiên debug (nhảy cóc) không bao giờ ghi.
+
+## Phím debug và nhảy cóc
+
+*(Chốt 2026-11-24. Làm ở mốc 5.6.)*
+
+- **F1** bật/tắt lớp debug cho mọi cảnh (cờ chung ở `Director`, không còn mỗi cảnh một cờ).
+- **Khi lớp debug đang bật**, phím số nhảy cóc (bảng `DEBUG_JUMP_KEYS` trong `data/keybindings.ts`, xử lý ở
+  `core/debug-jump.ts`, không đi qua `Input` vì không phải logic game): `1`–`4` vào trận cư dân 1–4 từ lượt 1, `5` vào
+  trận boss, `6` thị trấn ở tiệm, `7` màn kết, `0` màn bắt đầu.
+- **URL:** `?jump=` với `r1`…`r4` / `boss` (vào trận), `r4.2` (lượt 2, pha né), `r4.2d` (lượt 2, pha tháo), `town`,
+  `town.r3` (thị trấn, cư dân trước r3 đã giải thoát, đứng trước r3), `intro`, `ending`. Giá trị lạ → bỏ qua, chạy bình
+  thường. Hàm thuần `parseJump(search)` có test.
+- Nhảy cóc coi mọi cư dân đứng trước đích là đã giải thoát, bật `debugSession`: không đọc ghi localStorage, góc phải trên
+  hiện "DEBUG · không lưu".
+- `PLAYTEST_PATTERN` và `PLAYTEST_PHASE` trong `main.ts` bị xóa khi có `?jump=` (mốc 5.6).
+
 ## Hình ảnh và âm thanh
 
 - **Hình ảnh**: giai đoạn đầu dùng placeholder vẽ bằng code (hình khối, sprite pixel định nghĩa bằng mảng dữ
@@ -176,9 +593,26 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
   nhạc nền đơn giản. Module `src/audio/` phải thiết kế để sau này thêm được file nhạc thật (phát qua cùng một
   giao diện theo tên âm thanh, nguồn có thể là bộ tổng hợp hoặc file). Nhớ: trình duyệt chỉ cho phát âm thanh sau
   một thao tác của người dùng.
-- **Font**: BẮT BUỘC hỗ trợ đầy đủ dấu tiếng Việt. **Chưa chọn font**; hiện dùng `monospace` tạm thời
-  (`FONT_FAMILY` trong `src/core/config.ts`). Khi chọn, kiểm tra thật với các chữ như "ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ
-  ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự ỳ ỷ ỹ ỵ đ" và cân nhắc kích thước tối thiểu để đọc rõ trên canvas độ phân giải thấp.
+- **Nhạc nền (chốt 2026-11-24):** pha né và pha tháo không có nhạc giai điệu; tiếng tích tắc chính là nhạc. Thị trấn có
+  một lớp nền procedural rất nhỏ: gió (nhiễu lọc thấp) và một tiếng tích xa ở 40 BPM. Màn bắt đầu: một tiếng tích mỗi
+  giây. Màn kết: các lớp tích tắc chồng dần. Cue mới (đều procedural, phát qua `playCue`): `blip`, `pencilUp`,
+  `pencilDrop`, `drawTick`, `ring`, `hum`, `bird`, `chime`. Chưa dùng file âm thanh thật.
+- **Độ trễ loa (chốt):** không làm màn hiệu chỉnh; giữ `visualDelaySeconds`. Ghi vào PLAYTEST.md để chủ dự án chỉnh.
+- **Font (chốt 2026-11-24): VT323** của Peter Hull, giấy phép **SIL Open Font License 1.1**. Metadata Google Fonts
+  (`ofl/vt323/METADATA.pb`) ghi `license: "OFL"`, subsets `latin`, `latin-ext`, `vietnamese`.
+  - Nguồn tải: `https://github.com/google/fonts/raw/main/ofl/vt323/VT323-Regular.ttf`, giấy phép
+    `https://github.com/google/fonts/raw/main/ofl/vt323/OFL.txt`, gốc `https://github.com/phoikoi/VT323`.
+  - Tự host: `public/assets/fonts/VT323-Regular.ttf` và `public/assets/fonts/OFL.txt` (kèm theo bắt buộc của OFL).
+    `@font-face` trong `style.css` (`font-display: block`); `FONT_FAMILY = '"VT323", monospace'`; `main.ts` chờ
+    `document.fonts.load('20px "VT323"')` (tối đa 3 giây, quá thì chạy với font dự phòng) trước khi vẽ chữ đầu tiên.
+    Ghi vào `CREDITS.md`.
+  - Kiểm: script tạm (ngoài `src/`, không commit) đọc bảng `cmap` của file TTF và xác nhận có đủ mọi ký tự xuất hiện
+    trong chuỗi hiển thị của `src/data/` và `src/scenes/`, cùng dòng mẫu hoa/thường "ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ ỗ ộ ớ ờ ở
+    ỡ ợ ứ ừ ử ữ ự ỳ ỷ ỹ ỵ đ". Lớp debug hiện dòng mẫu ở cỡ 16, 20, 24, 32.
+  - Cỡ chữ: VT323 hẹp và cao nên cỡ nhỏ nhất là **16** (gợi ý phím, debug), chữ hội thoại **20**, tiêu đề 32–48.
+    Hộp thoại tính lại số ký tự mỗi dòng theo `measureText`, không đoán.
+  - Dự phòng nếu chủ dự án nhìn thấy dấu chồng (ví dụ "ẳ", "ỡ") bị dính hay cắt ở cỡ 20: **GNU Unifont** (OFL 1.1,
+    `https://unifoundry.com/unifont/`), cỡ 16. Đổi font chỉ là đổi file và `FONT_FAMILY`.
 - **Asset bên ngoài**: nếu dùng (font, nhạc, ảnh...), ghi nguồn và giấy phép vào `CREDITS.md` (tạo file khi có
   asset đầu tiên). Không đưa vào asset không rõ giấy phép.
 
@@ -259,6 +693,12 @@ Hiện đã có:
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
 - Chưa có code: lưu tiến trình trong `core/`, hội thoại, thị trấn, ghép pha né với pha tháo lắp.
+- File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/page.ts`, `battle/stillness.ts`, `scenes/director.ts`,
+  `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
+  `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,
+  `TOWN_FEEL`, `STILL_FEEL`, `SAVE_FEEL`), `data/dialogues.ts`, `data/town.ts`, `data/backdrops.ts`,
+  `data/residents/*.ts`, `data/mechanisms/{pocket-watch,stopwatch,metronome,alarm-clock,tower-clock}.ts`,
+  `data/patterns/resident-{1,2,3,4}.ts` và `boss.ts` (mỗi file xuất 3 lượt).
 
 ### Nền tảng kỹ thuật đã chốt
 
@@ -298,9 +738,10 @@ Hiện đã có:
   vùng va chạm của đạn, kim và chữ (hồng), toạ độ, số tick, **beat hiện tại, BPM hiệu dụng, hệ số nhịp, vòng
   pattern, số đạn và cảnh báo đang hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0), **số đoạn nét chì**
   (`nét`, kể cả đoạn đã tẩy), **hệ số phóng**
-  (`phóng`), và một dòng mẫu dấu tiếng Việt ở cỡ 8, 12, 16, 20 để chọn cỡ nhỏ nhất còn đọc rõ. Chưa chọn font.
+  (`phóng`), và một dòng mẫu dấu tiếng Việt ở cỡ 8, 12, 16, 20 (đổi thành 16, 20, 24, 32 khi có VT323, mốc 7.1).
+  Phím nhảy cóc khi lớp debug bật: mục "Phím debug và nhảy cóc".
 - Windows có "Sticky Keys" bật lên khi bấm Shift 5 lần liên tiếp, có thể làm gián đoạn lúc chơi; đây là cài đặt của
-  hệ điều hành, game không chặn được. Nếu thành vấn đề, thêm phím phụ cho `slow` trong `keybindings.ts`.
+  hệ điều hành, game không chặn được. Chốt: không thêm phím phụ; ghi vào PLAYTEST.md.
 
 ## Nhịp, tích tắc và đạn
 
@@ -361,7 +802,8 @@ chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 
   cảnh báo dài thêm. Cảnh báo hết theo beat bắn, không theo giây đã đóng băng.
 - **Chính sách cư dân 3** (`Pace`): ôm một câu thì hạ `PACE_FEEL.drop` từ beat nguyên kế tiếp; câu đi hết khung không
   chạm thì hồi `PACE_FEEL.recover` ở đầu nhịp kế (`beatsPerBar`). Cùng một beat: hạ trước, rồi hồi, một lần `setPace`.
-  Hệ số kẹp trong [`floor`, 1]. Sàn 0,8 vì 1 / 0,8 = 1,25.
+  Hệ số kẹp trong [`floor`, 1]. Code hiện để sàn 0,8 (1 / 0,8 = 1,25); đã chốt đổi thành 0,7 ở mốc 6.3
+  (mục cư dân 3).
 
 ### Định dạng pattern (`data/pattern-types.ts`)
 
@@ -373,6 +815,18 @@ từ tranh. Hết mỗi vòng pattern, khung và đạn mờ đi, nét người 
 (cả vết tẩy, nét dày như sáp), rồi giữ tranh `SKETCH_FEEL.revealSeconds`. Không hiện hình mẫu. Nhịp chạy tiếp từ đúng
 mốc vừa khép. Pattern không có `gallery` thì vòng chạy liền và đồng hồ không bị giữ. Pattern không có `paper` thì bút
 không chạm giấy và bánh răng đi bốn hướng.
+
+**Trường pattern đã chốt, chưa làm** (thay `gallery`, `paper`, `hands` ở mốc 3b.1–3b.2; các trường khác ở mốc ghi kèm):
+
+| Trường | Kiểu | Việc | Mốc |
+| ------ | ---- | ---- | --- |
+| `finish` | `{ kind: "length" }` \| `{ kind: "page"; drawBeats: number }` \| `{ kind: "exit"; side: Side; at: number; openBeat: number; widths: readonly number[]; openBeats: readonly number[] }` | Pha né kết thúc thế nào (mục "Cấu trúc một trận"). Mặc định `length`. `length` cần `loop: false`; `page` và `exit` cần `loop: true` | 3b.2 (`length`, `page`), 6.4 (`exit`) |
+| `pencil` | `{ x: number; y: number }` | Chỗ bút nằm đầu lượt (cư dân 4). Bắt buộc khi `finish.kind` là `page`, cấm khi khác | 3b.2 |
+| `still` | `{ backdrop: string }` | Đứng yên thì chậm nhịp và hiện cảnh nền (cư dân 2, boss lượt 2). Cấm đi cùng đạn `word` | 6.2 |
+| `lagClock` | `boolean` | Mặt đồng hồ trễ (cư dân 3, boss lượt 3) | 6.3 |
+
+`validatePattern` kiểm các ràng buộc trong bảng. Đạn `distraction` đổi luật ở mốc 3b.2: không tẩy nét; chỉ có tác
+dụng (làm rơi bút) khi pattern có `pencil` và bánh răng đang cầm bút.
 
 ```ts
 export const MY_PATTERN: Pattern = {
@@ -455,7 +909,8 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
 | Chữ to/nhỏ, bay nhanh/chậm, hitbox chữ         | `WORD_FEEL.fontSize` (16), `speed`, `hitboxScale` |
 | Câu tan / câu nổ lâu hay mau                   | `WORD_FEEL.fadeSeconds`, `absorbSeconds`      |
 
-Nét chì và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640×360):
+Nét chì và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640×360). Bảng này tả code hiện tại (trống giấy);
+mốc 3b.1 xóa các dòng tẩy, đuôi, giấy, kim và thay bằng bảng `DRAW_FEEL` ở mục cư dân 4:
 
 | Muốn…                                          | Chỉnh                                        |
 | ---------------------------------------------- | -------------------------------------------- |
@@ -517,11 +972,12 @@ Pha tháo lắp nằm ở `data/disassembly-feel.ts`:
 2. Đạn theo beat + tiếng tích tắc procedural.
 2b. Nâng độ phân giải logic từ 320×180 lên 640×360, giữ nguyên cảm giác chơi.
 3a. Lời tiêu cực của cư dân 3 trong pha né đạn (làm chậm nhịp).
-3b. Nét vẽ của cô bé trong pha né đạn.
-3c. Bản thô pha tháo lắp, dùng chung cho mọi cư dân. Thiết kế ở mục "Pha tháo lắp". Chưa ghép với pha né đạn (bước 4).
-4. Vertical slice một cư dân hoàn chỉnh.
-5. Máy trạng thái cảnh + thị trấn + lưu tiến trình.
+3b. Nét vẽ của cô bé trong pha né đạn. Vòng 1–3 đã làm; vòng mới "Nhặt bút" (mục cư dân 4) thay trống giấy.
+3c. Bản thô pha tháo lắp, dùng chung cho mọi cư dân. Thiết kế ở mục "Pha tháo lắp". Còn phần "Tầng".
+4. Vertical slice một cư dân hoàn chỉnh (cư dân 4: 3 lượt, thua, hội thoại, cảnh kết).
+5. Máy trạng thái cảnh + màn bắt đầu, mở đầu, kết + thị trấn + lưu tiến trình + nhảy cóc; khung trận tạm cho mọi cư dân.
 6. Nội dung các cư dân còn lại và boss.
 7. Hoàn thiện hình ảnh, âm thanh, font.
 
 Đừng nhảy cóc: mỗi bước dựa trên bước trước. Chưa làm gameplay nào ngoài những gì thuộc bước hiện tại.
+Các mốc nhỏ của từng bước nằm ở `AUTOPILOT.md`, mục "Kế hoạch từng bước".
