@@ -91,7 +91,9 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước 7.3: hình ảnh placeholder. Thêm sprite `hand`, `ring`, `crown`, `weight`, `rod` cho bộ phận máy (kim, vòng đệm/móc, núm,
     quả cân, cần/con lắc) và gán vào 5 máy; sửa `r4-pencil` bị lệch một cột. `data/sprites.test.ts`: mọi sprite đều chữ nhật, đủ
     màu, mọi id mà dữ liệu tham chiếu có thật, bản xám dựng được từ bản màu. Ô thị trấn, cảnh nền, cảnh kết đã có hình từ 5.3–6.5.
-- **Bước tiếp theo:** mốc 7.4 trong `AUTOPILOT.md` (viết PLAYTEST.md rồi dừng).
+  - Bước 7.4: `PLAYTEST.md` (cách chạy, phím, nhảy cóc, lỗi đã biết, chỗ không chắc, con số nên chỉnh). Lượt chạy tự động DỪNG ở đây.
+- **Bước tiếp theo:** chủ dự án chơi thử theo `PLAYTEST.md` (lần đầu game chạy trong trình duyệt thật), rồi quyết các mục "Chỗ không
+  chắc". Sau đó mới tới việc thay sprite placeholder bằng PNG và thử nghiệm âm thanh bằng tai.
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill

@@ -131,10 +131,10 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Khe cửa là hàm thuần theo beat nghe được (exitView), không đếm tick; Player.door do DodgePhase đặt mỗi tick trước khi bánh răng di chuyển.
 - Ra khỏi khung: cả thân phải lọt trong khe mới lách ra được (khe tối thiểu 24 px, validatePattern kiểm); đã ra ngoài mép thì hai bên khe là tường; đi tối đa nửa thân + 12 px ngoài viền, tâm vượt viền ngoài là thắng.
 - Khe đóng khi bánh răng đang ở ngoài mép: kẹp lại về trong khung ngay tick đó (không sát thương).
-- Khe không bao giờ cùng cạnh với đạn bắn tới (test: không đạn nào có rom bằng cạnh khe) để lối ra không bị chắn thẳng cửa.
+- Khe không bao giờ cùng cạnh với đạn bắn tới (test: không đạn nào có `from` bằng cạnh khe) để lối ra không bị chắn thẳng cửa.
 - Cảnh báo khe: đoạn viền ở khe nhấp nháy 1 beat trước khi mở (EXIT_WARN_BEATS); khe mở thì đoạn viền biến mất. Khe mở ngay từ beat 0 thì không có cảnh báo.
 - Thắng bằng khe đi cùng nhánh dọn đạn như length (clearing rồi won).
-- Lượt 2 của boss dùng still với cảnh 	ower (đã có sẵn trong ackdrops.ts); đạn xao nhãng không có bút nên chỉ hút.
+- Lượt 2 của boss dùng still với cảnh `tower` (đã có sẵn trong `backdrops.ts`); đạn xao nhãng không có bút nên chỉ hút.
 - Bộ phận của TOWER_CLOCK: bu lông ×2, nắp che; kim giờ, kim phút, mặt số; quả nặng, bộ bánh răng, con lắc, bộ thoát (core). Sprite placeholder dùng chung.
 
 ## 6.5
@@ -142,9 +142,9 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Cảnh kết của mọi cư dân là VignetteScene riêng (màn tối, hình khối + sprite), không dựng trong TownScene: cùng cách với cảnh pencil của Linh đã chốt ở bước 4.3, nên r1–r3 và boss không còn đứng yên `freedHoldSeconds` giây. Cảnh kết thật trong thị trấn (camera, đèn) để dành cho lần sau nếu chủ dự án muốn.
 - Boss cũng có cảnh leave ngắn (đặt đồng hồ xuống, bước ra cửa) trước khi sang màn kết.
 - Dải trời của r2: dải cao 12 px ở mép trên màn hình (không theo camera), vì dãy mái nhà phủ kín hàng 0 nên không có ô trời thật.
-- Tiếng chim: một cue ird (ba tiếng hót) mỗi 6–12 giây, ngẫu nhiên không cần tái lập (andom truyền vào để test cố định). Chỉ phát trong TownScene (màn kết dùng chung TownScene nên cũng nghe chim).
+- Tiếng chim: một cue `bird` (ba tiếng hót) mỗi 6–12 giây, ngẫu nhiên không cần tái lập (`random` truyền vào để test cố định). Chỉ phát trong TownScene (màn kết dùng chung TownScene nên cũng nghe chim).
 - Tranh trên tường nhà Linh: khung 64×28 px ở cột 45–46, hàng 0–1; vẽ từ SaveData.drawing thu vào khung giữ tỉ lệ; không có nét thì tờ giấy trắng.
-- Thêm sprite placeholder 2-up và oss; cue ing, hum, ird, chime làm luôn ở đây vì cảnh cần chúng (7.2 chỉ còn kiểm và lớp nền).
+- Thêm sprite placeholder `r2-up` và `boss`; cue `ring`, `hum`, `bird`, `chime` làm luôn ở đây vì cảnh cần chúng (7.2 chỉ còn kiểm và lớp nền).
 - Lỗi mã hóa: `Add-Content` của Windows PowerShell ghi ANSI làm hỏng UTF-8 (đã gặp ở fixtures.ts). Dùng `AppendAllText` với UTF8 không BOM; đã quét toàn bộ src và các file md: không còn file sai.
 
 ## 6.6
@@ -166,7 +166,7 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 
 ## 7.2
 
-- Cue ing, hum, ird, chime, pencilUp, pencilDrop, drawTick, lip, mend đã có từ các mốc trước; mốc này thêm test cho **mọi** cue (`CUE_NAMES` thay cho kiểu liệt kê tay) trên `FakeContext`: mỗi nguồn có `start` rồi `stop`, nối tới đầu ra, không `exponentialRamp` tới giá trị ≤ 0, mọi cue dưới 4 giây.
+- Cue `ring`, `hum`, `bird`, `chime`, `pencilUp`, `pencilDrop`, `drawTick`, `blip`, `mend` đã có từ các mốc trước; mốc này thêm test cho **mọi** cue (`CUE_NAMES` thay cho kiểu liệt kê tay) trên `FakeContext`: mỗi nguồn có `start` rồi `stop`, nối tới đầu ra, không `exponentialRamp` tới giá trị ≤ 0, mọi cue dưới 4 giây.
 - Nền thị trấn: gió (`audio/wind.ts`, nhiễu trắng 3 giây lặp, lọc thấp 520 Hz, dập dềnh chu kỳ 9 giây sâu 50%, gain `AMBIENCE_FEEL.windLevel` 0,07) và tiếng tích xa 40 BPM (`distantSink`: cùng bộ tổng hợp tiếng tích, nhân gain 0,3 và cắt cao 900 Hz). Gió và tích xa đi qua gain tổng nên M tắt cả hai (test: gain tổng về 0).
 - Màn bắt đầu: một tiếng mỗi giây (60 BPM) bằng sink **thường** (không phải sink xa): đó là âm thanh duy nhất của màn nên để rõ. Tích/tắc xen kẽ như mọi nơi khác. Chỉ chạy sau khi âm thanh mở khóa, dừng hẳn và hủy tiếng đã hẹn khi chọn xong.
 - Vòng đời: thêm `Scene.leave?()`, `Director` gọi cho cảnh cũ khi `fadeTo` đổi cảnh hay `cut`. Cảnh thị trấn bật gió và tích xa ở tick `update` đầu tiên (nên `TownScene` chỉ để vẽ trong màn kết không phát gì; màn kết có lớp tích tắc riêng). Phương án bỏ: để `GameFlow` bật/tắt gió theo loại cảnh (dễ quên khi thêm đường chuyển cảnh mới).

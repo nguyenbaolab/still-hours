@@ -306,8 +306,8 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 5.3 — 910a44f — data/town.ts (64×11, cổng, NPC, chỗ ngắm cảnh), TownScene (đi lại, va chạm ô, camera, tương tác), backdrop.
 - 5.4 — ca89bea — formatPlayTime, IntroScene (tích tắc dừng ở dòng 2), EndingScene (trôi, thời gian, công trạng, xóa lưu), TownScene.drawWorld.
 - 5.5 — f33f6b7 — GameFlow (Title→Intro→Town→trận→cảnh kết→lưu→…→Ending), dữ liệu tạm r1–r3/boss, flow.test, Title chờ phím sau màn kết (commit này lỡ kèm tmp/dbg.txt, xóa ở 5.6).
-- 5.6 — accd04e — core/debug-jump.ts (parseJump, phím số), GameFlow.queueJump/jump, BattleScene startStep, xóa PLAYTEST_*.
-- 6.1 — 8dfa316 — R1_ROUNDS (120→176 BPM), POCKET_WATCH (rhythmic false, không unscrew), test BPM cuối 176 và độ dài.
+- 5.6 — accd04e — core/debug-jump.ts (parseJump, phím số), GameFlow.queueJump/jump, BattleScene startStep, xóa PLAYTEST_*.
+- 6.1 — 8dfa316 — R1_ROUNDS (120→176 BPM), POCKET_WATCH (rhythmic false, không unscrew), test BPM cuối 176 và độ dài.
 - 6.2 — ac2f695 — Stillness + isStill, STILL_FEEL, Pattern.still, cảnh nền trong khung né, R2_ROUNDS, STOPWATCH.
 
 - 6.3 — cb894e0 — PACE_FEEL.floor 0.7, 8 câu thật, lagClock + lagClockHands, R3_ROUNDS, METRONOME.
@@ -316,8 +316,10 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 
 - 6.5 — d994a5b — TOWN_AMBIENCE, ambienceFor/birdDelay, TownInit.drawing, 4 cảnh kết VignetteScene, cue ring/hum/bird/chime, sprite r2-up và boss.
 
+- 7.3 — b554fa5 — sprite hand/ring/crown/weight/rod cho bộ phận máy, sửa r4-pencil lệch cột, sprites.test.
+
 - 7.2 — 4865897 — wind.ts, BackgroundTicker, distantSink, Scene.leave, AMBIENCE_FEEL, fake-context, test mọi cue/AudioEngine/nền.
 
 - 7.1 — 336d608 — font VT323 tự host, FONT_FAMILY, chờ font trước khi chạy, CREDITS.md, debug cỡ 16/20/24/32, advanceEm 0,4, cmap 0 thiếu.
 
-- 6.6 — c7e6c24 (sửa ở 1d778bc) — testing/dodger.ts, testing/playthrough.test.ts: bot né 15 lượt đều thắng, bot tháo 5 máy, đối chứng đứng yên.
+- 6.6 — c7e6c24 (sửa ở 1d778bc) — testing/dodger.ts, testing/playthrough.test.ts: bot né 15 lượt đều thắng, bot tháo 5 máy, đối chứng đứng yên.
