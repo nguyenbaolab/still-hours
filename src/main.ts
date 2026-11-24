@@ -3,11 +3,13 @@ import { AudioEngine } from "./audio/audio-engine";
 import { DisassemblePhase } from "./battle/disassemble-phase";
 import { DodgePhase } from "./battle/dodge-phase";
 import { Workbench } from "./battle/mechanism";
+import { DEBUG } from "./core/debug";
 import { strokesFromSegments, type Pt } from "./core/drawing";
 import { Input } from "./core/input";
 import { attachKeyboard } from "./core/keyboard";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
+import { browserStorage, SaveStore } from "./core/save";
 import { DIALOGUES } from "./data/dialogues";
 import { DISASSEMBLY_FEEL } from "./data/disassembly-feel";
 import { KEY_BINDINGS } from "./data/keybindings";
@@ -38,9 +40,19 @@ attachKeyboard(input, KEY_BINDINGS);
 const audio = new AudioEngine(AUDIO_FEEL, RHYTHM_FEEL.visualDelaySeconds);
 
 const resident = RESIDENT_R4;
-// Kho lưu thật có ở mốc 5.2; tới lúc đó coi như chưa có bản lưu.
-const title = new TitleScene(audio, input, { exists: () => false, clear: () => undefined });
+// Kho lưu: phiên debug (nhảy cóc, mốc 5.6) không bao giờ đọc ghi. Chế độ riêng tư: chơi không lưu, không báo lỗi.
+const store = new SaveStore(browserStorage(), () => DEBUG.session);
+audio.setMuted(store.loadSettings().muted);
+let savedMuted = audio.muted;
+const title = new TitleScene(audio, input, { exists: () => store.exists(), clear: () => store.clear() });
 const director = new Director(input, audio, title);
+
+// Đóng tab hoặc tab bị ẩn: chỉ cập nhật thời gian chơi, và chỉ khi đã có bản lưu.
+const touchSave = (): void => store.touchPlaySeconds(director.playSeconds);
+window.addEventListener("pagehide", touchSave);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) touchSave();
+});
 let opening: DialogueScene | null = null;
 let battle: BattleScene | null = null;
 let vignette: VignetteScene | null = null;
@@ -73,6 +85,10 @@ startLoop({
   update() {
     input.poll();
     director.update();
+    if (audio.muted !== savedMuted) {
+      savedMuted = audio.muted;
+      store.saveSettings({ muted: savedMuted });
+    }
     if (director.transitioning) return;
     const scene = director.scene;
     if (scene === title && title.result) {

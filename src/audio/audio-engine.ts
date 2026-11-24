@@ -83,6 +83,12 @@ export class AudioEngine implements AudioPort {
     this.applyVolume();
   }
 
+  /** Đặt trạng thái tắt tiếng (đọc từ cài đặt lúc khởi động). Chưa mở khóa âm thanh cũng được. */
+  setMuted(muted: boolean): void {
+    this._muted = muted;
+    this.applyVolume(true);
+  }
+
   playCue(cue: CueName, hz?: number): void {
     if (!this.ctx || !this.master || !this.unlocked) return;
     synthCue(this.ctx, this.master, cue, this.ctx.currentTime, hz);

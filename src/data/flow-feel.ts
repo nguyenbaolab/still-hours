@@ -54,3 +54,16 @@ export const DIALOGUE_FEEL: DialogueFeel = {
   lineHeight: 22,
   maxLines: 3,
 };
+
+/** Lưu tiến trình (CLAUDE.md, "Lưu tiến trình"). */
+export interface SaveFeel {
+  /** Sai số (px) khi giản lược tranh của r4 bằng Ramer–Douglas–Peucker. */
+  drawingEpsilon: number;
+  /** Tranh lưu không quá bấy nhiêu số; quá thì tăng sai số gấp đôi tới khi vừa. */
+  drawingMaxNumbers: number;
+}
+
+export const SAVE_FEEL: SaveFeel = {
+  drawingEpsilon: 1.5,
+  drawingMaxNumbers: 3000,
+};

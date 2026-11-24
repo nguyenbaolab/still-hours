@@ -289,3 +289,4 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 4.1 — a53a683 — ResidentData, BattleScene (3 lượt, thua, dựng lại đúng pha), gear-cracked, cue mend.
 - 4.2 — 5bf4951 — DialogueBox (gõ chữ, tua X, dừng dấu câu), dialogues.ts, blip, measureText.
 - 4.3 — de242d3 — ALARM_CLOCK, RESIDENT_R4, hội thoại khép trận, vignette pencil, drawing utils, content.test.
+- 5.1 — 2f9a9ee — Director (chuyển cảnh, debug chung, playSeconds), TitleScene thay press-start.
