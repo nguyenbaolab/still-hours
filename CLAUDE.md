@@ -38,7 +38,10 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     `residents/index.ts` (`RESIDENTS`), `BattleScene` đọc hội thoại khép trận, `scenes/vignette.ts` (cảnh kết "pencil":
     tranh của người chơi thu vào khung 160×64, Linh cầm bút lên), `scenes/dialogue-scene.ts`, `core/drawing.ts`
     (`strokesFromSegments`, `fitStrokes`), `data/content.test.ts`. `main.ts` chạy: hội thoại mở → trận r4 → cảnh kết → lặp.
-- **Bước tiếp theo:** bước 5 trong `AUTOPILOT.md` (mốc 5.1: `Director` và màn bắt đầu).
+  - Bước 5.1: `scenes/director.ts` (`Director`: chuyển cảnh có mờ, cờ debug chung `core/debug.ts`, tắt/bật tiếng, đếm
+    `playSeconds`), `scenes/title.ts` (`TitleScene` thay `press-start.ts`; menu Tiếp tục / Bắt đầu lại khi có bản lưu).
+    Các cảnh không còn tự xử lý F1 và M.
+- **Bước tiếp theo:** mốc 5.2 trong `AUTOPILOT.md` (lưu tiến trình).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -705,7 +708,8 @@ Hiện đã có:
   đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng), `pace.ts` (khi nào hạ / hồi hệ số nhịp),
   `sketch.ts` (danh sách đoạn nét chì, tua lại), `page.ts` (trang vẽ: nhặt bút, bút rơi, beat vẽ), `ink-layer.ts` (canvas
   phụ cho nét lúc chơi), `mechanism.ts` (thứ tự tháo, nhịp, con trỏ), `disassemble-phase.ts` (pha tháo lắp).
-- `scenes/`: `scene.ts` (giao diện `Scene`), `press-start.ts` (màn "Nhấn phím bất kỳ để bắt đầu").
+- `scenes/`: `scene.ts` (giao diện `Scene`), `director.ts`, `title.ts`, `battle-scene.ts`, `dialogue-box.ts`,
+  `dialogue-scene.ts`, `vignette.ts`.
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),

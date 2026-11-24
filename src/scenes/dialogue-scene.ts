@@ -25,7 +25,6 @@ export class DialogueScene implements Scene {
   }
 
   update(): void {
-    if (this.input.wasPressed("mute")) this.audio.toggleMute();
     this.box.update(this.input, this.audio);
   }
 

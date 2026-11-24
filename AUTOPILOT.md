@@ -288,3 +288,4 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 3c.1 — 1621bc2 — tầng: Part.stage, Workbench.setStage/stageComplete, DisassemblePhase outcome, CLOCKWORK 3 tầng.
 - 4.1 — a53a683 — ResidentData, BattleScene (3 lượt, thua, dựng lại đúng pha), gear-cracked, cue mend.
 - 4.2 — 5bf4951 — DialogueBox (gõ chữ, tua X, dừng dấu câu), dialogues.ts, blip, measureText.
+- 4.3 — de242d3 — ALARM_CLOCK, RESIDENT_R4, hội thoại khép trận, vignette pencil, drawing utils, content.test.

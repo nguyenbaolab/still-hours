@@ -2,6 +2,7 @@ import type { AudioPort } from "../audio/audio-engine";
 import { TickScheduler } from "../audio/tick-scheduler";
 import { stageOf, type Workbench } from "./mechanism";
 import { BeatClock } from "../core/beat-clock";
+import { DEBUG } from "../core/debug";
 import type { Input } from "../core/input";
 import type { Renderer } from "../core/renderer";
 import { DISASSEMBLY_FEEL, DISASSEMBLY_LAYOUT } from "../data/disassembly-feel";
@@ -33,7 +34,6 @@ export class DisassemblePhase implements Scene {
   private clock: BeatClock;
   private ticks: TickScheduler;
   private memoryShown = 0;
-  private debug = false;
   private heardAt: number;
   private done = false;
 
@@ -55,9 +55,6 @@ export class DisassemblePhase implements Scene {
   }
 
   update(): void {
-    if (this.input.wasPressed("debug")) this.debug = !this.debug;
-    if (this.input.wasPressed("mute")) this.audio.toggleMute();
-
     if (this.done) return;
 
     const heard = this.audio.heardTime();
@@ -138,7 +135,7 @@ export class DisassemblePhase implements Scene {
       renderer.text("Mũi tên chọn · Z thao tác", 32, DISASSEMBLY_LAYOUT.memoryY, { color: COLOR.hint, size: 16 });
     }
 
-    if (this.debug) {
+    if (DEBUG.on) {
       const beat = this.clock.beat;
       const near = Math.abs(beat - Math.round(beat)) <= DISASSEMBLY_FEEL.beatWindow;
       renderer.text(

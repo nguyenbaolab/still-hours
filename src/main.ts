@@ -17,8 +17,9 @@ import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
 import { SPRITES } from "./data/sprites";
 import { BattleScene, createBattleFactory } from "./scenes/battle-scene";
 import { DialogueScene } from "./scenes/dialogue-scene";
-import { PressStartScene } from "./scenes/press-start";
+import { Director } from "./scenes/director";
 import type { Scene } from "./scenes/scene";
+import { TitleScene } from "./scenes/title";
 import { VignetteScene } from "./scenes/vignette";
 
 // Cảnh đang chơi thử, cho tới khi có Director và thị trấn (bước 5). "flow" = hội thoại mở → trận cư dân 4 →
@@ -37,8 +38,9 @@ attachKeyboard(input, KEY_BINDINGS);
 const audio = new AudioEngine(AUDIO_FEEL, RHYTHM_FEEL.visualDelaySeconds);
 
 const resident = RESIDENT_R4;
-const pressStart = new PressStartScene(audio);
-let scene: Scene = pressStart;
+// Kho lưu thật có ở mốc 5.2; tới lúc đó coi như chưa có bản lưu.
+const title = new TitleScene(audio, input, { exists: () => false, clear: () => undefined });
+const director = new Director(input, audio, title);
 let opening: DialogueScene | null = null;
 let battle: BattleScene | null = null;
 let vignette: VignetteScene | null = null;
@@ -70,19 +72,24 @@ function start(): Scene {
 startLoop({
   update() {
     input.poll();
-    scene.update();
-    if (scene === pressStart && pressStart.ready) {
-      scene = start();
+    director.update();
+    if (director.transitioning) return;
+    const scene = director.scene;
+    if (scene === title && title.result) {
+      director.fadeTo(start);
     } else if (opening && scene === opening && opening.finished) {
-      scene = startBattle();
+      director.fadeTo(startBattle);
     } else if (battle && scene === battle && battle.finished) {
-      vignette = new VignetteScene(resident.vignette, input, { drawing: drawingOf(battle) });
-      scene = vignette;
+      const drawing = drawingOf(battle);
+      director.fadeTo(() => {
+        vignette = new VignetteScene(resident.vignette, input, { drawing });
+        return vignette;
+      });
     } else if (vignette && scene === vignette && vignette.finished) {
-      scene = startOpening();
+      director.fadeTo(startOpening);
     }
   },
   render(alpha) {
-    scene.render(renderer, alpha);
+    director.render(renderer, alpha);
   },
 });

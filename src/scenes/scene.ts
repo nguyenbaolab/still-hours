@@ -6,4 +6,6 @@ export interface Scene {
   update(): void;
   /** Vẽ một khung hình. `alpha` ∈ [0, 1) để nội suy giữa tick trước và tick hiện tại. Không đổi trạng thái game. */
   render(renderer: Renderer, alpha: number): void;
+  /** `false` = tick của cảnh này không tính vào thời gian chơi (màn bắt đầu). Bỏ trống = có tính. */
+  readonly countsPlayTime?: boolean;
 }

@@ -166,7 +166,6 @@ export class BattleScene implements Scene {
         return;
       }
       case "closing": {
-        if (this.input.wasPressed("mute")) this.audio.toggleMute();
         this.closing?.update(this.input, this.audio);
         if (this.closing?.done) {
           this.done = true;

@@ -1,7 +1,8 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { TickScheduler } from "../audio/tick-scheduler";
 import { BeatClock } from "../core/beat-clock";
-import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
+import { GAME_HEIGHT, TICK_RATE } from "../core/config";
+import { DEBUG } from "../core/debug";
 import type { Input } from "../core/input";
 import { lerp } from "../core/math";
 import type { Renderer } from "../core/renderer";
@@ -33,7 +34,6 @@ const COLOR = {
   hpLost: "#9c1c1c",
   hp: "#f2d23c",
   text: "#ffffff",
-  mutedHint: "#8a7f68",
   debugText: "#9fb3a8",
   debugBody: "#5b6b73",
   debugPlayerHitbox: "#3cff7a",
@@ -85,7 +85,6 @@ export class DodgePhase implements Scene {
   private readonly spawnContext: SpawnContext;
   private readonly ink = new InkLayer();
   private tick = 0;
-  private debug = false;
   private absorbFlash = 0;
   private stage: Stage = "play";
   private result: DodgeOutcome = "playing";
@@ -164,8 +163,6 @@ export class DodgePhase implements Scene {
 
   update(): void {
     this.tick++;
-    if (this.input.wasPressed("debug")) this.debug = !this.debug;
-    if (this.input.wasPressed("mute")) this.audio.toggleMute();
 
     if (this.stage === "lost" || this.stage === "done") return;
     if (this.stage === "reveal") {
@@ -358,7 +355,7 @@ export class DodgePhase implements Scene {
     const clearAlpha =
       this.stage === "clearing" && FLOW_FEEL.clearSeconds > 0 ? Math.max(0, 1 - this.clearAge / FLOW_FEEL.clearSeconds) : 1;
     renderer.setAlpha(veil * clearAlpha);
-    this.world.render(renderer, alpha, this.debug);
+    this.world.render(renderer, alpha, DEBUG.on);
     renderer.setAlpha(veil);
 
     const px = lerp(player.prevX, player.x, alpha);
@@ -385,10 +382,7 @@ export class DodgePhase implements Scene {
       this.renderReveal(renderer);
       renderer.unclip();
     }
-    if (this.audio.muted) {
-      renderer.text("tắt tiếng (M)", GAME_WIDTH - 8, 8, { size: 16, align: "right", color: COLOR.mutedHint });
-    }
-    if (this.debug) this.renderDebug(renderer, px, py);
+    if (DEBUG.on) this.renderDebug(renderer, px, py);
   }
 
   /** Cây bút: nằm yên và lóe sáng mỗi vài beat, hoặc nằm trong tay bánh răng. */
