@@ -209,6 +209,44 @@ export const SPRITES = {
       ".bb..bb.",
     ],
   },
+  /** Chú Minh ngẩng đầu: mặt hướng lên, thấy cả cằm và cổ. */
+  "r2-up": {
+    scale: 2,
+    palette: { h: "#3a2a1a", s: "#e8c8a0", c: "#7a6a3a", b: "#2a2420", k: "#6a5a2a" },
+    rows: [
+      "..hhhh..",
+      ".hssssh.",
+      ".ssssss.",
+      "..ssss..",
+      "..cccc..",
+      "kcccccc.",
+      "kcccccc.",
+      "cccccccc",
+      ".cc..cc.",
+      ".cc..cc.",
+      ".bb..bb.",
+      ".bb..bb.",
+    ],
+  },
+  /** Ông Khải: tóc bạc, áo gi-lê, chiếc đồng hồ sửa dở trong tay. */
+  boss: {
+    scale: 2,
+    palette: { h: "#c8c8cc", s: "#e8c8a0", c: "#4a3a2a", b: "#2a2420", g: "#e0b04a", v: "#6a5a3a" },
+    rows: [
+      "..hhhh..",
+      ".hhhhhh.",
+      ".hssssh.",
+      "..ssss..",
+      ".vvvvvv.",
+      "ccvvvvgg",
+      "ccvvvvgg",
+      "cccccccc",
+      ".cc..cc.",
+      ".cc..cc.",
+      ".bb..bb.",
+      ".bb..bb.",
+    ],
+  },
   /** Ốc trên bộ máy. */
   screw: {
     scale: 2,

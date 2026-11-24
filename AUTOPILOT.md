@@ -310,4 +310,6 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 6.1 — 8dfa316 — R1_ROUNDS (120→176 BPM), POCKET_WATCH (rhythmic false, không unscrew), test BPM cuối 176 và độ dài.
 - 6.2 — ac2f695 — Stillness + isStill, STILL_FEEL, Pattern.still, cảnh nền trong khung né, R2_ROUNDS, STOPWATCH.
 
-- 6.3 — cb894e0 — PACE_FEEL.floor 0.7, 8 câu thật, lagClock + lagClockHands, R3_ROUNDS, METRONOME.
+- 6.3 — cb894e0 — PACE_FEEL.floor 0.7, 8 câu thật, lagClock + lagClockHands, R3_ROUNDS, METRONOME.
+
+- 6.4 — a57d8c2 — Pattern.finish exit, battle/exit.ts, Player.door, loopsSeen, BOSS_ROUNDS, TOWER_CLOCK. (Sửa kèm ở 6.5: fixtures.ts bị ghi sai mã hóa ở 6.4, đã ghi lại UTF-8.)

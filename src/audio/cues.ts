@@ -16,11 +16,19 @@ export type CueName =
   | "pencilDrop"
   | "drawTick"
   | "mend"
-  | "blip";
+  | "blip"
+  | "ring"
+  | "hum"
+  | "bird"
+  | "chime";
 
 /** `hz`: cao độ riêng của tiếng (chỉ `blip` dùng: mỗi người nói một cao độ). */
 export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName, time: number, hz?: number): void {
   if (cue === "blip") blip(ctx, destination, time, hz ?? 440);
+  else if (cue === "ring") ring(ctx, destination, time);
+  else if (cue === "hum") hum(ctx, destination, time);
+  else if (cue === "bird") bird(ctx, destination, time);
+  else if (cue === "chime") chime(ctx, destination, time);
   else if (cue === "wordAbsorb") thud(ctx, destination, time);
   else if (cue === "wordRelease") breath(ctx, destination, time);
   else if (cue === "unscrew") click(ctx, destination, time, 1400);
@@ -187,4 +195,59 @@ function blip(ctx: AudioContext, destination: AudioNode, time: number, hz: numbe
   osc.connect(filter).connect(gain).connect(destination);
   osc.start(time);
   osc.stop(time + 0.05);
+}
+
+/** Một nốt sin có bao: lên nhanh, tắt dần. */
+function tone(ctx: AudioContext, destination: AudioNode, time: number, hz: number, seconds: number, peak: number, type: OscillatorType = "sine"): void {
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(hz, time);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(FLOOR, time);
+  gain.gain.exponentialRampToValueAtTime(peak, time + 0.02);
+  gain.gain.exponentialRampToValueAtTime(FLOOR, time + seconds);
+  osc.connect(gain).connect(destination);
+  osc.start(time);
+  osc.stop(time + seconds + 0.02);
+}
+
+/** Chuông điện thoại chờ máy: hai hồi "rrrr" ngắn (hai nốt xen nhau), một lần phát là một hồi chuông. */
+function ring(ctx: AudioContext, destination: AudioNode, time: number): void {
+  for (let burst = 0; burst < 2; burst++) {
+    const start = time + burst * 0.42;
+    for (let i = 0; i < 8; i++) {
+      tone(ctx, destination, start + i * 0.045, i % 2 === 0 ? 880 : 1040, 0.04, 0.09, "square");
+    }
+  }
+}
+
+/** Ngân nga khẽ: bốn nốt sin mềm, mỗi nốt kéo dài, nối nhau. */
+function hum(ctx: AudioContext, destination: AudioNode, time: number): void {
+  const notes = [330, 392, 349, 294];
+  notes.forEach((hz, i) => tone(ctx, destination, time + i * 0.5, hz, 0.55, 0.16));
+}
+
+/** Tiếng chim: ba tiếng hót ngắn, mỗi tiếng vút lên. */
+function bird(ctx: AudioContext, destination: AudioNode, time: number): void {
+  for (let i = 0; i < 3; i++) {
+    const start = time + i * 0.14;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(2800 + i * 300, start);
+    osc.frequency.exponentialRampToValueAtTime(4000 + i * 300, start + 0.07);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(FLOOR, start);
+    gain.gain.exponentialRampToValueAtTime(0.05, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(FLOOR, start + 0.09);
+    osc.connect(gain).connect(destination);
+    osc.start(start);
+    osc.stop(start + 0.1);
+  }
+}
+
+/** Chuông đồng hồ: một tiếng ngân dài, hai bội âm. */
+function chime(ctx: AudioContext, destination: AudioNode, time: number): void {
+  tone(ctx, destination, time, 660, 1.4, 0.16);
+  tone(ctx, destination, time, 990, 1.0, 0.08);
+  tone(ctx, destination, time, 1650, 0.6, 0.04);
 }

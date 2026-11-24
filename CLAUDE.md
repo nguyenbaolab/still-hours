@@ -72,7 +72,11 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     `Player.door` (lách qua khe, hai bên khe là tường, khe đóng thì đẩy về), `DodgeOptions.loopsSeen` / `DodgePhase.loopsSeen`,
     `BattleScene` giữ số vòng qua lần thua (về 0 khi sang lượt), `data/patterns/boss.ts` (`BOSS_ROUNDS`: giờ làm / ngẩng lên / vòng lặp),
     `data/mechanisms/tower-clock.ts` (`TOWER_CLOCK`, core `escapement`). Cảnh kết `leave` làm ở 6.5 / 7.2.
-- **Bước tiếp theo:** mốc 6.5 trong `AUTOPILOT.md`.
+  - Bước 6.5: thị trấn sống lại. `TOWN_AMBIENCE` (`data/town.ts`: cửa sổ đèn vàng, dải trời, chim, khung tranh trên tường nhà Linh),
+    `ambienceFor` / `birdDelay` (`scenes/town-logic.ts`), `TownInit.drawing` / `random`, `TownScene.ambience`; cảnh kết thật `phone` /
+    `lookUp` / `hum` / `leave` trong `VignetteScene` (cùng `pencil`, mỗi cư dân một cảnh ~10 giây rồi mới lưu), `VIGNETTE_CUES`,
+    cue `ring` / `hum` / `bird` / `chime`, sprite `r2-up` và `boss`. Test ở `scenes/ambience.test.ts`.
+- **Bước tiếp theo:** mốc 6.6 trong `AUTOPILOT.md` (kiểm trọn vòng bằng bot).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -759,7 +763,7 @@ Hiện đã có:
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: cảnh kết `phone`, `lookUp`, `hum`, `leave` và cue `ring` / `hum` / `bird` / `chime` (6.5, 7.2).
+- Chưa có code: kiểm trọn vòng bằng bot (6.6), font VT323 (7.1), nền thị trấn / tích tắc màn bắt đầu và kết (7.2), vòng hình ảnh (7.3).
 - File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,

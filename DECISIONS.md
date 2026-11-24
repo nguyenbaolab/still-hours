@@ -136,3 +136,13 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Thắng bằng khe đi cùng nhánh dọn đạn như length (clearing rồi won).
 - Lượt 2 của boss dùng still với cảnh 	ower (đã có sẵn trong ackdrops.ts); đạn xao nhãng không có bút nên chỉ hút.
 - Bộ phận của TOWER_CLOCK: bu lông ×2, nắp che; kim giờ, kim phút, mặt số; quả nặng, bộ bánh răng, con lắc, bộ thoát (core). Sprite placeholder dùng chung.
+
+## 6.5
+
+- Cảnh kết của mọi cư dân là VignetteScene riêng (màn tối, hình khối + sprite), không dựng trong TownScene: cùng cách với cảnh pencil của Linh đã chốt ở bước 4.3, nên r1–r3 và boss không còn đứng yên `freedHoldSeconds` giây. Cảnh kết thật trong thị trấn (camera, đèn) để dành cho lần sau nếu chủ dự án muốn.
+- Boss cũng có cảnh leave ngắn (đặt đồng hồ xuống, bước ra cửa) trước khi sang màn kết.
+- Dải trời của r2: dải cao 12 px ở mép trên màn hình (không theo camera), vì dãy mái nhà phủ kín hàng 0 nên không có ô trời thật.
+- Tiếng chim: một cue ird (ba tiếng hót) mỗi 6–12 giây, ngẫu nhiên không cần tái lập (andom truyền vào để test cố định). Chỉ phát trong TownScene (màn kết dùng chung TownScene nên cũng nghe chim).
+- Tranh trên tường nhà Linh: khung 64×28 px ở cột 45–46, hàng 0–1; vẽ từ SaveData.drawing thu vào khung giữ tỉ lệ; không có nét thì tờ giấy trắng.
+- Thêm sprite placeholder 2-up và oss; cue ing, hum, ird, chime làm luôn ở đây vì cảnh cần chúng (7.2 chỉ còn kiểm và lớp nền).
+- Lỗi mã hóa: `Add-Content` của Windows PowerShell ghi ANSI làm hỏng UTF-8 (đã gặp ở fixtures.ts). Dùng `AppendAllText` với UTF8 không BOM; đã quét toàn bộ src và các file md: không còn file sai.

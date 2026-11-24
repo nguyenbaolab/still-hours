@@ -89,11 +89,11 @@ export const LENGTH_FIXTURE: Pattern = {
 };
 
 /**
- * Pha n� ki?u `exit`, kh�ng c� d?n: 120 BPM, v�ng 8 beat (4 gi�y). Khe b�n ph?i gi?a c?nh, m? ? beat 4 c?a m?i v�ng:
- * v�ng 1 r?ng 28 px trong 2 beat, v�ng 2 r?ng 44 px trong 3 beat, t? v�ng 3 r?ng 64 px v� m? t?i h?t v�ng.
+ * Pha né kiểu `exit`, không có đạn: 120 BPM, vòng 8 beat (4 giây). Khe bên phải giữa cạnh, mở ở beat 4 của mỗi vòng:
+ * vòng 1 rộng 28 px trong 2 beat, vòng 2 rộng 44 px trong 3 beat, từ vòng 3 rộng 64 px và mở tới hết vòng.
  */
 export const EXIT_FIXTURE: Pattern = {
-  name: "fixture khe c?a",
+  name: "fixture khe cửa",
   bpm: 120,
   lengthBeats: 8,
   loop: true,

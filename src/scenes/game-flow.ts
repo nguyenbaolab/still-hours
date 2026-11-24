@@ -56,8 +56,8 @@ export function townSpawnFor(freed: readonly ResidentId[]): Tile | undefined {
 /**
  * Luồng của cả game (CLAUDE.md, "Trình tự đầy đủ"): Title → Intro → Town → (hội thoại mở → trận → cảnh kết → lưu →
  * Town) × 5 → Ending → Title. Giữ `Director` và tiến trình (`freed`, tranh của r4); mỗi chuyển cảnh là một `fadeTo`.
- * Lưu sau mỗi cư dân (kể cả boss, kèm `finished`). Cảnh kết ở thị trấn của r1–r3 và boss tạm là đứng yên
- * `FLOW_FEEL.freedHoldSeconds` giây (cảnh thật ở mốc 6.5); r4 có `VignetteScene` "pencil".
+ * Lưu sau mỗi cư dân (kể cả boss, kèm `finished`). Mỗi cư dân có một `VignetteScene` ~10 giây (`ResidentData.vignette`)
+ * trước khi lưu và về thị trấn.
  */
 export class GameFlow {
   readonly director: Director;
@@ -141,10 +141,8 @@ export class GameFlow {
         if (resident.id === "r4") {
           this.strokes = stage.scene.page ? strokesFromSegments(stage.scene.page.sketch.segments) : [];
           this.drawing = encodeDrawing(this.strokes, BATTLE_LAYOUT.arena);
-          this.director.fadeTo(() => this.newVignette(resident));
-        } else {
-          this.director.fadeTo(() => this.complete(resident.id));
         }
+        this.director.fadeTo(() => this.newVignette(resident));
         return;
       }
       case "vignette":
@@ -201,7 +199,7 @@ export class GameFlow {
 
   private newTown(spawn: Tile | undefined, holdSeconds: number): Scene {
     const { input, audio, measure, residents } = this.deps;
-    const scene = new TownScene(TOWN, residents, { freed: this.freedIds, spawn, holdSeconds }, input, audio, measure);
+    const scene = new TownScene(TOWN, residents, { freed: this.freedIds, spawn, holdSeconds, drawing: this.drawing }, input, audio, measure);
     this.stage = { kind: "town", scene };
     return scene;
   }
@@ -213,7 +211,7 @@ export class GameFlow {
   }
 
   private newVignette(resident: ResidentData): Scene {
-    const scene = new VignetteScene(resident.vignette, this.deps.input, { drawing: this.strokes });
+    const scene = new VignetteScene(resident.vignette, this.deps.input, { drawing: this.strokes }, this.deps.audio);
     this.stage = { kind: "vignette", scene, resident };
     return scene;
   }
@@ -221,7 +219,7 @@ export class GameFlow {
   private newEnding(): Scene {
     const { input, audio, measure, residents, store } = this.deps;
     const everyone = residents.map((r) => r.id);
-    const world = new TownScene(TOWN, residents, { freed: everyone }, input, audio, measure);
+    const world = new TownScene(TOWN, residents, { freed: everyone, drawing: this.drawing }, input, audio, measure);
     const scene = new EndingScene(world, input, audio, { clear: () => store.clear() }, this.director.playSeconds);
     this.stage = { kind: "ending", scene };
     return scene;

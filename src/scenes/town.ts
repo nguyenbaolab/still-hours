@@ -1,12 +1,16 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
+import { fitStrokes, type Pt } from "../core/drawing";
 import { clamp, lerp } from "../core/math";
+import { decodeDrawing } from "../core/save";
 import type { Renderer } from "../core/renderer";
+import { BATTLE_LAYOUT } from "../data/battle-layout";
 import { DIALOGUES, type DialogueId } from "../data/dialogues";
 import { TOWN_FEEL } from "../data/flow-feel";
 import type { ResidentData, ResidentId } from "../data/residents/types";
 import {
+  TOWN_AMBIENCE,
   TOWN_GATE_ROWS,
   TOWN_NPCS,
   TOWN_SIGNS,
@@ -18,7 +22,16 @@ import {
 import { drawBackdrop } from "./backdrop";
 import { DialogueBox, type MeasureText } from "./dialogue-box";
 import type { Scene } from "./scene";
-import { blockedTiles, facingFor, moveBody, pickInteraction, type Facing } from "./town-logic";
+import {
+  ambienceFor,
+  birdDelay,
+  blockedTiles,
+  facingFor,
+  moveBody,
+  pickInteraction,
+  type AmbienceLayers,
+  type Facing,
+} from "./town-logic";
 
 /** Việc thị trấn nhờ bên ngoài làm: vào trận với một cư dân (sau khi hội thoại mở đã đọc xong). */
 export interface TownRequest {
@@ -33,6 +46,10 @@ export interface TownInit {
   spawn?: Tile;
   /** Đứng yên (không nhận phím) chừng này giây đầu: nhịp thở sau khi một cư dân được giải thoát. */
   holdSeconds?: number;
+  /** Tranh của r4 (`SaveData.drawing`) để treo trên tường nhà Linh. Chỉ vẽ khi r4 đã giải thoát; null/rỗng = giấy trắng. */
+  drawing?: readonly number[] | null;
+  /** Nguồn ngẫu nhiên cho tiếng chim (0..1). Mặc định `Math.random`; test truyền bản cố định. */
+  random?: () => number;
 }
 
 type Mode = "walk" | "dialogue" | "spot";
@@ -75,6 +92,11 @@ export class TownScene implements Scene {
   private pending: TownRequest | null = null;
   private tick = 0;
   private readonly holdTicks: number;
+  private readonly layers: AmbienceLayers;
+  private readonly wallStrokes: Pt[][];
+  private readonly random: () => number;
+  /** Số tick còn lại tới tiếng chim kế tiếp. */
+  private birdTicks = 0;
 
   constructor(
     private readonly map: TownMap,
@@ -91,6 +113,23 @@ export class TownScene implements Scene {
     this.x = this.prevX = (spawn.x + 0.5) * this.tile;
     this.y = this.prevY = (spawn.y + 0.5) * this.tile;
     this.objects = this.buildObjects();
+    this.layers = ambienceFor(this.freed);
+    this.random = init.random ?? Math.random;
+    this.birdTicks = this.nextBirdTicks();
+    const { frame } = TOWN_AMBIENCE.wall;
+    const inner = { x: frame.x + 3, y: frame.y + 3, w: frame.w - 6, h: frame.h - 6 };
+    const arena = BATTLE_LAYOUT.arena;
+    this.wallStrokes = fitStrokes(decodeDrawing(init.drawing ?? []), { x: 0, y: 0, w: arena.w, h: arena.h }, inner);
+  }
+
+  private nextBirdTicks(): number {
+    const { minSeconds, maxSeconds } = TOWN_AMBIENCE.birds;
+    return Math.round(birdDelay(this.random(), minSeconds, maxSeconds) * TICK_RATE);
+  }
+
+  /** Lớp thị trấn đang bật (đèn cửa sổ, dải trời, chim, tranh trên tường). */
+  get ambience(): AmbienceLayers {
+    return this.layers;
   }
 
   private buildObjects(): Interactable[] {
@@ -138,6 +177,10 @@ export class TownScene implements Scene {
 
   update(): void {
     this.tick++;
+    if (this.layers.birds && --this.birdTicks <= 0) {
+      this.audio.playCue("bird");
+      this.birdTicks = this.nextBirdTicks();
+    }
     switch (this.mode) {
       case "walk":
         if (this.tick <= this.holdTicks) {
@@ -263,6 +306,7 @@ export class TownScene implements Scene {
       }
     }
 
+    this.renderAmbience(renderer, camX, camY);
     this.renderGates(renderer, camX, camY);
 
     // Cư dân và người thợ, xếp theo hàng để cái thấp hơn che cái cao hơn.
@@ -286,6 +330,43 @@ export class TownScene implements Scene {
       });
     }
     sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
+  }
+
+  /** Các lớp đổi dần theo cư dân đã giải thoát: đèn cửa sổ, tranh trên tường, dải trời. */
+  private renderAmbience(renderer: Renderer, camX: number, camY: number): void {
+    const t = this.tile;
+    const feel = TOWN_AMBIENCE;
+    if (this.layers.windows) {
+      for (const tile of feel.windows.tiles) {
+        const sx = tile.x * t - camX;
+        if (sx < -t || sx > GAME_WIDTH) continue;
+        const sy = tile.y * t + camY;
+        renderer.rect(sx + 8, sy + 6, 16, 18, feel.windows.glow);
+        renderer.rect(sx + 10, sy + 8, 12, 14, feel.windows.color);
+      }
+    }
+    if (this.layers.wall) {
+      const { frame } = feel.wall;
+      const sx = frame.x - camX;
+      if (sx > -frame.w && sx < GAME_WIDTH) {
+        const sy = frame.y + camY;
+        renderer.rect(sx, sy, frame.w, frame.h, feel.wall.edge);
+        renderer.rect(sx + 2, sy + 2, frame.w - 4, frame.h - 4, feel.wall.paper);
+        renderer.clip(sx + 2, sy + 2, frame.w - 4, frame.h - 4);
+        for (const stroke of this.wallStrokes) {
+          for (let i = 1; i < stroke.length; i++) {
+            const a = stroke[i - 1] as Pt;
+            const b = stroke[i] as Pt;
+            renderer.line(a.x - camX, a.y + camY, b.x - camX, b.y + camY, 1, feel.wall.ink);
+          }
+        }
+        renderer.unclip();
+      }
+    }
+    if (this.layers.sky) {
+      renderer.rect(0, 0, GAME_WIDTH, feel.sky.height, feel.sky.color);
+      renderer.rect(0, feel.sky.height - 4, GAME_WIDTH, 4, feel.sky.edge);
+    }
   }
 
   /** Vài nét trang trí lên ô: cửa, cây, biển, bàn, lan can. */

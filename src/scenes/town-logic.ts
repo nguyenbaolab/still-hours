@@ -152,3 +152,25 @@ export function facingFor(dx: number, dy: number, previous: Facing): Facing {
   if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? "right" : "left";
   return dy > 0 ? "down" : "up";
 }
+
+/** Lớp thị trấn nào đang bật theo danh sách cư dân đã giải thoát (xem `TOWN_AMBIENCE`). */
+export interface AmbienceLayers {
+  windows: boolean;
+  sky: boolean;
+  birds: boolean;
+  wall: boolean;
+}
+
+export function ambienceFor(freed: readonly ResidentId[]): AmbienceLayers {
+  return {
+    windows: freed.includes("r1"),
+    sky: freed.includes("r2"),
+    birds: freed.includes("r3"),
+    wall: freed.includes("r4"),
+  };
+}
+
+/** Giây tới tiếng chim kế tiếp, với `rand` trong [0, 1). */
+export function birdDelay(rand: number, minSeconds: number, maxSeconds: number): number {
+  return minSeconds + Math.min(0.999999, Math.max(0, rand)) * (maxSeconds - minSeconds);
+}
