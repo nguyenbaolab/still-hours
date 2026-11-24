@@ -1,6 +1,6 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { TickScheduler } from "../audio/tick-scheduler";
-import { Workbench } from "./mechanism";
+import { stageOf, type Workbench } from "./mechanism";
 import { BeatClock } from "../core/beat-clock";
 import type { Input } from "../core/input";
 import type { Renderer } from "../core/renderer";
@@ -22,32 +22,43 @@ const COLOR = {
   debug: "#9fb3a8",
 } as const;
 
+export type DisassembleOutcome = "playing" | "done";
+
 /**
- * Pha tháo lắp: con trỏ chọn bộ phận, confirm thao tác theo nhịp nghe được.
- * Không biết pha né đạn. Chơi lại khi đã tháo core thì dựng lại chính cỗ máy này.
+ * Pha tháo lắp của một tầng: con trỏ chọn bộ phận, confirm thao tác theo nhịp nghe được.
+ * Không biết pha né đạn. `Workbench` do người gọi giữ (một cho cả trận, qua ba tầng); tầng xong
+ * (đã tháo hết bộ phận của tầng và đóng câu ký ức cuối) thì `outcome` là `done`.
  */
 export class DisassemblePhase implements Scene {
-  private bench: Workbench;
   private clock: BeatClock;
   private ticks: TickScheduler;
   private memoryShown = 0;
   private debug = false;
   private heardAt: number;
+  private done = false;
 
   constructor(
     private readonly input: Input,
     private readonly audio: AudioPort,
     private readonly mechanism: Mechanism,
+    private readonly bench: Workbench,
+    private readonly stage: number,
   ) {
-    this.bench = new Workbench(mechanism, DISASSEMBLY_FEEL);
+    this.bench.setStage(stage);
     this.clock = this.makeClock();
     this.ticks = new TickScheduler(this.clock, () => audio.contextTime(), audio.tickSink);
     this.heardAt = audio.heardTime();
   }
 
+  get outcome(): DisassembleOutcome {
+    return this.done ? "done" : "playing";
+  }
+
   update(): void {
     if (this.input.wasPressed("debug")) this.debug = !this.debug;
     if (this.input.wasPressed("mute")) this.audio.toggleMute();
+
+    if (this.done) return;
 
     const heard = this.audio.heardTime();
     const heardDt = Math.max(0, heard - this.heardAt);
@@ -65,15 +76,11 @@ export class DisassemblePhase implements Scene {
         else {
           this.bench.closeMemory();
           this.memoryShown = 0;
+          if (this.bench.stageComplete) this.done = true;
         }
       } else {
         this.memoryShown = Math.min(text.length, this.memoryShown + DISASSEMBLY_FEEL.memoryCharsPerSecond * heardDt);
       }
-      return;
-    }
-
-    if (this.bench.finished) {
-      if (this.input.wasPressed("confirm")) this.restart();
       return;
     }
 
@@ -84,6 +91,8 @@ export class DisassemblePhase implements Scene {
 
     if (this.input.wasPressed("confirm")) this.apply(this.bench.press(tempo, time));
     this.apply(this.bench.hold(tempo, time, this.input.isDown("confirm")));
+    // Tháo xong bộ phận cuối của tầng mà không có câu ký ức thì tầng xong ngay.
+    if (this.bench.stageComplete) this.done = true;
   }
 
   render(renderer: Renderer, _alpha: number): void {
@@ -94,6 +103,8 @@ export class DisassemblePhase implements Scene {
 
     for (const part of this.mechanism.parts) {
       if (this.bench.removed.has(part.id)) continue;
+      const later = stageOf(part) > this.stage;
+      renderer.setAlpha(later ? 0.35 : 1);
       const size = renderer.sprites.size(part.sprite);
       const x = bench.x + part.x * bench.w - size.width / 2;
       const y = bench.y + part.y * bench.h - size.height / 2;
@@ -102,7 +113,8 @@ export class DisassemblePhase implements Scene {
         renderer.rect(bench.x + box.x * bench.w, bench.y + box.y * bench.h, box.w * bench.w, box.h * bench.h, COLOR.flash);
       }
       renderer.sprite(part.sprite, x, y);
-      if (part.id === this.bench.selectedId) {
+      renderer.setAlpha(1);
+      if (!later && part.id === this.bench.selectedId) {
         const box = part.hit;
         renderer.rectOutline(
           bench.x + box.x * bench.w,
@@ -122,10 +134,8 @@ export class DisassemblePhase implements Scene {
         color: COLOR.memory,
         size: 16,
       });
-    } else if (this.bench.finished) {
-      renderer.text("xong", 320, 150, { color: COLOR.text, size: 20, align: "center" });
-    } else {
-      renderer.text("Mũi tên chọn · Z thao tác", 32, DISASSEMBLY_LAYOUT.memoryY, { color: COLOR.hint, size: 12 });
+    } else if (this.mechanism.showHint && this.stage === 1) {
+      renderer.text("Mũi tên chọn · Z thao tác", 32, DISASSEMBLY_LAYOUT.memoryY, { color: COLOR.hint, size: 16 });
     }
 
     if (this.debug) {
@@ -142,7 +152,7 @@ export class DisassemblePhase implements Scene {
 
   private drawProgress(renderer: Renderer): void {
     const part = this.mechanism.parts.find((item) => item.id === this.bench.selectedId);
-    if (!part || this.bench.removed.has(part.id) || this.bench.memory || this.bench.finished) return;
+    if (!part || this.bench.removed.has(part.id) || this.bench.memory || this.done) return;
     const bench = DISASSEMBLY_LAYOUT.bench;
     const left = bench.x + part.hit.x * bench.w;
     const top = bench.y + (part.hit.y + part.hit.h) * bench.h + 4;
@@ -160,14 +170,6 @@ export class DisassemblePhase implements Scene {
   private apply(result: { cue: "unscrew" | "lift" | "unhook" | "clack" | null; removedId: string | null }): void {
     if (result.cue) this.audio.playCue(result.cue);
     if (result.removedId && this.bench.memory) this.memoryShown = 0;
-  }
-
-  private restart(): void {
-    this.ticks.dropPending();
-    this.bench.reset();
-    this.memoryShown = 0;
-    this.clock = this.makeClock();
-    this.ticks = new TickScheduler(this.clock, () => this.audio.contextTime(), this.audio.tickSink);
   }
 
   private makeClock(): BeatClock {

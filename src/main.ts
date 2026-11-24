@@ -1,6 +1,7 @@
 import "./style.css";
 import { AudioEngine } from "./audio/audio-engine";
 import { DisassemblePhase } from "./battle/disassemble-phase";
+import { Workbench } from "./battle/mechanism";
 import { DodgePhase } from "./battle/dodge-phase";
 import type { PageState } from "./battle/page";
 import { Input } from "./core/input";
@@ -9,6 +10,7 @@ import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import type { Pattern } from "./data/pattern-types";
 import { KEY_BINDINGS } from "./data/keybindings";
+import { DISASSEMBLY_FEEL } from "./data/disassembly-feel";
 import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
 import { CLOCKWORK } from "./data/mechanisms/clockwork";
 import { R4_ROUNDS } from "./data/patterns/resident-4";
@@ -40,6 +42,19 @@ let scene: Scene = pressStart;
 let dodge: DodgePhase | null = null;
 let page: PageState | undefined;
 let round = 0;
+let bench: Workbench | null = null;
+let disassemble: DisassemblePhase | null = null;
+let stage = 1;
+
+/** Chơi thử pha tháo: tầng 1 → 2 → 3 trên cùng một bàn, rồi lại từ đầu. */
+function startDisassemble(): DisassemblePhase {
+  if (!bench || stage > 3) {
+    bench = new Workbench(CLOCKWORK, DISASSEMBLY_FEEL);
+    stage = 1;
+  }
+  disassemble = new DisassemblePhase(input, audio, CLOCKWORK, bench, stage);
+  return disassemble;
+}
 
 function startDodge(pattern: Pattern): DodgePhase {
   const phase = new DodgePhase(input, audio, renderer.sprites.size("gear").width, pattern, page ? { page } : {});
@@ -53,7 +68,10 @@ startLoop({
     input.poll();
     scene.update();
     if (scene === pressStart && pressStart.ready) {
-      scene = PLAYTEST_PHASE === "disassemble" ? new DisassemblePhase(input, audio, CLOCKWORK) : startDodge(PLAYTEST_PATTERN);
+      scene = PLAYTEST_PHASE === "disassemble" ? startDisassemble() : startDodge(PLAYTEST_PATTERN);
+    } else if (disassemble && scene === disassemble && disassemble.outcome === "done") {
+      stage++;
+      scene = startDisassemble();
     } else if (dodge && scene === dodge && dodge.outcome !== "playing") {
       if (dodge.outcome === "won") {
         page?.closeRound();

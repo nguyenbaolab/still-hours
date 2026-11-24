@@ -24,8 +24,13 @@ export interface Part {
   operation: Operation;
   /** Một câu ngắn tiếng Việt. Có thì hiện sau khi tháo xong. */
   memory?: string;
-  /** Tháo xong bộ phận này thì pha kết thúc. Đúng một bộ phận trong máy. */
+  /** Tháo xong bộ phận này thì cả cỗ máy xong. Đúng một bộ phận trong máy, ở tầng cuối. */
   core?: boolean;
+  /**
+   * Tầng (số nguyên ≥ 1, mặc định 1). Một trận có 3 tầng, mỗi lượt tháo một tầng; tầng cuối chứa `core`.
+   * Bộ phận ở tầng sau vẫn được vẽ (nó nằm trong máy) nhưng con trỏ bỏ qua.
+   */
+  stage?: number;
 }
 
 export interface Mechanism {
@@ -34,4 +39,6 @@ export interface Mechanism {
   /** false = vặn và gỡ không cần đúng nhịp. Nhấc vẫn giữ đủ số beat. */
   rhythmic: boolean;
   parts: readonly Part[];
+  /** Hiện dòng gợi ý phím ở tầng 1 ("Mũi tên chọn · Z thao tác"). Chỉ cư dân đầu tiên cần. */
+  showHint?: boolean;
 }

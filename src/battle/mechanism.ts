@@ -50,7 +50,62 @@ export function validateMechanism(mechanism: Mechanism): string[] {
   else if (cores !== 1) fail("không đúng một core");
 
   if (!canReachCore(mechanism.parts)) fail("không có thứ tự tháo tới core");
+
+  validateStages(mechanism, fail);
   return problems;
+}
+
+/** Tầng của một bộ phận (mặc định 1). */
+export function stageOf(part: Part): number {
+  return part.stage ?? 1;
+}
+
+/** Số tầng lớn nhất của máy. */
+export function lastStage(mechanism: Mechanism): number {
+  let max = 1;
+  for (const part of mechanism.parts) max = Math.max(max, stageOf(part));
+  return max;
+}
+
+function validateStages(mechanism: Mechanism, fail: (message: string) => void): void {
+  const { parts } = mechanism;
+  const byId = new Map(parts.map((part) => [part.id, part]));
+  for (const part of parts) {
+    const stage = stageOf(part);
+    if (!Number.isInteger(stage) || stage < 1) fail(`"${part.id}" có tầng ${stage} không hợp lệ (số nguyên ≥ 1)`);
+  }
+  for (const part of parts) {
+    for (const blocker of part.blockedBy) {
+      const other = byId.get(blocker);
+      if (other && stageOf(other) > stageOf(part)) {
+        fail(`"${part.id}" (tầng ${stageOf(part)}) bị chặn bởi "${blocker}" ở tầng sau (${stageOf(other)})`);
+      }
+    }
+  }
+  const last = lastStage(mechanism);
+  for (let stage = 1; stage <= last; stage++) {
+    if (!parts.some((part) => stageOf(part) === stage)) fail(`thiếu tầng ${stage} (tầng ${last} là tầng cuối)`);
+  }
+  const core = parts.find((part) => part.core);
+  if (core && stageOf(core) !== last) fail(`core "${core.id}" ở tầng ${stageOf(core)}, phải ở tầng cuối (${last})`);
+
+  // Mỗi tầng tháo hết được chỉ với bộ phận của các tầng ≤ nó.
+  for (let stage = 1; stage <= last; stage++) {
+    const within = parts.filter((part) => stageOf(part) <= stage);
+    if (!canRemoveAll(within)) fail(`tầng ${stage} không tháo hết được chỉ với bộ phận của các tầng ≤ ${stage}`);
+  }
+}
+
+/** Có thứ tự tháo hết mọi bộ phận trong `parts` (chỉ tính bộ phận chặn nằm trong `parts`; chặn ngoài tập thì bỏ qua). */
+function canRemoveAll(parts: readonly Part[]): boolean {
+  const ids = new Set(parts.map((part) => part.id));
+  const removed = new Set<string>();
+  for (let guard = 0; guard <= parts.length; guard++) {
+    const next = parts.find((part) => !removed.has(part.id) && part.blockedBy.every((id) => removed.has(id) || !ids.has(id)));
+    if (!next) break;
+    removed.add(next.id);
+  }
+  return removed.size === parts.length;
 }
 
 function hasCycle(parts: readonly Part[]): boolean {
@@ -135,6 +190,8 @@ export function onBeat(tempo: TempoMap, time: number, window: number, rhythmic: 
  */
 export class Workbench {
   readonly removed = new Set<string>();
+  /** Tầng đang mở. Bộ phận ở tầng sau vẫn có trong máy nhưng con trỏ bỏ qua. */
+  stage = 1;
   selectedId: string;
   finished = false;
   /** Câu đang đọc. Null khi không có. */
@@ -153,6 +210,34 @@ export class Workbench {
     const first = mechanism.parts[0];
     if (!first) throw new Error(`Cỗ máy không hợp lệ:\n${mechanism.name}: không có bộ phận`);
     this.selectedId = first.id;
+    this.setStage(1);
+  }
+
+  /**
+   * Mở tầng `stage`. Con trỏ về bộ phận chọn được gần góc trên trái nhất.
+   * Một cuộc chơi (một trận) dùng một `Workbench` cho cả ba tầng, nên `removed` giữ qua các tầng.
+   */
+  setStage(stage: number): void {
+    this.stage = stage;
+    this.memory = null;
+    this.liftFrom = null;
+    this.liftPart = null;
+    let best: Part | undefined;
+    let bestDistance = Infinity;
+    for (const part of this.available()) {
+      const distance = Math.hypot(part.x, part.y);
+      if (distance < bestDistance - 1e-9) {
+        bestDistance = distance;
+        best = part;
+      }
+    }
+    if (best) this.selectedId = best.id;
+  }
+
+  /** Mọi bộ phận của các tầng ≤ tầng đang mở đã tháo, và không còn câu ký ức đang mở. */
+  get stageComplete(): boolean {
+    if (this.memory) return false;
+    return this.mechanism.parts.every((part) => stageOf(part) > this.stage || this.removed.has(part.id));
   }
 
   notchCount(id: string): number {
@@ -250,16 +335,17 @@ export class Workbench {
     this.finished = false;
     this.liftFrom = null;
     this.liftPart = null;
-    const first = this.mechanism.parts[0];
-    if (first) this.selectedId = first.id;
+    this.stage = 1;
+    this.setStage(1);
   }
 
+  /** Bộ phận con trỏ chọn được: chưa tháo và thuộc tầng đã mở. */
   private available(): Part[] {
-    return this.mechanism.parts.filter((part) => !this.removed.has(part.id));
+    return this.mechanism.parts.filter((part) => !this.removed.has(part.id) && stageOf(part) <= this.stage);
   }
 
   private selected(): Part | undefined {
-    return this.mechanism.parts.find((part) => part.id === this.selectedId && !this.removed.has(part.id));
+    return this.available().find((part) => part.id === this.selectedId);
   }
 
   private stillBlocking(part: Part): string[] {

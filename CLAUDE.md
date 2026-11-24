@@ -21,12 +21,14 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước (3b): "Nhặt bút" cho cư dân 4 (mốc 3b.1–3b.3 của AUTOPILOT): trống giấy và tẩy đã xóa; bút, trang vẽ, đồng hồ
     của cô bé, `finish` (`length`, `page`), `DodgePhase.outcome`, ba lượt `R4_ROUNDS`. Hết máu thì `outcome` là `lost`
     (màn thua có ở mốc 4.1). `main.ts` chơi thử `R4_ROUNDS` khi `PLAYTEST_PHASE` là `"dodge"`.
-  - Bước (3c): pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK` (commit `1a057f3`). Chưa chơi thử.
-    `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
+  - Bước (3c): pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK` (commit `1a057f3`), rồi tầng (mốc 3c.1): `Part.stage`,
+    `Workbench.setStage` / `stageComplete`, `DisassemblePhase(input, audio, mechanism, bench, stage)` với `outcome`
+    (`playing` / `done`), `CLOCKWORK` chia 3 tầng. `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (tháo
+    tầng 1 → 2 → 3 rồi lại từ đầu; đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
 - **Phiên thiết kế 2026-11-24 (chỉ tài liệu, không code):** thiết kế lại cư dân 4 thành **"Nhặt bút"** (mục cư dân 4),
   chốt mọi quyết định còn mở (cấu trúc trận, thua, màn bắt đầu/mở đầu/kết, thị trấn, hội thoại, cư dân 1–3 và boss,
   lưu tiến trình, font VT323, phím nhảy cóc), và tạo `AUTOPILOT.md` với kế hoạch từng mốc.
-- **Bước tiếp theo:** mốc 3c.1 trong `AUTOPILOT.md` (tầng của pha tháo lắp), rồi bước 4.
+- **Bước tiếp theo:** bước 4 trong `AUTOPILOT.md` (mốc 4.1: dữ liệu cư dân và `BattleScene`).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -404,9 +406,8 @@ một quãng, phải đi nhặt lại. Một mặt đồng hồ nhỏ của cô 
 
 ## Pha tháo lắp
 
-Bản thô dùng chung cho mọi cư dân, đã làm ở bước 3c. Chưa ghép với pha né đạn (đó là bước 4). Phần "Tầng" ở cuối mục
-là thiết kế đã chốt nhưng chưa làm; khi làm xong, câu "Tháo xong `core`: hiện xong…" và `PLAYTEST_PHASE` bên dưới
-hết hiệu lực. Mỗi cỗ máy là dữ liệu
+Bản thô dùng chung cho mọi cư dân, đã làm ở bước 3c, kể cả phần "Tầng" ở cuối mục (mốc 3c.1; câu "Tháo xong `core`:
+hiện xong…" ở trên đã thay bằng `outcome`). Chưa ghép với pha né đạn (đó là bước 4). Mỗi cỗ máy là dữ liệu
 trong `src/data/mechanisms/`. Pha này tự dựng `BeatClock` và tiếng tích tắc, cùng cách pha né: beat là hàm của
 giờ nghe được.
 
@@ -426,8 +427,8 @@ giờ nghe được.
 - Chọn bộ phận đang bị chặn: mọi bộ phận chặn còn lắp sáng trong `blockFlashBeats` beat. Không tiếng cạch, không phạt.
 - Tháo xong bộ phận có câu ký ức: hiện câu đó, chạy với `memoryCharsPerSecond`. Confirm lúc chữ chưa hiện hết thì
   hiện nốt; confirm lúc đã hiện hết thì đóng. Lần bấm vừa tháo xong không đóng câu.
-- Tháo xong `core`: hiện "xong". Confirm sau đó chơi lại cùng cỗ máy. Nếu core có câu ký ức thì đọc câu trước,
-  đóng câu rồi mới tới "xong".
+- Tháo xong tầng (bộ phận cuối của tầng, kèm đóng câu ký ức của nó nếu có): `outcome` là `done`. Không còn chữ "xong"
+  và không tự chơi lại. Tháo xong `core` là tháo xong tầng cuối.
 - Tiếng `unscrew`, `lift`, `unhook`, `clack` là tổng hợp procedural, phát qua `playCue` theo tên, cùng gain với
   tiếng tích tắc.
 - Hình là sprite placeholder theo id. Cỗ máy thử `CLOCKWORK`: 4 ốc (`unscrew`) → mặt đồng hồ (`lift`) → tấm che
