@@ -11,12 +11,13 @@ import { PLAYER_FEEL } from "../data/feel";
 import { FLOW_FEEL, STILL_FEEL } from "../data/flow-feel";
 import type { Pattern } from "../data/pattern-types";
 import { TEST_PATTERN } from "../data/patterns/test-pattern";
-import { BULLET_FEEL, PACE_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
+import { BULLET_FEEL, LAG_CLOCK_FEEL, PACE_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
 import { DISTRACTION_FEEL, DRAW_FEEL, SKETCH_FEEL } from "../data/sketch-feel";
 import { drawBackdrop } from "../scenes/backdrop";
 import type { Scene } from "../scenes/scene";
 import { BulletWorld } from "./bullets";
 import { InkLayer } from "./ink-layer";
+import { lagClockHands } from "./lag-clock";
 import { Pace } from "./pace";
 import { isStill, Stillness } from "./stillness";
 import { addDrawnBeats, dropPoint, PageState, pencilHome, pencilPickup, type Point } from "./page";
@@ -383,6 +384,7 @@ export class DodgePhase implements Scene {
 
     this.renderHpBar(renderer);
     this.renderGirlClock(renderer);
+    this.renderLagClock(renderer);
     renderer.setAlpha(1);
 
     if (this.idleLeft > 0 && !revealing) {
@@ -427,6 +429,26 @@ export class DodgePhase implements Scene {
     renderer.disc(cx, cy, r, COLOR.clockInside);
     const angle = -Math.PI / 2 + Math.PI * 2 * Math.min(1, this.pageState.drawnBeats / finish.drawBeats);
     renderer.line(cx, cy, cx + Math.cos(angle) * (r - 3), cy + Math.sin(angle) * (r - 3), 2, COLOR.clockHand);
+    renderer.disc(cx, cy, 2, COLOR.clockFace);
+  }
+
+  /** Mặt đồng hồ trễ, ngay ngoài góc phải trên của khung: kim mờ giờ thật, kim sáng giờ kịch bản của beat đang nghe. */
+  private renderLagClock(renderer: Renderer): void {
+    if (!this.pattern.lagClock) return;
+    const { arena } = this;
+    const { radius: r, secondsPerTurn } = LAG_CLOCK_FEEL;
+    const cx = arena.x + arena.w - r;
+    const cy = arena.y - BATTLE_LAYOUT.borderThickness - r - 6;
+    const tempo = this.clock.tempo;
+    const hands = lagClockHands(this.clock.time, tempo.scriptTimeAtBeat(Math.max(0, this.clock.beat)), secondsPerTurn);
+    renderer.disc(cx, cy, r + 2, COLOR.clockFace);
+    renderer.disc(cx, cy, r, COLOR.clockInside);
+    const hand = (deg: number, length: number, width: number, color: string): void => {
+      const angle = -Math.PI / 2 + (deg * Math.PI) / 180;
+      renderer.line(cx, cy, cx + Math.cos(angle) * length, cy + Math.sin(angle) * length, width, color);
+    };
+    hand(hands.real, r - 3, 2, LAG_CLOCK_FEEL.realColor);
+    hand(hands.script, r - 5, 2, LAG_CLOCK_FEEL.scriptColor);
     renderer.disc(cx, cy, 2, COLOR.clockFace);
   }
 

@@ -65,7 +65,8 @@ export const RHYTHM_FEEL: RhythmFeel = {
 /**
  * Hệ số nhịp: nhân lên BPM kịch bản, luôn nằm trong (0, 1]. Dùng chung, không gắn một cư dân.
  * Trúng câu hạ ngay từ beat nguyên kế tiếp; câu đi qua hồi một nấc ở đầu nhịp kế.
- * Sàn 0,8 vì 1 / 0,8 = 1,25: kể cả bị trúng liên tục, trận không dài quá 1,25 lần kịch bản.
+ * Sàn 0,7 (chốt ở mốc 6.3, trước là 0,8): 100 → 80 BPM nghe chậm nhưng chưa ra "kéo lê", 70 BPM thì rõ. 1 / 0,7 ≈ 1,43:
+ * ôm hết mọi câu thì lượt dài nhất 1,43 lần kịch bản; ôm khoảng một nửa thì ≤ ~1,2 lần vì hồi ở mỗi câu đi qua.
  */
 export interface PaceFeel {
   floor: number;
@@ -74,9 +75,29 @@ export interface PaceFeel {
 }
 
 export const PACE_FEEL: PaceFeel = {
-  floor: 0.8,
+  floor: 0.7,
   drop: 0.1,
   recover: 0.1,
+};
+
+/**
+ * Mặt đồng hồ trễ (cư dân 3, boss lượt 3), ngay ngoài góc phải trên của khung. Kim mờ chỉ giờ thật đã trôi, kim sáng
+ * chỉ giờ kịch bản của beat đang nghe; ôm câu thì kim sáng tụt lại. Không chữ, không số.
+ */
+export interface LagClockFeel {
+  radius: number;
+  /** Một vòng mặt số = chừng này giây. */
+  secondsPerTurn: number;
+  /** Màu kim giờ thật (mờ) và kim giờ kịch bản (sáng). */
+  realColor: string;
+  scriptColor: string;
+}
+
+export const LAG_CLOCK_FEEL: LagClockFeel = {
+  radius: 14,
+  secondsPerTurn: 60,
+  realColor: "#6b6252",
+  scriptColor: "#f0b429",
 };
 
 /** Đạn chữ: một câu ngắn bay qua khung. Trúng không trừ máu, chỉ hạ hệ số nhịp. */

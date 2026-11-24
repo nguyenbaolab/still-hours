@@ -39,14 +39,14 @@ function fight(mode: "eat" | "dodge"): { heard: number; script: number; factor: 
 }
 
 describe("hệ số nhịp của cư dân 3", () => {
-  it("bot ăn mọi chữ: một vòng không dài quá 1,25 lần kịch bản", () => {
+  it("bot ăn mọi chữ: một vòng không dài quá 1 / sàn lần kịch bản", () => {
     const { heard, script } = fight("eat");
     expect(wordsOf(RESIDENT3_PATTERN.lengthBeats).length).toBeGreaterThan(0);
     expect(heard / script).toBeGreaterThan(1);
-    expect(heard / script).toBeLessThanOrEqual(1.25);
+    expect(heard / script).toBeLessThanOrEqual(1 / PACE_FEEL.floor);
   });
 
-  it("bot ăn liên tục từ beat 0: vẫn không vượt 1,25, và sát trần nên sàn lỏng hơn sẽ vỡ", () => {
+  it("bot ăn liên tục từ beat 0: vẫn không vượt 1 / 0,7, và sát trần nên sàn lỏng hơn sẽ vỡ", () => {
     const length = RESIDENT3_PATTERN.lengthBeats;
     const tempo = new TempoMap(RESIDENT3_PATTERN.bpm ?? 100);
     const pace = new Pace(tempo, PACE_FEEL, RHYTHM_FEEL.beatsPerBar);
@@ -55,8 +55,9 @@ describe("hệ số nhịp của cư dân 3", () => {
       pace.update(beat + 1);
     }
     const ratio = tempo.timeAtBeat(length) / tempo.scriptTimeAtBeat(length);
-    expect(ratio).toBeLessThanOrEqual(1.25);
-    expect(ratio).toBeGreaterThan(1.2);
+    expect(PACE_FEEL.floor).toBe(0.7);
+    expect(ratio).toBeLessThanOrEqual(1 / 0.7);
+    expect(ratio).toBeGreaterThan(1.35);
     expect(pace.factor).toBeCloseTo(PACE_FEEL.floor, 9);
   });
 
@@ -87,16 +88,17 @@ describe("hệ số nhịp của cư dân 3", () => {
     pace.absorb(0);
     pace.update(1);
     pace.absorb(1);
-    pace.update(2);
-    expect(pace.factor).toBeCloseTo(0.8, 9);
+    pace.absorb(2);
+    pace.update(3);
+    expect(pace.factor).toBeCloseTo(0.7, 9);
 
     pace.release(5); // đầu nhịp kế là beat 8
     pace.absorb(7.2); // hạ cũng rơi vào beat 8
     pace.update(7.9);
-    expect(pace.factor).toBeCloseTo(0.8, 9);
+    expect(pace.factor).toBeCloseTo(0.7, 9);
     pace.update(8);
-    // Hạ trước: sàn giữ 0,8. Rồi hồi một nấc: 0,9. Hồi trước thì sẽ còn 0,8.
-    expect(pace.factor).toBeCloseTo(0.9, 9);
-    expect(tempo.paceAtBeat(8)).toBeCloseTo(0.9, 9);
+    // Hạ trước: sàn giữ 0,7. Rồi hồi một nấc: 0,8. Hồi trước thì sẽ còn 0,7 (0,8 rồi hạ).
+    expect(pace.factor).toBeCloseTo(0.8, 9);
+    expect(tempo.paceAtBeat(8)).toBeCloseTo(0.8, 9);
   });
 });

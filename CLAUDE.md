@@ -64,7 +64,11 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     `Pattern.still` (`validatePattern` từ chối đi cùng `word` hoặc cảnh nền không có), `DodgePhase` vẽ cảnh nền (`drawBackdrop`) dưới đạn,
     `data/patterns/resident-2.ts` (`R2_ROUNDS`: làn `straight` ngoài túi an toàn giữa khung, `aimed` mỗi 8 beat),
     `data/mechanisms/stopwatch.ts` (`STOPWATCH`). Cảnh kết `lookUp` làm ở 6.5.
-- **Bước tiếp theo:** mốc 6.3 trong `AUTOPILOT.md` (cư dân 3 hoàn chỉnh).
+  - Bước 6.3: cư dân 3 hoàn chỉnh. `PACE_FEEL.floor` 0,7; tám câu thật trong `data/words.ts`; `Pattern.lagClock` + `battle/lag-clock.ts`
+    (`lagClockHands`) + `LAG_CLOCK_FEEL` (rhythm-feel.ts) + mặt đồng hồ trễ vẽ trong `DodgePhase`; `data/patterns/resident-3.ts` (`R3_ROUNDS`:
+    chữ mỗi 3 beat, đạn thường mỗi 4 beat; `RESIDENT3_PATTERN` giữ lại làm pattern thử cho test `pace` / `pattern-runner`);
+    `data/mechanisms/metronome.ts` (`METRONOME`). Cảnh kết `hum` làm ở 6.5 / 7.2.
+- **Bước tiếp theo:** mốc 6.4 trong `AUTOPILOT.md` (boss: khe cửa).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -735,7 +739,7 @@ Hiện đã có:
   `dialogue-scene.ts`, `vignette.ts`, `town.ts`, `backdrop.ts`, `intro.ts`, `ending.ts`, `game-flow.ts` (luồng cả game).
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
-  placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
+  placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (tám câu của đạn chữ),
   `sketch-feel.ts` (**độ dày nét, sáp màu, đung đưa, bút và trang vẽ `DRAW_FEEL`**), `flow-feel.ts` (**chuyển cảnh, dọn đạn,
   màn thua**),
   `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-1.ts` (`R1_ROUNDS`: tích tắc dồn dập), `patterns/resident-2.ts` (`R2_ROUNDS`: đứng yên thì thế giới hiện ra), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
@@ -883,7 +887,7 @@ Pattern không khai `finish`: `loop: false` coi như `length`, `loop: true` ch�
 | `pencil` | `{ x: number; y: number }` | Chỗ bút nằm đầu lượt (cư dân 4). Bắt buộc khi `finish.kind` là `page`, cấm khi khác | xong |
 | `idleLines` | `readonly string[]` | Câu tự nhủ khi một vòng trọn vẹn trôi qua mà chưa cầm bút (chỉ pattern có `pencil`) | xong |
 | `still` | `{ backdrop: string }` | Đứng yên thì chậm nhịp và hiện cảnh nền (cư dân 2, boss lượt 2). Cấm đi cùng đạn `word` | xong |
-| `lagClock` | `boolean` | Mặt đồng hồ trễ (cư dân 3, boss lượt 3) | 6.3 |
+| `lagClock` | `boolean` | Mặt đồng hồ trễ (cư dân 3, boss lượt 3) | xong |
 
 `validatePattern` kiểm các ràng buộc trong bảng. Đạn `distraction`: không tẩy nét; chỉ có tác dụng (làm rơi bút) khi
 pattern có `pencil` và bánh răng đang cầm bút.
@@ -964,7 +968,8 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
 | Đạn xuất hiện sớm/muộn hơn tiếng "tích"        | `visualDelaySeconds` (sớm → tăng, muộn → giảm) |
 | Thời gian dạo đầu trước beat 0                 | `leadInSeconds`                               |
 | Một nhịp dài bao nhiêu beat (lúc hồi hệ số)    | `beatsPerBar`                                 |
-| Sàn nhịp / mỗi câu hạ / mỗi câu hồi            | `PACE_FEEL.floor`, `drop`, `recover`          |
+| Sàn nhịp / mỗi câu hạ / mỗi câu hồi            | `PACE_FEEL.floor` (0,7), `drop`, `recover`    |
+| Mặt đồng hồ trễ: cỡ, một vòng bao lâu, màu kim | `LAG_CLOCK_FEEL.radius` (14), `secondsPerTurn` (60), `realColor`, `scriptColor` |
 | Chữ to/nhỏ, bay nhanh/chậm, hitbox chữ         | `WORD_FEEL.fontSize` (16), `speed`, `hitboxScale` |
 | Câu tan / câu nổ lâu hay mau                   | `WORD_FEEL.fadeSeconds`, `absorbSeconds`      |
 

@@ -118,3 +118,10 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Túi an toàn của cư dân 2: `straight` chỉ ở làn ngoài 0,3–0,7 của cạnh nên đứng giữa khung không bị trúng; `aimed` mỗi 8 beat (lượt 3 hai viên) ép bước ra, nên không đứng yên mãi được.
 - Bộ phận thêm cho đủ 3 bộ phận mỗi tầng của STOPWATCH: nắp lưng, núm vặn, kim giây, tấm đỡ, bánh răng (sprite placeholder).
 - Cảnh kết `lookUp` dời sang 6.5 như `phone`.
+
+## 6.3
+
+- Mặt đồng hồ trễ: hàm thuần `lagClockHands` trong `battle/lag-clock.ts` (có test); trước beat 0 kim đứng ở 0. Cỡ, màu và một vòng 60 giây ở `LAG_CLOCK_FEEL`.
+- `RESIDENT3_PATTERN` (pattern thử, `loop: true`) giữ lại vì `pace.test` và `pattern-runner.test` dùng nó; dữ liệu thật của r3 là `R3_ROUNDS` trong cùng file.
+- Chữ mỗi 3 beat (bắt đầu beat 2), đạn thường mỗi 4 beat (bắt đầu beat 4), xen `straight` hai viên và `aimed`: thưa hơn chữ như thiết kế, và hai nguồn này lệch pha nên có lúc phải chọn giữa né chữ và né đạn.
+- Bộ phận thêm cho đủ 3 bộ phận mỗi tầng của METRONOME: quả cân, cần lắc, núm lên dây, tấm đỡ, bánh răng (sprite placeholder).

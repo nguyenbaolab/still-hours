@@ -161,5 +161,7 @@ export interface Pattern {
    * Không đi cùng đạn `word` (hai nguồn cùng đặt hệ số nhịp).
    */
   still?: { backdrop: string };
+  /** Mặt đồng hồ trễ ngoài góc phải trên của khung (cư dân 3, boss lượt 3). */
+  lagClock?: boolean;
   events: readonly PatternEvent[];
 }
