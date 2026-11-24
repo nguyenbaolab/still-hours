@@ -156,6 +156,20 @@ describe("TitleScene: menu", () => {
     expect(t.scene.inMenu).toBe(false);
   });
 
+  it("quay lại màn bắt đầu khi âm thanh đã mở khóa: đợi một phím thật, không tự đi tiếp", () => {
+    const input = new Input();
+    const scene = new TitleScene({ ready: true }, input, { exists: () => false, clear: () => undefined });
+    for (let i = 0; i < 120; i++) {
+      input.poll();
+      scene.update();
+    }
+    expect(scene.result).toBeNull();
+    input.setActionState("t", "confirm", true);
+    input.poll();
+    scene.update();
+    expect(scene.result).toBe("new");
+  });
+
   it("có bản lưu: menu lên/xuống vòng đúng; Tiếp tục → continue", () => {
     const t = title(true);
     t.gate.ready = true;

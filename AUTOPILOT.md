@@ -4,6 +4,18 @@ File này có hiệu lực cao hơn mục "Quy trình làm việc" trong CLAUDE.
 chạy tự động. Không có ai trả lời câu hỏi. Mục tiêu: một bản Still Hours chơi được
 trọn vẹn từ màn bắt đầu tới màn kết. Làm tốt nhất có thể.
 
+## Luật bổ sung
+
+*(Chủ dự án thêm 2026-11-24; hiệu lực cao nhất, ghi ở đầu file để không mất khi ngữ cảnh bị nén.)*
+
+1. Xong một mốc thì KHÔNG kết thúc lượt và KHÔNG viết báo cáo. Ghi nhật ký, commit, push, build + test, rồi sang mốc
+   kế tiếp ngay.
+2. `git push` đã được cho phép tự chạy (vẫn cấm force push). Nếu push vẫn bị chặn thì bỏ qua, ghi một dòng vào Nhật ký,
+   làm tiếp. Không dừng vì push.
+3. Chỉ dừng khi PLAYTEST.md đã viết xong. Mốc nào lỗi sau 3 lần sửa theo luật chống lặp thì ghi lại (PLAYTEST.md "Lỗi
+   đã biết"), bỏ qua nếu mốc sau không phụ thuộc vào nó, rồi làm tiếp.
+4. Báo cáo tổng MỘT lần duy nhất ở cuối.
+
 ## Luật
 
 - Làm liên tục qua các bước, không dừng chờ chơi thử, không hỏi.
@@ -292,3 +304,5 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 5.1 — 2f9a9ee — Director (chuyển cảnh, debug chung, playSeconds), TitleScene thay press-start.
 - 5.2 — 2d8064a — core/save.ts (parseSave, SaveStore, giản lược tranh), cài đặt muted, móc pagehide.
 - 5.3 — 910a44f — data/town.ts (64×11, cổng, NPC, chỗ ngắm cảnh), TownScene (đi lại, va chạm ô, camera, tương tác), backdrop.
+- 5.4 — ca89bea — formatPlayTime, IntroScene (tích tắc dừng ở dòng 2), EndingScene (trôi, thời gian, công trạng, xóa lưu), TownScene.drawWorld.
+

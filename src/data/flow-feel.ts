@@ -11,6 +11,8 @@ export interface FlowFeel {
   loseHoldSeconds: number;
   /** Sau khi vết nứt khép lại (bánh răng lành), chờ bấy nhiêu giây rồi pha né mờ vào lại. */
   mendSeconds: number;
+  /** Về thị trấn sau khi một cư dân được giải thoát: đứng yên bấy nhiêu giây để nhìn họ (cảnh kết tạm của mốc 5.5). */
+  freedHoldSeconds: number;
 }
 
 export const FLOW_FEEL: FlowFeel = {
@@ -18,6 +20,7 @@ export const FLOW_FEEL: FlowFeel = {
   clearSeconds: 0.6,
   loseHoldSeconds: 1.2,
   mendSeconds: 0.35,
+  freedHoldSeconds: 2,
 };
 
 /** Hộp hội thoại và cách hiện chữ (CLAUDE.md, "Hội thoại"). Pixel logic 640×360. */

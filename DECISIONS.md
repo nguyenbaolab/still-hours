@@ -81,3 +81,19 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - **Bản lưu được tạo khi xong cảnh mở đầu** (`seenIntro: true`), nên "Tiếp tục" sau đó vào thẳng thị trấn. Nạp `freed` từ bản
   lưu và đứng cạnh cư dân vừa giải thoát là việc của mốc 5.5.
 - **`PLAYTEST_PHASE = "ending"`** không xóa bản lưu thật (truyền `clear` rỗng).
+
+## 5.5
+
+- **Luồng cả game tách khỏi `main.ts` thành `GameFlow`** (`scenes/game-flow.ts`), nhận phụ thuộc qua `FlowDeps` (kho lưu, nơi dựng
+  trận). Lý do: test chạy được Director thật với trận giả "thắng ngay". Bỏ: để luồng trong `main.ts` rồi test bằng trình duyệt
+  (luật không cho test cần trình duyệt).
+- **Cảnh kết của r1–r3 và boss ở mốc này** là về thị trấn với cư dân đã có màu và người thợ đứng yên
+  `FLOW_FEEL.freedHoldSeconds` (2 giây, `TownInit.holdSeconds`); r4 vẫn dùng `VignetteScene` "pencil". Cảnh thật ở mốc 6.5.
+- **Dữ liệu tạm r1–r3, boss:** hội thoại và câu ký ức dùng luôn bản đã chốt trong CLAUDE.md (rẻ, và khỏi viết hai lần);
+  chỉ pha né và máy là tạm. Máy tạm tự dựng từ `placeholderMechanism` (3/3/4 bộ phận) vì `CLOCKWORK` có tầng 2 chỉ 2 bộ phận,
+  trái luật 3–4 bộ phận mỗi tầng của `content.test.ts`.
+- **`showHint` chỉ để cho cư dân 1** (đúng thiết kế); đã bỏ khỏi `ALARM_CLOCK`.
+- **Lỗi tìm thấy nhờ test luồng:** `TitleScene` dựng lại sau màn kết (âm thanh đã mở khóa, không có bản lưu) sẽ tự vào ván mới
+  ngay. Sửa: nếu `audio.ready` đã đúng lúc dựng thì phải đợi một phím thật.
+- **Bản lưu ghi sau mỗi cư dân** gồm `drawing` (tranh r4, giản lược) từ lúc r4 xong trận; `finished: true` khi boss xong, nên
+  "Tiếp tục" lúc đó vào thẳng màn kết. Thời gian chơi nối tiếp từ `playSeconds` của bản lưu.

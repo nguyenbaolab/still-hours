@@ -34,6 +34,8 @@ export class FakeAudio implements AudioPort {
   /** Giờ thô của AudioContext (giây). */
   t: number;
   muted = false;
+  /** Như `AudioEngine.ready`: màn bắt đầu chờ nó. Bản giả luôn sẵn sàng. */
+  readonly ready = true;
   readonly plays: PlayRecord[] = [];
   readonly cues: CueName[] = [];
   /** Cao độ đi kèm từng cue (undefined nếu không có), cùng thứ tự với `cues`. */

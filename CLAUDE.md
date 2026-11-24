@@ -49,7 +49,12 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     rồi hiện chữ), `scenes/ending.ts` (`EndingScene`: camera trôi, tích tắc chồng lớp, thẻ thời gian, "Vẫn chưa muộn.",
     công trạng, xóa bản lưu), `data/credits.ts`, `INTRO_FEEL` / `ENDING_FEEL`. `main.ts`: "Bắt đầu" mới → cảnh mở đầu →
     thị trấn (ghi `seenIntro`); `PLAYTEST_PHASE = "ending"` để xem màn kết (không xóa bản lưu thật).
-- **Bước tiếp theo:** mốc 5.5 trong `AUTOPILOT.md` (vòng chơi trọn vẹn với dữ liệu tạm cho r1–r3 và boss).
+  - Bước 5.5: `scenes/game-flow.ts` (`GameFlow`: Title → Intro → Town → (hội thoại → trận → cảnh kết → lưu → Town) × 5 → Ending → Title;
+    `townSpawnFor`), `data/residents/{r1,r2,r3,boss}.ts` là DỮ LIỆU TẠM (lượt rút từ pattern thử qua `patterns/placeholder.ts`, máy tạm
+    `mechanisms/placeholder.ts`; hội thoại và câu ký ức đã là bản thật). Game chơi được từ đầu tới cuối. `main.ts` chỉ còn dựng
+    `GameFlow`; `PLAYTEST_PHASE` ("game" / "dodge" / "disassemble" / "ending") đi qua `FlowDeps.override`. `TitleScene` quay lại
+    sau màn kết thì đợi một phím thật.
+- **Bước tiếp theo:** mốc 5.6 trong `AUTOPILOT.md` (nhảy cóc `?jump=` và phím số khi bật debug).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -717,7 +722,7 @@ Hiện đã có:
   `sketch.ts` (danh sách đoạn nét chì, tua lại), `page.ts` (trang vẽ: nhặt bút, bút rơi, beat vẽ), `ink-layer.ts` (canvas
   phụ cho nét lúc chơi), `mechanism.ts` (thứ tự tháo, nhịp, con trỏ), `disassemble-phase.ts` (pha tháo lắp).
 - `scenes/`: `scene.ts` (giao diện `Scene`), `director.ts`, `title.ts`, `battle-scene.ts`, `dialogue-box.ts`,
-  `dialogue-scene.ts`, `vignette.ts`, `town.ts`, `backdrop.ts`, `intro.ts`, `ending.ts`.
+  `dialogue-scene.ts`, `vignette.ts`, `town.ts`, `backdrop.ts`, `intro.ts`, `ending.ts`, `game-flow.ts` (luồng cả game).
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
@@ -736,7 +741,7 @@ Hiện đã có:
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: vòng chơi nối thị trấn với trận và lưu `freed` (mốc 5.5), nhảy cóc (5.6), nội dung r1–r3 và boss (bước 6).
+- Chưa có code: nhảy cóc (5.6), nội dung thật của r1–r3 và boss (bước 6; hiện là dữ liệu tạm).
 - File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,

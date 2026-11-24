@@ -1,5 +1,5 @@
 import { GAME_WIDTH } from "../core/config";
-import type { Input } from "../core/input";
+import { ACTIONS, type Input } from "../core/input";
 import type { Renderer } from "../core/renderer";
 import type { Scene } from "./scene";
 
@@ -35,12 +35,16 @@ export class TitleScene implements Scene {
   private phase: Phase = "press";
   private choice = 0;
   private outcome: TitleResult | null = null;
+  /** Âm thanh đã mở khóa từ trước (quay lại màn bắt đầu sau màn kết): phải đợi một phím thật, không tự đi tiếp. */
+  private readonly needsKey: boolean;
 
   constructor(
     private readonly audio: AudioGate,
     private readonly input: Input,
     private readonly save: SaveInfo,
-  ) {}
+  ) {
+    this.needsKey = audio.ready;
+  }
 
   /** Người chơi đã chọn xong. */
   get result(): TitleResult | null {
@@ -65,6 +69,7 @@ export class TitleScene implements Scene {
     switch (this.phase) {
       case "press": {
         if (!this.audio.ready) return;
+        if (this.needsKey && !ACTIONS.some((action) => this.input.wasPressed(action))) return;
         if (this.save.exists()) {
           this.phase = "menu";
           this.choice = 0;

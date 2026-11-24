@@ -15,7 +15,6 @@ export const ALARM_CLOCK: Mechanism = {
   name: "đồng hồ báo thức",
   bpm: 100,
   rhythmic: true,
-  showHint: true,
   parts: [
     // Tầng 1
     { id: "screw-a", sprite: "screw", x: 0.2, y: 0.2, hit: hit(0.2, 0.2, 0.12, 0.16), blockedBy: [], operation: "unscrew", stage: 1 },

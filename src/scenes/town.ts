@@ -31,6 +31,8 @@ export interface TownInit {
   freed: readonly ResidentId[];
   /** Ô đứng ban đầu. Bỏ trống = điểm xuất phát trong tiệm. */
   spawn?: Tile;
+  /** Đứng yên (không nhận phím) chừng này giây đầu: nhịp thở sau khi một cư dân được giải thoát. */
+  holdSeconds?: number;
 }
 
 type Mode = "walk" | "dialogue" | "spot";
@@ -72,6 +74,7 @@ export class TownScene implements Scene {
   private spotView = 0;
   private pending: TownRequest | null = null;
   private tick = 0;
+  private readonly holdTicks: number;
 
   constructor(
     private readonly map: TownMap,
@@ -82,6 +85,7 @@ export class TownScene implements Scene {
     private readonly measure: MeasureText,
   ) {
     this.freed = [...init.freed];
+    this.holdTicks = Math.round((init.holdSeconds ?? 0) * TICK_RATE);
     this.blocked = blockedTiles(TOWN_NPCS, this.freed);
     const spawn = init.spawn ?? map.spawn;
     this.x = this.prevX = (spawn.x + 0.5) * this.tile;
@@ -136,6 +140,11 @@ export class TownScene implements Scene {
     this.tick++;
     switch (this.mode) {
       case "walk":
+        if (this.tick <= this.holdTicks) {
+          this.prevX = this.x;
+          this.prevY = this.y;
+          return;
+        }
         this.walk();
         return;
       case "dialogue": {
