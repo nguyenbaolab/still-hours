@@ -142,7 +142,7 @@ export class DisassemblePhase implements Scene {
         `beat ${beat.toFixed(2)}  bpm ${this.clock.bpm.toFixed(0)}  cửa sổ ${near ? "kịp" : "lệch"}  ${this.bench.selectedId}`,
         8,
         8,
-        { color: COLOR.debug, size: 12 },
+        { color: COLOR.debug, size: 16 },
       );
     }
   }

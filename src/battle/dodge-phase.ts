@@ -27,9 +27,9 @@ import { Player } from "./player";
 import { replayPieces } from "./sketch";
 import type { SpawnContext } from "./spawners";
 
-/** Dòng mẫu để chọn cỡ chữ còn đọc rõ dấu tiếng Việt. Chưa chọn font. */
+/** Dòng mẫu dấu tiếng Việt ở các cỡ chữ của game (VT323: nhỏ nhất 16), để xem dấu chồng có dính hay cắt không. */
 const VIETNAMESE_SAMPLE = "ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự ỳ ỷ ỹ ỵ đ";
-const SAMPLE_SIZES = [8, 12, 16, 20] as const;
+const SAMPLE_SIZES = [16, 20, 24, 32] as const;
 
 const COLOR = {
   background: "#0b0908",

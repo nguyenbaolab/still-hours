@@ -103,7 +103,7 @@ export const LAG_CLOCK_FEEL: LagClockFeel = {
 /** Đạn chữ: một câu ngắn bay qua khung. Trúng không trừ máu, chỉ hạ hệ số nhịp. */
 export interface WordFeel {
   fontSize: number;
-  /** Bề ngang một ký tự so với cỡ chữ. Font monospace, đủ để không đo chữ trong update. */
+  /** Bề ngang một ký tự so với cỡ chữ. VT323 là monospace, advance 400/1000 em, nên không cần đo chữ trong update. */
   advanceEm: number;
   /** Hitbox = khung chữ nhân hệ số này, cùng nguyên tắc hitbox nhỏ hơn hình vẽ. */
   hitboxScale: number;
@@ -118,7 +118,7 @@ export interface WordFeel {
 
 export const WORD_FEEL: WordFeel = {
   fontSize: 16,
-  advanceEm: 0.6,
+  advanceEm: 0.4,
   hitboxScale: 0.7,
   speed: 100,
   fadeSeconds: 0.4,

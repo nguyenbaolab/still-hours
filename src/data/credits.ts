@@ -12,7 +12,7 @@ export interface CreditLine {
 
 /**
  * Công trạng ngắn, tự cuộn. Chỉ ghi những gì đang đúng: mọi hình và âm đều do mã tạo ra.
- * Mốc 7.1 (font VT323) thêm dòng chữ và giấy phép OFL vào đây, cùng lúc với `CREDITS.md`.
+ * Có dòng ghi công font VT323 (SIL OFL 1.1), cùng nội dung với `CREDITS.md`.
  */
 export const CREDITS: readonly CreditLine[] = [
   { text: "Still Hours", size: 32 },
@@ -21,6 +21,7 @@ export const CREDITS: readonly CreditLine[] = [
   { text: "", size: 20 },
   { text: "Âm thanh tổng hợp bằng WebAudio", size: 16 },
   { text: "Hình vẽ bằng mã", size: 16 },
+  { text: "Phông chữ VT323 của Peter Hull (SIL OFL 1.1)", size: 16 },
   { text: "", size: 20 },
   { text: "Cảm ơn bạn đã ở lại tới cuối", size: 20 },
 ];

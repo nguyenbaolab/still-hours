@@ -79,7 +79,11 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước 6.6: kiểm trọn vòng bằng bot. `testing/dodger.ts` (`DodgerBot`: thử 8 hướng bàn phím + đứng yên, mô phỏng quỹ đạo đạn và
     kim, tránh vùng cảnh báo, có mục tiêu tùy chọn) và `testing/playthrough.test.ts` (mọi lượt né của 5 cư dân, mọi tầng của 5 máy,
     đối chứng đứng yên). Kết quả và chỗ không chắc ghi ở DECISIONS.md mục 6.6.
-- **Bước tiếp theo:** mốc 7.1 trong `AUTOPILOT.md` (font VT323).
+  - Bước 7.1: font VT323. `public/assets/fonts/VT323-Regular.ttf` + `OFL.txt`, `@font-face` (`style.css`), `FONT_FAMILY` = `"VT323", monospace`,
+    `main.ts` chờ `document.fonts.load` (tối đa 3 giây) trước khi chạy vòng lặp, preload trong `index.html`, `CREDITS.md` và dòng ghi
+    công trong `data/credits.ts`, lớp debug mẫu dấu ở cỡ 16/20/24/32, `WORD_FEEL.advanceEm` 0,4 (advance thật của VT323). Script kiểm
+    `cmap` (tạm, ở `tmp/`, không commit): 0 ký tự thiếu.
+- **Bước tiếp theo:** mốc 7.2 trong `AUTOPILOT.md` (âm thanh: kiểm cue, nền thị trấn, tích tắc màn bắt đầu và màn kết).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -766,7 +770,7 @@ Hiện đã có:
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: font VT323 (7.1), nền thị trấn / tích tắc màn bắt đầu và kết (7.2), vòng hình ảnh (7.3).
+- Chưa có code: nền thị trấn / tích tắc màn bắt đầu và kết (7.2), vòng hình ảnh (7.3).
 - File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,
@@ -812,7 +816,7 @@ Hiện đã có:
   vùng va chạm của đạn, kim và chữ (hồng), toạ độ, số tick, **beat hiện tại, BPM hiệu dụng, hệ số nhịp, vòng
   pattern, số đạn và cảnh báo đang hoạt động** (và số lần phải bỏ đạn vì pool đầy: nên luôn là 0), **số đoạn nét chì**
   (`nét`, kể cả đoạn đã tẩy), **hệ số phóng**
-  (`phóng`), và một dòng mẫu dấu tiếng Việt ở cỡ 8, 12, 16, 20 (đổi thành 16, 20, 24, 32 khi có VT323, mốc 7.1).
+  (`phóng`), và một dòng mẫu dấu tiếng Việt ở cỡ 16, 20, 24, 32.
   Phím nhảy cóc khi lớp debug bật: mục "Phím debug và nhảy cóc".
 - Windows có "Sticky Keys" bật lên khi bấm Shift 5 lần liên tiếp, có thể làm gián đoạn lúc chơi; đây là cài đặt của
   hệ điều hành, game không chặn được. Chốt: không thêm phím phụ; ghi vào PLAYTEST.md.

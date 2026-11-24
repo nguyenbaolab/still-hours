@@ -154,3 +154,12 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Lượt thắng của bot dài nhất so với kịch bản: r2 lượt 3 (49 giây so với 36), tức 1,37 lần (còn trong 2 lần). Cư dân 4: bot né kỹ nên chỉ vẽ 11–28 beat mỗi lượt và trang khép bằng `DRAW_FEEL.maxLoops` (~60–66 giây); người chơi thật cứ đi liên tục thì xong sớm hơn nhiều. Trang vẫn luôn khép được, đúng thiết kế.
 - Đối chứng: bánh răng đứng yên giữa khung thua ở mọi lượt của r1, r4 và boss lượt 1–2. Đứng yên THẮNG ở r2 lượt 3 (đàn chim) và r3 lượt 2; ở r2 là ý thiết kế (túi an toàn), ở r3 lượt 2 là chỗ không chắc: đạn thường thưa nên đứng yên giữa khung gần như không mất máu. Chưa sửa vì không bất khả thi, chỉ nhẹ; ghi vào PLAYTEST.md. Boss lượt 3 đứng yên không xong (khe mở nhưng phải bước ra), đúng thiết kế.
 - `spacing` của đạn `straight` là tỉ lệ 0..1 của cạnh (không phải px); `validatePattern` đã kiểm, nên giá trị 0,3 ở lượt 3 boss là đúng.
+
+## 7.1
+
+- Tải VT323 từ `google/fonts` (`ofl/vt323`): `VT323-Regular.ttf` 153.116 byte và `OFL.txt`; tự host trong `public/assets/fonts/`, kèm giấy phép như OFL đòi.
+- Kiểm `cmap` bằng script Node tạm (`tmp/cmap.mjs`, `tmp` vào `.gitignore`): 159 ký tự khác nhau xuất hiện trong chuỗi của `src/data`, `src/scenes`, `src/battle`, `src/core`, **0 ký tự thiếu**; dòng mẫu hoa/thường dấu tiếng Việt cũng đủ. Chưa nhìn bằng mắt xem dấu chồng (ẳ, ỡ) có dính ở cỡ 20 không: để chủ dự án xem (PLAYTEST.md); dự phòng GNU Unifont như đã ghi.
+- Dung lượng `dist/`: 127.303 byte trước, 285.245 byte sau (phần tăng là 153.116 byte font và 4.367 byte giấy phép; mã không đổi đáng kể).
+- `WORD_FEEL.advanceEm` 0,6 → 0,4 (advance thật của VT323, 400/1000 em), giữ nguyên nguyên tắc hitbox bằng 70% khung chữ vẽ ra. Hệ quả: khung chữ hẹp hơn khoảng một phần ba so với trước, nên chữ ở cư dân 3 dễ né hơn một chút; nếu muốn như cũ, tăng `WORD_FEEL.fontSize` hoặc `hitboxScale`. Ghi vào PLAYTEST.md.
+- Cỡ chữ: giữ 16 (gợi ý phím, debug, chữ của đạn), 20 (hội thoại), 24, 32–48 (tiêu đề). Chữ debug của pha tháo từ 12 lên 16 vì 16 là cỡ nhỏ nhất của VT323.
+- `main.ts` chờ `document.fonts.load` (tối đa 3 giây) rồi mới `startLoop`; `font-display: block` và `<link rel=preload>` để font về sớm.

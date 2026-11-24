@@ -2,6 +2,7 @@ import "./style.css";
 import { AudioEngine } from "./audio/audio-engine";
 import { DEBUG } from "./core/debug";
 import { parseJump } from "./core/debug-jump";
+import { FONT_FAMILY } from "./core/config";
 import { Input } from "./core/input";
 import { attachKeyboard } from "./core/keyboard";
 import { startLoop } from "./core/loop";
@@ -62,7 +63,16 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) touchSave();
 });
 
-startLoop({
+/** Chờ VT323 nạp xong trước khi vẽ chữ đầu tiên (canvas không tự vẽ lại khi font về sau). Quá 3 giây thì chạy với font dự phòng. */
+async function waitForFont(): Promise<void> {
+  try {
+    await Promise.race([document.fonts.load(`20px ${FONT_FAMILY}`), new Promise<void>((resolve) => setTimeout(resolve, 3000))]);
+  } catch {
+    // Không nạp được font: chạy với font dự phòng.
+  }
+}
+
+void waitForFont().then(() => startLoop({
   update() {
     input.poll();
     flow.update();
@@ -74,4 +84,4 @@ startLoop({
   render(alpha) {
     flow.render(renderer, alpha);
   },
-});
+}));

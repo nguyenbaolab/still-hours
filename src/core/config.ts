@@ -6,7 +6,8 @@ export const GAME_HEIGHT = 360;
 export const TICK_RATE = 60;
 
 /**
- * Font tạm thời. CHƯA chọn font chính thức.
+ * Font chính thức: VT323 (SIL Open Font License 1.1), tự host ở `public/assets/fonts/`, nạp bằng `@font-face` trong
+ * `style.css`. `main.ts` chờ font nạp xong (tối đa 3 giây) trước khi vẽ chữ đầu tiên. `monospace` là dự phòng.
  * Yêu cầu khi chọn: hỗ trợ đầy đủ dấu tiếng Việt (xem CLAUDE.md).
  */
-export const FONT_FAMILY = "monospace";
+export const FONT_FAMILY = '"VT323", monospace';
