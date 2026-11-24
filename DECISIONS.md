@@ -146,3 +146,11 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Tranh trên tường nhà Linh: khung 64×28 px ở cột 45–46, hàng 0–1; vẽ từ SaveData.drawing thu vào khung giữ tỉ lệ; không có nét thì tờ giấy trắng.
 - Thêm sprite placeholder 2-up và oss; cue ing, hum, ird, chime làm luôn ở đây vì cảnh cần chúng (7.2 chỉ còn kiểm và lớp nền).
 - Lỗi mã hóa: `Add-Content` của Windows PowerShell ghi ANSI làm hỏng UTF-8 (đã gặp ở fixtures.ts). Dùng `AppendAllText` với UTF8 không BOM; đã quét toàn bộ src và các file md: không còn file sai.
+
+## 6.6
+
+- Bot né đạn (`testing/dodger.ts`) chỉ thử 8 hướng bàn phím + đứng yên, vì input là bàn phím: bản đầu thử 16 hướng nên hướng dự đoán lệch hướng thật và bot kẹt. Mục tiêu (nhặt bút, ra khe) chỉ phá thế hòa, không lấn nguy hiểm; mục tiêu ra khe đặt xa (300 px ngoài khung) để mô phỏng không đi quá.
+- Kết quả (một lần chạy, không ngẫu nhiên): bot thắng mọi lượt của mọi cư dân, 0 lần thua; không lượt nào quá 3 lần thua. Tháo hết ba tầng của cả 5 máy: mỗi tầng 2–6 giây (người thật chậm hơn nhiều).
+- Lượt thắng của bot dài nhất so với kịch bản: r2 lượt 3 (49 giây so với 36), tức 1,37 lần (còn trong 2 lần). Cư dân 4: bot né kỹ nên chỉ vẽ 11–28 beat mỗi lượt và trang khép bằng `DRAW_FEEL.maxLoops` (~60–66 giây); người chơi thật cứ đi liên tục thì xong sớm hơn nhiều. Trang vẫn luôn khép được, đúng thiết kế.
+- Đối chứng: bánh răng đứng yên giữa khung thua ở mọi lượt của r1, r4 và boss lượt 1–2. Đứng yên THẮNG ở r2 lượt 3 (đàn chim) và r3 lượt 2; ở r2 là ý thiết kế (túi an toàn), ở r3 lượt 2 là chỗ không chắc: đạn thường thưa nên đứng yên giữa khung gần như không mất máu. Chưa sửa vì không bất khả thi, chỉ nhẹ; ghi vào PLAYTEST.md. Boss lượt 3 đứng yên không xong (khe mở nhưng phải bước ra), đúng thiết kế.
+- Sửa nhỏ: `spacing` của đạn `straight` lượt 3 boss từ 0,3 thành 30 px (0,3 là nhầm đơn vị, hai viên đè lên nhau).

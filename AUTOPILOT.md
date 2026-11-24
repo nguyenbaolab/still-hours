@@ -312,4 +312,6 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 
 - 6.3 — cb894e0 — PACE_FEEL.floor 0.7, 8 câu thật, lagClock + lagClockHands, R3_ROUNDS, METRONOME.
 
-- 6.4 — a57d8c2 — Pattern.finish exit, battle/exit.ts, Player.door, loopsSeen, BOSS_ROUNDS, TOWER_CLOCK. (Sửa kèm ở 6.5: fixtures.ts bị ghi sai mã hóa ở 6.4, đã ghi lại UTF-8.)
+- 6.4 — a57d8c2 — Pattern.finish exit, battle/exit.ts, Player.door, loopsSeen, BOSS_ROUNDS, TOWER_CLOCK. (Sửa kèm ở 6.5: fixtures.ts bị ghi sai mã hóa ở 6.4, đã ghi lại UTF-8.)
+
+- 6.5 — d994a5b — TOWN_AMBIENCE, ambienceFor/birdDelay, TownInit.drawing, 4 cảnh kết VignetteScene, cue ring/hum/bird/chime, sprite r2-up và boss.

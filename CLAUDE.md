@@ -76,7 +76,10 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     `ambienceFor` / `birdDelay` (`scenes/town-logic.ts`), `TownInit.drawing` / `random`, `TownScene.ambience`; cảnh kết thật `phone` /
     `lookUp` / `hum` / `leave` trong `VignetteScene` (cùng `pencil`, mỗi cư dân một cảnh ~10 giây rồi mới lưu), `VIGNETTE_CUES`,
     cue `ring` / `hum` / `bird` / `chime`, sprite `r2-up` và `boss`. Test ở `scenes/ambience.test.ts`.
-- **Bước tiếp theo:** mốc 6.6 trong `AUTOPILOT.md` (kiểm trọn vòng bằng bot).
+  - Bước 6.6: kiểm trọn vòng bằng bot. `testing/dodger.ts` (`DodgerBot`: thử 8 hướng bàn phím + đứng yên, mô phỏng quỹ đạo đạn và
+    kim, tránh vùng cảnh báo, có mục tiêu tùy chọn) và `testing/playthrough.test.ts` (mọi lượt né của 5 cư dân, mọi tầng của 5 máy,
+    đối chứng đứng yên). Kết quả và chỗ không chắc ghi ở DECISIONS.md mục 6.6.
+- **Bước tiếp theo:** mốc 7.1 trong `AUTOPILOT.md` (font VT323).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -763,7 +766,7 @@ Hiện đã có:
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: kiểm trọn vòng bằng bot (6.6), font VT323 (7.1), nền thị trấn / tích tắc màn bắt đầu và kết (7.2), vòng hình ảnh (7.3).
+- Chưa có code: font VT323 (7.1), nền thị trấn / tích tắc màn bắt đầu và kết (7.2), vòng hình ảnh (7.3).
 - File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,

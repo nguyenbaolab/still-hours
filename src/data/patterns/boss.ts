@@ -72,7 +72,7 @@ for (let beat = 2, i = 0; beat <= 29; beat += 3, i++) {
   round3Events.push({ beat, type: "word", from: WORD_SIDES[i % WORD_SIDES.length] as Side, at: [0.4, 0.6, 0.3, 0.7][i % 4] as number, phrase: i % 8 });
 }
 for (let beat = 4, i = 0; beat <= 28; beat += 4, i++) {
-  if (i % 2 === 0) round3Events.push({ beat, type: "straight", from: i % 4 === 0 ? "top" : "bottom", at: 0.35, count: 2, spacing: 0.3 });
+  if (i % 2 === 0) round3Events.push({ beat, type: "straight", from: i % 4 === 0 ? "top" : "bottom", at: 0.35, count: 2, spacing: 30 });
   else round3Events.push({ beat, type: "aimed", from: "right", at: 0.5, count: 2, spreadDeg: 18 });
 }
 
