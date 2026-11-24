@@ -8,15 +8,17 @@ import { lerp } from "../core/math";
 import type { Renderer } from "../core/renderer";
 import { BATTLE_LAYOUT } from "../data/battle-layout";
 import { PLAYER_FEEL } from "../data/feel";
-import { FLOW_FEEL } from "../data/flow-feel";
+import { FLOW_FEEL, STILL_FEEL } from "../data/flow-feel";
 import type { Pattern } from "../data/pattern-types";
 import { TEST_PATTERN } from "../data/patterns/test-pattern";
 import { BULLET_FEEL, PACE_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
 import { DISTRACTION_FEEL, DRAW_FEEL, SKETCH_FEEL } from "../data/sketch-feel";
+import { drawBackdrop } from "../scenes/backdrop";
 import type { Scene } from "../scenes/scene";
 import { BulletWorld } from "./bullets";
 import { InkLayer } from "./ink-layer";
 import { Pace } from "./pace";
+import { isStill, Stillness } from "./stillness";
 import { addDrawnBeats, dropPoint, PageState, pencilHome, pencilPickup, type Point } from "./page";
 import { PatternRunner } from "./pattern-runner";
 import { Player } from "./player";
@@ -81,6 +83,8 @@ export class DodgePhase implements Scene {
   private readonly pattern: Pattern;
   private readonly runner: PatternRunner;
   private readonly pace: Pace;
+  /** Đứng yên thì chậm nhịp và hiện cảnh nền (chỉ pattern có `still`). */
+  private readonly stillness: Stillness | null;
   private readonly ticks: TickScheduler;
   private readonly spawnContext: SpawnContext;
   private readonly ink = new InkLayer();
@@ -129,6 +133,7 @@ export class DodgePhase implements Scene {
     this.spawnContext = { arena: this.arena, world: this.world, feel: BULLET_FEEL, playerX: 0, playerY: 0 };
     this.runner = new PatternRunner(pattern, this.clock.tempo, BULLET_FEEL, RHYTHM_FEEL.defaultBpm);
     this.pace = new Pace(this.clock.tempo, PACE_FEEL, RHYTHM_FEEL.beatsPerBar);
+    this.stillness = pattern.still ? new Stillness(this.clock.tempo, STILL_FEEL) : null;
     this.ticks = new TickScheduler(this.clock, () => audio.contextTime(), audio.tickSink);
 
     if (pattern.pencil) {
@@ -207,6 +212,12 @@ export class DodgePhase implements Scene {
       this.audio.playCue("wordRelease");
     }
     this.pace.update(this.clock.beat);
+    if (this.stillness) {
+      // Quãng cả tick, kể cả lực hút: bị kéo đi thì không tính là đứng yên.
+      const step = Math.hypot(this.player.x - this.player.prevX, this.player.y - this.player.prevY);
+      const moving = this.input.move.x !== 0 || this.input.move.y !== 0;
+      this.stillness.update(this.clock.time, this.clock.beat, isStill(moving, step, STILL_FEEL), 1 / TICK_RATE);
+    }
     this.ticks.update();
 
     if (absorbed > 0) this.absorbFlash = ABSORB_FLASH_SECONDS;
@@ -350,10 +361,15 @@ export class DodgePhase implements Scene {
     renderer.rect(arena.x - border, arena.y - border, arena.w + 2 * border, arena.h + 2 * border, COLOR.frame);
     renderer.rect(arena.x, arena.y, arena.w, arena.h, COLOR.arena);
 
-    if (!revealing) this.renderLiveInk(renderer);
-
     const clearAlpha =
       this.stage === "clearing" && FLOW_FEEL.clearSeconds > 0 ? Math.max(0, 1 - this.clearAge / FLOW_FEEL.clearSeconds) : 1;
+    // Cảnh nền của "đứng yên": nằm dưới nét và đạn.
+    if (this.stillness && this.pattern.still && this.stillness.backdrop > 0) {
+      drawBackdrop(renderer, this.pattern.still.backdrop, arena, veil * clearAlpha * STILL_FEEL.backdropAlpha * this.stillness.backdrop, this.clock.time);
+      renderer.setAlpha(veil);
+    }
+
+    if (!revealing) this.renderLiveInk(renderer);
     renderer.setAlpha(veil * clearAlpha);
     this.world.render(renderer, alpha, DEBUG.on);
     renderer.setAlpha(veil);
@@ -481,11 +497,12 @@ export class DodgePhase implements Scene {
       page && finish?.kind === "page"
         ? `  bút ${this.holding ? "cầm" : "nằm"}  vẽ ${page.drawnBeats.toFixed(1)}/${finish.drawBeats}  nét ${page.sketch.count}`
         : "";
+    const stillText = this.stillness ? `  đứng yên ${this.stillness.active ? "có" : "không"}` : "";
     const lines = [
       `DEBUG (F1)  tick ${this.tick}  phóng ${scaleText}`,
       `x ${player.x.toFixed(1)}  y ${player.y.toFixed(1)}  ${player.invincible ? "bất tử" : ""}`,
       `beat ${clock.beat.toFixed(2)}  BPM ${clock.bpm.toFixed(1)}  hệ số ${clock.tempo.paceAtBeat(clock.beat).toFixed(2)}  vòng ${this.runner.cycle + 1}`,
-      `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}${drawText}`,
+      `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}${drawText}${stillText}`,
     ];
     lines.forEach((line, i) => renderer.text(line, 8, 8 + i * 20, { size: 16, color: COLOR.debugText }));
 

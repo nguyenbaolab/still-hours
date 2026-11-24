@@ -1,6 +1,7 @@
 import type { TempoMap } from "../core/tempo-map";
 import type { BulletEvent, Pattern, PatternEvent, TempoEvent } from "../data/pattern-types";
 import type { BulletFeel } from "../data/rhythm-feel";
+import { BACKDROPS } from "../data/backdrops";
 import { NEGATIVE_PHRASES } from "../data/words";
 import { handlerFor, type SpawnContext } from "./spawners";
 
@@ -46,6 +47,13 @@ export function validatePattern(pattern: Pattern, feel: BulletFeel): string[] {
     if (kind !== "page") problems.push(`${pattern.name}: pencil chỉ dùng với finish page`);
     if (!fraction(pattern.pencil.x) || !fraction(pattern.pencil.y)) {
       problems.push(`${pattern.name}: pencil x, y phải trong [0, 1]`);
+    }
+  }
+
+  if (pattern.still) {
+    if (!BACKDROPS[pattern.still.backdrop]) problems.push(`${pattern.name}: still: không có cảnh nền "${pattern.still.backdrop}"`);
+    if (pattern.events.some((event) => event.type === "word")) {
+      problems.push(`${pattern.name}: still không đi cùng đạn word (hai nguồn cùng đặt hệ số nhịp)`);
     }
   }
 

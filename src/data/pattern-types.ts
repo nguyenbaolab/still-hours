@@ -156,5 +156,10 @@ export interface Pattern {
   pencil?: { x: number; y: number };
   /** Câu tự nhủ khi một vòng trọn vẹn trôi qua mà chưa cầm bút (chỉ pattern có `pencil`). Lấy lần lượt. */
   idleLines?: readonly string[];
+  /**
+   * Đứng yên thì chậm nhịp và hiện cảnh nền `backdrop` (id trong `BACKDROPS`): cư dân 2, boss lượt 2.
+   * Không đi cùng đạn `word` (hai nguồn cùng đặt hệ số nhịp).
+   */
+  still?: { backdrop: string };
   events: readonly PatternEvent[];
 }

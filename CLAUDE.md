@@ -60,7 +60,11 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước 6.1: cư dân 1 thật. `data/patterns/resident-1.ts` (`R1_ROUNDS`: 120→144, 132→160, 144→176 BPM, 60/64/68 beat, chuỗi `straight`,
     `aimed` 3 viên mỗi 4 beat, lượt 3 hai `sweep`), `data/mechanisms/pocket-watch.ts` (`POCKET_WATCH`, `rhythmic: false`, không
     `unscrew`, `showHint`), `residents/r1.ts` dùng dữ liệu thật. Cảnh kết `phone` và cue `ring` làm ở 6.5 / 7.2.
-- **Bước tiếp theo:** mốc 6.2 trong `AUTOPILOT.md` (cư dân 2 và đứng yên).
+  - Bước 6.2: cư dân 2 thật và "đứng yên". `battle/stillness.ts` (`Stillness`, `isStill`), `STILL_FEEL` (`data/flow-feel.ts`), trường
+    `Pattern.still` (`validatePattern` từ chối đi cùng `word` hoặc cảnh nền không có), `DodgePhase` vẽ cảnh nền (`drawBackdrop`) dưới đạn,
+    `data/patterns/resident-2.ts` (`R2_ROUNDS`: làn `straight` ngoài túi an toàn giữa khung, `aimed` mỗi 8 beat),
+    `data/mechanisms/stopwatch.ts` (`STOPWATCH`). Cảnh kết `lookUp` làm ở 6.5.
+- **Bước tiếp theo:** mốc 6.3 trong `AUTOPILOT.md` (cư dân 3 hoàn chỉnh).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -734,10 +738,10 @@ Hiện đã có:
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
   `sketch-feel.ts` (**độ dày nét, sáp màu, đung đưa, bút và trang vẽ `DRAW_FEEL`**), `flow-feel.ts` (**chuyển cảnh, dọn đạn,
   màn thua**),
-  `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-1.ts` (`R1_ROUNDS`: tích tắc dồn dập), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
+  `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-1.ts` (`R1_ROUNDS`: tích tắc dồn dập), `patterns/resident-2.ts` (`R2_ROUNDS`: đứng yên thì thế giới hiện ra), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
   `patterns/resident-4.ts` (`R4_ROUNDS`: ba lượt "Nhặt bút", vòng 32 beat, `finish: page`),
   `disassembly-feel.ts` (cửa sổ nhịp, số nấc, số beat giữ, chữ ký ức),
-  `mechanisms/clockwork.ts` (bộ máy đồng hồ thử), `mechanisms/pocket-watch.ts` (đồng hồ quả quýt của cư dân 1).
+  `mechanisms/clockwork.ts` (bộ máy đồng hồ thử), `mechanisms/pocket-watch.ts` (đồng hồ quả quýt của cư dân 1), `mechanisms/stopwatch.ts` (đồng hồ bấm giờ của cư dân 2), `battle/stillness.ts`.
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
   (pattern fixture + hàm tính giờ độc lập), `bots.ts` (bot thử: đi tới bút, đi vòng chữ nhật, đứng yên). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
   `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `battle/pace.test.ts`, `battle/words.test.ts`,
@@ -846,7 +850,7 @@ chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 
 
 - Tempo kịch bản nằm trong pattern (sự kiện `tempo`). Hết mỗi vòng, BPM trở về `pattern.bpm`. `change` không đụng hệ số nhịp.
 - **Hệ số nhịp** (`setPace(atBeat, factor)`): lớp riêng, dùng chung, không gắn một cư dân. Nhân lên BPM kịch bản.
-  Cư dân 3 hạ/hồi qua `battle/pace.ts`; cư dân 2 (đứng yên thì đạn chậm) sẽ gọi cùng `setPace` ở bước 6.
+  Cư dân 3 hạ/hồi qua `battle/pace.ts`; cư dân 2 (đứng yên thì đạn chậm) gọi cùng `setPace` qua `battle/stillness.ts`.
   - Hệ số **hằng theo đoạn**, luôn trong (0, 1]. Nhân với đoạn BPM tuyến tính vẫn ra đoạn tuyến tính, nên công thức
     đóng giữ nguyên. Ramp tuyến tính của hệ số ra bậc hai, không dùng. `setPace` với hệ số ngoài (0, 1] thì ném lỗi.
   - `timeAtBeat` / `bpmAtBeat` là thời gian và BPM **nghe được** (đã nhân hệ số). `scriptTimeAtBeat` là tempo kịch bản
@@ -878,7 +882,7 @@ Pattern không khai `finish`: `loop: false` coi như `length`, `loop: true` ch�
 | `finish` | `{ kind: "length" }` \| `{ kind: "page"; drawBeats: number }` \| `{ kind: "exit"; side: Side; at: number; openBeat: number; widths: readonly number[]; openBeats: readonly number[] }` | Pha né kết thúc thế nào (mục "Cấu trúc một trận"). Bỏ trống: `loop: false` là `length`, `loop: true` chạy mãi. `length` cần `loop: false`; `page` và `exit` cần `loop: true` | xong (`length`, `page`); 6.4 (`exit`) |
 | `pencil` | `{ x: number; y: number }` | Chỗ bút nằm đầu lượt (cư dân 4). Bắt buộc khi `finish.kind` là `page`, cấm khi khác | xong |
 | `idleLines` | `readonly string[]` | Câu tự nhủ khi một vòng trọn vẹn trôi qua mà chưa cầm bút (chỉ pattern có `pencil`) | xong |
-| `still` | `{ backdrop: string }` | Đứng yên thì chậm nhịp và hiện cảnh nền (cư dân 2, boss lượt 2). Cấm đi cùng đạn `word` | 6.2 |
+| `still` | `{ backdrop: string }` | Đứng yên thì chậm nhịp và hiện cảnh nền (cư dân 2, boss lượt 2). Cấm đi cùng đạn `word` | xong |
 | `lagClock` | `boolean` | Mặt đồng hồ trễ (cư dân 3, boss lượt 3) | 6.3 |
 
 `validatePattern` kiểm các ràng buộc trong bảng. Đạn `distraction`: không tẩy nét; chỉ có tác dụng (làm rơi bút) khi
@@ -989,6 +993,9 @@ Nét chì, bút và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel log
 | Đạn xao nhãng bay nhanh/chậm, to/nhỏ           | `DISTRACTION_FEEL.speed`, `radius`            |
 | Đạn treo: đung đưa rộng / nhanh / sợi dài / sống bao lâu | `DISTRACTION_FEEL.swingAmplitude`, `swingPerBeat`, `threadLength`, `hangBeats` |
 | Mờ đen giữa các cảnh                           | `FLOW_FEEL.fadeSeconds` (0,4)                 |
+| Đứng yên bao lâu thì tính / dịch tối đa mỗi tick | `STILL_FEEL.stillSeconds` (1), `maxStepPx` (0,5) |
+| Đứng yên thì nhịp chậm bao nhiêu               | `STILL_FEEL.pace` (0,75)                      |
+| Cảnh nền hiện / tắt nhanh chậm, đậm nhạt       | `STILL_FEEL.fadeInSeconds` (1), `fadeOutSeconds` (0,3), `backdropAlpha` (0,6) |
 | Đạn còn lại mờ đi khi pha `length` xong        | `FLOW_FEEL.clearSeconds` (0,6)                |
 | Bánh răng nứt nằm yên bao lâu khi thua         | `FLOW_FEEL.loseHoldSeconds` (1,2)             |
 | Cảnh mở: tích tắc một mình trước dòng đầu      | `INTRO_FEEL.leadSeconds` (3)                  |

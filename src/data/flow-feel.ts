@@ -157,3 +157,28 @@ export const TOWN_FEEL: TownFeel = {
   spotFadeSeconds: 1,
   gateBpm: 40,
 };
+
+/** Đứng yên thì thế giới hiện ra (cư dân 2, boss lượt 2). CLAUDE.md, "Chú Minh". */
+export interface StillFeel {
+  /** Phải đứng yên liên tục chừng này giây (nghe được) thì mới tính. */
+  stillSeconds: number;
+  /** Quãng bánh răng dịch tối đa trong một tick (px) mà vẫn tính là đứng yên. Lực hút kéo quá mức này thì không tính. */
+  maxStepPx: number;
+  /** Hệ số nhịp khi đứng yên đủ lâu (hạ nhịp: 0,75 thì lượt dài nhất 1 / 0,75 ≈ 1,33 lần kịch bản). */
+  pace: number;
+  /** Cảnh nền hiện dần sau đạn trong chừng này giây khi đã đứng yên đủ; tắt trong `fadeOutSeconds` khi di chuyển lại. */
+  fadeInSeconds: number;
+  fadeOutSeconds: number;
+  /** Độ đậm tối đa của cảnh nền trong khung né (0..1); không quá đậm để đạn trắng vẫn đọc được. */
+  backdropAlpha: number;
+}
+
+export const STILL_FEEL: StillFeel = {
+  stillSeconds: 1,
+  maxStepPx: 0.5,
+  pace: 0.75,
+  fadeInSeconds: 1,
+  fadeOutSeconds: 0.3,
+  backdropAlpha: 0.6,
+};
+
