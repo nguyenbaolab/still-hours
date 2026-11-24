@@ -134,6 +134,14 @@ export interface TempoEvent {
 export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent | DistractionEvent;
 export type PatternEvent = BulletEvent | TempoEvent;
 
+/**
+ * Pha né kết thúc thế nào (CLAUDE.md, "Cấu trúc một trận").
+ * - `length`: `loop: false`, xong khi beat nghe được ≥ `lengthBeats`.
+ * - `page`: `loop: true`, xong khi đã vẽ đủ `drawBeats` beat, hoặc hết `DRAW_FEEL.maxLoops` vòng dù chưa đủ.
+ * Bỏ trống: `loop: false` coi như `length`; `loop: true` chạy mãi (pattern thử, test đồng bộ nhịp).
+ */
+export type FinishRule = { kind: "length" } | { kind: "page"; drawBeats: number };
+
 export interface Pattern {
   name: string;
   /** BPM lúc bắt đầu mỗi vòng. Bỏ trống = RHYTHM_FEEL.defaultBpm. */
@@ -142,5 +150,11 @@ export interface Pattern {
   lengthBeats: number;
   /** Hết vòng thì lặp lại (BPM trở về `bpm` ở đầu vòng mới). */
   loop: boolean;
+  /** Cách kết thúc pha né. Xem `FinishRule`. */
+  finish?: FinishRule;
+  /** Chỗ bút nằm đầu lượt (cư dân 4), tỉ lệ 0..1 của khung. Bắt buộc khi `finish.kind` là `page`, cấm khi khác. */
+  pencil?: { x: number; y: number };
+  /** Câu tự nhủ khi một vòng trọn vẹn trôi qua mà chưa cầm bút (chỉ pattern có `pencil`). Lấy lần lượt. */
+  idleLines?: readonly string[];
   events: readonly PatternEvent[];
 }

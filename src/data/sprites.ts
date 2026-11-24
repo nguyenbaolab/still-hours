@@ -32,6 +32,22 @@ export const SPRITES = {
       "...#...",
     ],
   },
+  /** Cây bút chì nằm chéo trên giấy (cư dân 4). Tâm sprite là tâm bút. */
+  pencil: {
+    scale: 2,
+    palette: { "#": "#f0b429", o: "#c98a1a", p: "#f2c1c8", w: "#e6e0d4", k: "#3a342c" },
+    rows: [
+      ".......pp.",
+      "......ppo.",
+      ".....###..",
+      "....###o..",
+      "...###o...",
+      "..###o....",
+      ".www#.....",
+      ".wkw......",
+      ".k........",
+    ],
+  },
   /** Ốc trên bộ máy. */
   screw: {
     scale: 2,

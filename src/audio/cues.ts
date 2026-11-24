@@ -5,7 +5,16 @@
 
 const FLOOR = 0.0001;
 
-export type CueName = "wordAbsorb" | "wordRelease" | "unscrew" | "lift" | "unhook" | "clack";
+export type CueName =
+  | "wordAbsorb"
+  | "wordRelease"
+  | "unscrew"
+  | "lift"
+  | "unhook"
+  | "clack"
+  | "pencilUp"
+  | "pencilDrop"
+  | "drawTick";
 
 export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName, time: number): void {
   if (cue === "wordAbsorb") thud(ctx, destination, time);
@@ -13,6 +22,9 @@ export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName,
   else if (cue === "unscrew") click(ctx, destination, time, 1400);
   else if (cue === "lift") scrape(ctx, destination, time);
   else if (cue === "unhook") click(ctx, destination, time, 880);
+  else if (cue === "pencilUp") scratch(ctx, destination, time, 3200, 0.1, 0.1);
+  else if (cue === "pencilDrop") pencilDrop(ctx, destination, time);
+  else if (cue === "drawTick") scratch(ctx, destination, time, 5200, 0.03, 0.035);
   else knock(ctx, destination, time);
 }
 
@@ -108,4 +120,45 @@ function knock(ctx: AudioContext, destination: AudioNode, time: number): void {
   osc.connect(gain).connect(destination);
   osc.start(time);
   osc.stop(time + 0.1);
+}
+
+/** Chì chạm giấy: một vệt nhiễu ngắn, sáng. `peak` là biên độ đỉnh. */
+function scratch(ctx: AudioContext, destination: AudioNode, time: number, hz: number, seconds: number, peak: number): void {
+  const noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * seconds), ctx.sampleRate);
+  const samples = noise.getChannelData(0);
+  for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+  const source = ctx.createBufferSource();
+  source.buffer = noise;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = hz;
+  filter.Q.value = 1.1;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(FLOOR, time);
+  gain.gain.exponentialRampToValueAtTime(peak, time + 0.006);
+  gain.gain.exponentialRampToValueAtTime(FLOOR, time + seconds);
+  source.connect(filter).connect(gain).connect(destination);
+  source.start(time);
+  source.stop(time + seconds);
+}
+
+/** Bút rơi: hai cái gõ gỗ nhỏ, cái sau nhẹ hơn và cao hơn. */
+function pencilDrop(ctx: AudioContext, destination: AudioNode, time: number): void {
+  const taps = [
+    { at: 0, hz: 520, peak: 0.3 },
+    { at: 0.07, hz: 700, peak: 0.16 },
+  ];
+  for (const tap of taps) {
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(tap.hz, time + tap.at);
+    osc.frequency.exponentialRampToValueAtTime(tap.hz / 2, time + tap.at + 0.05);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(FLOOR, time + tap.at);
+    gain.gain.exponentialRampToValueAtTime(tap.peak, time + tap.at + 0.003);
+    gain.gain.exponentialRampToValueAtTime(FLOOR, time + tap.at + 0.06);
+    osc.connect(gain).connect(destination);
+    osc.start(time + tap.at);
+    osc.stop(time + tap.at + 0.07);
+  }
 }

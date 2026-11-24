@@ -85,10 +85,12 @@ export interface SimulateOptions {
   /** Một lần treo: khung hình bắt đầu từ `at` giây kéo dài `length` giây. */
   stall?: { at: number; length: number };
   seed?: number;
+  /** Kiểm tra sau mỗi khung hình; trả về true thì dừng sớm. */
+  stopWhen?: () => boolean;
 }
 
 /** Chạy các khung hình có jitter (và tùy chọn một lần treo). Trả về độ dài từng khung hình. */
-export function simulate({ seconds, audio, step, jitter = 0.004, stall, seed = 1 }: SimulateOptions): number[] {
+export function simulate({ seconds, audio, step, jitter = 0.004, stall, seed = 1, stopWhen }: SimulateOptions): number[] {
   const random = lcg(seed);
   const frames: number[] = [];
   let elapsed = 0;
@@ -103,6 +105,7 @@ export function simulate({ seconds, audio, step, jitter = 0.004, stall, seed = 1
     audio.t += dt;
     frames.push(dt);
     step(dt);
+    if (stopWhen?.()) break;
   }
   return frames;
 }

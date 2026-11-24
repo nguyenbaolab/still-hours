@@ -404,14 +404,26 @@ export class BulletWorld {
     item.y = item.prevY = anchorY + length;
   }
 
-  /** Chạm đạn xao nhãng thì lấy nó ra khỏi khung. Không trừ máu. Trả về số viên vừa chạm. */
-  consumeDistractions(hitbox: Rect): number {
+  /** Tâm viên xao nhãng đầu tiên bị lấy ra trong lần `consumeDistractions` gần nhất. */
+  grabX = 0;
+  grabY = 0;
+
+  /**
+   * Chạm đạn xao nhãng thì lấy nó ra khỏi khung. Không trừ máu. Trả về số viên vừa chạm.
+   * `active` = false (bánh răng chưa cầm bút): đạn bay xuyên qua, không bị lấy, trả về 0.
+   */
+  consumeDistractions(hitbox: Rect, active = true): number {
+    if (!active) return 0;
     let count = 0;
     for (let i = 0; i < this.distractions.size; ) {
       const item = this.distractions.at(i);
       if (!circleIntersectsRect(item.x, item.y, item.radius, hitbox)) {
         i++;
         continue;
+      }
+      if (count === 0) {
+        this.grabX = item.x;
+        this.grabY = item.y;
       }
       this.distractions.release(i);
       count++;

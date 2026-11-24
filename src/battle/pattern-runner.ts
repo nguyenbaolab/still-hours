@@ -33,6 +33,22 @@ export function validatePattern(pattern: Pattern, feel: BulletFeel): string[] {
   if (!(pattern.lengthBeats > 0)) problems.push(`${pattern.name}: lengthBeats phải > 0`);
   if (pattern.bpm !== undefined && !(pattern.bpm > 0)) problems.push(`${pattern.name}: bpm phải > 0`);
 
+  const kind = pattern.finish?.kind;
+  if (kind === "length" && pattern.loop) problems.push(`${pattern.name}: finish length cần loop: false`);
+  if (kind === "page") {
+    if (!pattern.loop) problems.push(`${pattern.name}: finish page cần loop: true`);
+    if (!pattern.pencil) problems.push(`${pattern.name}: finish page cần pencil`);
+    if (!(pattern.finish && pattern.finish.kind === "page" && pattern.finish.drawBeats > 0)) {
+      problems.push(`${pattern.name}: drawBeats phải > 0`);
+    }
+  }
+  if (pattern.pencil) {
+    if (kind !== "page") problems.push(`${pattern.name}: pencil chỉ dùng với finish page`);
+    if (!fraction(pattern.pencil.x) || !fraction(pattern.pencil.y)) {
+      problems.push(`${pattern.name}: pencil x, y phải trong [0, 1]`);
+    }
+  }
+
   pattern.events.forEach((event, i) => {
     if (!Number.isFinite(event.beat) || event.beat < 0 || event.beat >= pattern.lengthBeats) {
       fail(i, `beat ${event.beat} nằm ngoài [0, ${pattern.lengthBeats})`);

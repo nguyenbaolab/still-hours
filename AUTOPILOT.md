@@ -281,3 +281,5 @@ bộ phận máy mới; ô thị trấn có màu riêng; cảnh nền `Backdrop`
 ## Nhật ký
 
 Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
+
+- 3b.1 — 4798045 — xóa trống giấy, tẩy, đuôi nét, cặp kim; SKETCH_FEEL/DISTRACTION_FEEL gộp lại.

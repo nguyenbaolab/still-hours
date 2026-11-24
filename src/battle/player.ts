@@ -102,10 +102,4 @@ export class Player {
     this.invincibleTicks = this.invincibleTotalTicks;
     return true;
   }
-
-  /** Hồi đầy máu, kèm một khoảng bất tử để không bị trúng lại ngay. */
-  resetHealth(): void {
-    this.hp = this.feel.maxHp;
-    this.invincibleTicks = this.invincibleTotalTicks;
-  }
 }

@@ -25,14 +25,7 @@ const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
 
 const renderer = new Renderer(canvas);
-renderer.sprites.definePixels("gear", SPRITES.gear);
-renderer.sprites.definePixels("distraction", SPRITES.distraction);
-renderer.sprites.definePixels("screw", SPRITES.screw);
-renderer.sprites.definePixels("clock-face", SPRITES["clock-face"]);
-renderer.sprites.definePixels("cover", SPRITES.cover);
-renderer.sprites.definePixels("cog", SPRITES.cog);
-renderer.sprites.definePixels("spring", SPRITES.spring);
-renderer.sprites.definePixels("balance", SPRITES.balance);
+for (const [id, data] of Object.entries(SPRITES)) renderer.sprites.definePixels(id, data);
 
 const input = new Input();
 attachKeyboard(input, KEY_BINDINGS);

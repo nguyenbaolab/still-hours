@@ -52,3 +52,38 @@ export function fixtureTime(beat: number): number {
   const tail = beat > from ? simpson((x) => 60 / fixtureBpmAt(x), from, beat, 400) : 0;
   return (blockStart[wholeBlocks] as number) + tail;
 }
+
+/** Pha né kiểu `page`, không có đạn nào: chỉ để thử bút. 100 BPM, vòng 16 beat, cần vẽ 20 beat. */
+export const PAGE_FIXTURE: Pattern = {
+  name: "fixture trang",
+  bpm: 100,
+  lengthBeats: 16,
+  loop: true,
+  finish: { kind: "page", drawBeats: 20 },
+  pencil: { x: 0.25, y: 0.5 },
+  events: [],
+};
+
+/**
+ * Trang không bao giờ vẽ đủ (drawBeats lớn hơn mọi thứ vẽ được trong `maxLoops` vòng) và chỉ có đạn xao nhãng,
+ * không có đạn trừ máu. Đạn treo ở bên phải, xa chỗ bút, nên bánh răng đứng yên không bị hút tới bút.
+ */
+export const PAGE_NEVER_FIXTURE: Pattern = {
+  ...PAGE_FIXTURE,
+  name: "fixture trang không bao giờ đủ",
+  finish: { kind: "page", drawBeats: 500 },
+  events: [
+    { beat: 6, type: "distraction", from: "top", at: 0.92, hang: true },
+    { beat: 12, type: "distraction", from: "right", at: 0.8 },
+  ],
+};
+
+/** Pha né kiểu `length` không có đạn: 8 beat rồi xong. */
+export const LENGTH_FIXTURE: Pattern = {
+  name: "fixture độ dài",
+  bpm: 100,
+  lengthBeats: 8,
+  loop: false,
+  finish: { kind: "length" },
+  events: [],
+};

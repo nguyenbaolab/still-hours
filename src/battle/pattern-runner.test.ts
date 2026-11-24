@@ -265,3 +265,35 @@ describe("đạn nhắm vào người chơi: khóa hướng lúc nào", () => {
     expect(Math.abs(angle - angleTo(far))).toBeLessThan(0.15);
   });
 });
+
+describe("validatePattern: finish và pencil", () => {
+  const base = { name: "t", bpm: 100, lengthBeats: 16, events: [] } as const;
+  const problems = (pattern: Pattern): string => validatePattern(pattern, BULLET_FEEL).join(" | ");
+
+  it("page thiếu pencil → lỗi", () => {
+    expect(problems({ ...base, loop: true, finish: { kind: "page", drawBeats: 10 } })).toMatch(/cần pencil/);
+  });
+
+  it("pencil với length hoặc không có finish → lỗi", () => {
+    expect(problems({ ...base, loop: false, finish: { kind: "length" }, pencil: { x: 0.5, y: 0.5 } })).toMatch(/pencil chỉ dùng/);
+    expect(problems({ ...base, loop: false, pencil: { x: 0.5, y: 0.5 } })).toMatch(/pencil chỉ dùng/);
+  });
+
+  it("length với loop: true → lỗi; page với loop: false → lỗi", () => {
+    expect(problems({ ...base, loop: true, finish: { kind: "length" } })).toMatch(/finish length cần loop: false/);
+    expect(problems({ ...base, loop: false, finish: { kind: "page", drawBeats: 10 }, pencil: { x: 0.5, y: 0.5 } })).toMatch(
+      /finish page cần loop: true/,
+    );
+  });
+
+  it("page hợp lệ, length hợp lệ, và không có finish (thử nhịp) vẫn hợp lệ", () => {
+    expect(problems({ ...base, loop: true, finish: { kind: "page", drawBeats: 10 }, pencil: { x: 0.5, y: 0.5 } })).toBe("");
+    expect(problems({ ...base, loop: false, finish: { kind: "length" } })).toBe("");
+    expect(problems({ ...base, loop: true })).toBe("");
+  });
+
+  it("pencil ngoài [0, 1] hoặc drawBeats ≤ 0 → lỗi", () => {
+    expect(problems({ ...base, loop: true, finish: { kind: "page", drawBeats: 10 }, pencil: { x: 1.2, y: 0.5 } })).toMatch(/pencil x, y/);
+    expect(problems({ ...base, loop: true, finish: { kind: "page", drawBeats: 0 }, pencil: { x: 0.5, y: 0.5 } })).toMatch(/drawBeats/);
+  });
+});

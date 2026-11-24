@@ -55,6 +55,8 @@ function runScenario() {
     audio,
     stall: STALL,
     step: () => {
+      // Người chơi đứng yên bị đạn bắn trúng suốt 3 phút; pha thua khi hết máu, nên giữ máu đầy để pha chạy tiếp.
+      phase["player"].hp = phase["player"].maxHp;
       input.poll();
       phase.update();
     },

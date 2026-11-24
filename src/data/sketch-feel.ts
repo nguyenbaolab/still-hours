@@ -64,3 +64,46 @@ export const DISTRACTION_FEEL: DistractionFeel = {
   swingPerBeat: 0.85,
   hangBeats: 8,
 };
+
+/** Cây bút chì và trang vẽ của cô bé (cư dân 4, "Nhặt bút"). */
+export interface DrawFeel {
+  /** Tâm bánh răng cách tâm bút không quá bấy nhiêu px thì cầm bút. */
+  pickupRadius: number;
+  /** Sau khi bút rơi, chờ bấy nhiêu giây mới nhặt lại được. */
+  pickupDelaySeconds: number;
+  /** Bút văng xa bấy nhiêu px khi rơi. */
+  dropDistance: number;
+  /** Bút rơi không sát mép khung hơn bấy nhiêu px. */
+  dropMargin: number;
+  /** Bút nằm yên thì lóe sáng mỗi bấy nhiêu beat. */
+  glintEveryBeats: number;
+  /** Độ đậm của nét lúc chơi (0..1). */
+  liveInkAlpha: number;
+  /** Quá số đoạn này thì thôi ghi nét, nhưng tiến độ vẫn tính. */
+  maxSegments: number;
+  /** Beat nghe được của lần chơi đạt bấy nhiêu vòng pattern thì trang tự khép dù chưa vẽ đủ. */
+  maxLoops: number;
+  /** Bánh răng phải dịch ít nhất bấy nhiêu px trong một tick thì tính là đang vẽ. */
+  minMovePerTick: number;
+  /** Bán kính mặt đồng hồ của cô bé (px). */
+  clockRadius: number;
+  /** Câu tự nhủ hiện bấy nhiêu giây. */
+  idleLineSeconds: number;
+  /** Tối đa bấy nhiêu câu tự nhủ mỗi lượt. */
+  idleLineMax: number;
+}
+
+export const DRAW_FEEL: DrawFeel = {
+  pickupRadius: 14,
+  pickupDelaySeconds: 0.3,
+  dropDistance: 56,
+  dropMargin: 20,
+  glintEveryBeats: 4,
+  liveInkAlpha: 0.45,
+  maxSegments: 6000,
+  maxLoops: 3,
+  minMovePerTick: 0.5,
+  clockRadius: 14,
+  idleLineSeconds: 3,
+  idleLineMax: 3,
+};

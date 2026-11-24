@@ -22,6 +22,23 @@ describe("đạn xao nhãng", () => {
     expect(world.hit(heart)).toBe(0);
   });
 
+  it("không cầm bút (active = false) thì đạn bay xuyên qua: không bị lấy ra, vẫn không trừ máu", () => {
+    const arena = BATTLE_LAYOUT.arena;
+    const world = new BulletWorld(arena, BULLET_FEEL);
+    const x = arena.x + arena.w / 2;
+    const y = arena.y + arena.h / 2;
+    const heart = { x: x - 4, y: y - 4, w: 8, h: 8 };
+    world.step(0, 0);
+    world.spawnDistraction(x, y, 0, 0, DISTRACTION_FEEL.radius, DISTRACTION_FEEL.sprite, 0);
+
+    expect(world.consumeDistractions(heart, false)).toBe(0);
+    expect(world.distractions.size).toBe(1);
+    expect(world.hit(heart)).toBe(0);
+    expect(world.consumeDistractions(heart, true)).toBe(1);
+    expect(world.grabX).toBeCloseTo(x, 6);
+    expect(world.grabY).toBeCloseTo(y, 6);
+  });
+
   it("lớn hoặc có lực hút thì bắt buộc cảnh báo; nhỏ và không hút thì không", () => {
     expect(distractionNeedsTelegraph(5, 8, 0)).toBe(false);
     expect(distractionNeedsTelegraph(5, 8, 24)).toBe(true);
