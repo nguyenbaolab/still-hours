@@ -64,6 +64,18 @@ export const SPRITES = {
       ".k........",
     ],
   },
+  /** Linh, ngồi ở bàn học (bảng màu của cư dân 4). */
+  r4: {
+    scale: 2,
+    palette: { h: "#3a2a1a", s: "#e8c8a0", d: "#c0504d" },
+    rows: ["..hhhh..", ".hhhhhh.", ".hssssh.", ".hssssh.", "..dddd..", ".dddddd.", ".dddddd.", "..d..d.."],
+  },
+  /** Linh cầm bút chì lên (cảnh kết của cư dân 4). */
+  "r4-pencil": {
+    scale: 2,
+    palette: { h: "#3a2a1a", s: "#e8c8a0", d: "#c0504d", y: "#f0b429", p: "#f2c1c8" },
+    rows: ["..hhhh..p", ".hhhhhhy.", ".hssssyh.", ".hssssh..", "..dddd...", ".dddddd..", ".dddddd..", "..d..d.."],
+  },
   /** Ốc trên bộ máy. */
   screw: {
     scale: 2,

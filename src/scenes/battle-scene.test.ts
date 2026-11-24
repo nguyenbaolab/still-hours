@@ -67,10 +67,17 @@ function setup(rounds: readonly [Pattern, Pattern, Pattern]) {
       return phase;
     },
   };
-  const resident: ResidentData = { id: "r4", name: "thử", rounds, mechanism: CLOCKWORK };
+  const resident: ResidentData = {
+    id: "r4",
+    name: "thử",
+    rounds,
+    mechanism: CLOCKWORK,
+    dialogue: { open: "r4Open", close: "r4Close", idle: "r4Idle" },
+    vignette: "pencil",
+  };
   const audio = new FakeAudio(5, 0);
   const input = new Input();
-  const scene = new BattleScene(resident, input, audio, factory);
+  const scene = new BattleScene(resident, input, audio, factory, (text) => text.length * 10);
   const tick = (confirm = false): void => {
     input.setActionState("test", "confirm", confirm);
     input.poll();
@@ -96,8 +103,28 @@ describe("BattleScene: thứ tự một trận", () => {
       for (let i = 0; i < STEP_TICKS; i++) s.tick();
     }
     expect(s.log).toEqual(["dodge1", "dis1", "dodge2", "dis2", "dodge3", "dis3"]);
-    expect(s.scene.finished).toBe(true);
+    // Tháo xong tầng 3 chưa phải hết trận: còn hội thoại khép trận.
+    expect(s.scene.finished).toBe(false);
+    expect(s.scene.closingDialogue).toBe(true);
     expect(s.scene.current).toBeNull();
+    for (let i = 0; i < 2000 && !s.scene.finished; i++) {
+      s.tick(i % 2 === 0);
+    }
+    expect(s.scene.finished).toBe(true);
+    expect(s.scene.closingDialogue).toBe(false);
+  });
+
+  it("hội thoại khép trận: hết dòng cuối mới finished, và phát tiếng blip", () => {
+    const s = setup([plain, plain, plain]);
+    for (let step = 0; step < 6; step++) {
+      if (step % 2 === 0) (s.dodges.at(-1) as FakeDodge).outcome = "won";
+      else (s.disassembles.at(-1) as FakeDisassemble).outcome = "done";
+      for (let i = 0; i < STEP_TICKS; i++) s.tick();
+    }
+    expect(s.scene.closingDialogue).toBe(true);
+    for (let i = 0; i < 120; i++) s.tick();
+    expect(s.audio.cues).toContain("blip");
+    expect(s.scene.finished).toBe(false);
   });
 
   it("pha mới chỉ được dựng sau khi mờ hết, và chỉ chạy update sau đó", () => {

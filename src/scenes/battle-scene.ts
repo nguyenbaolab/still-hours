@@ -6,11 +6,13 @@ import { PageState, type Point } from "../battle/page";
 import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
 import type { Renderer } from "../core/renderer";
+import { DIALOGUES } from "../data/dialogues";
 import { DISASSEMBLY_FEEL } from "../data/disassembly-feel";
 import { FLOW_FEEL } from "../data/flow-feel";
 import type { Pattern } from "../data/pattern-types";
 import type { ResidentData } from "../data/residents/types";
 import { SKETCH_FEEL } from "../data/sketch-feel";
+import { DialogueBox, type MeasureText } from "./dialogue-box";
 import type { Scene } from "./scene";
 
 /** Phần của pha né mà `BattleScene` cần biết. `DodgePhase` thật hiện thực nó; test dùng bản giả. */
@@ -45,8 +47,10 @@ export function createBattleFactory(
 /** Mỗi lượt là một pha né rồi một pha tháo; một trận có 3 lượt. */
 const ROUNDS = 3;
 const FADE_COLOR = "#000000";
+/** Nền tối của hội thoại khép trận. */
+const BACKGROUND = "#0b0908";
 
-type Mode = "run" | "fadeOut" | "fadeIn" | "loseFade" | "loseHold" | "mend" | "ended";
+type Mode = "run" | "fadeOut" | "fadeIn" | "loseFade" | "loseHold" | "mend" | "closing" | "ended";
 
 /** Pha đang chạy: né hoặc tháo. `step` 0..5 = né 1, tháo 1, né 2, tháo 2, né 3, tháo 3. */
 interface Running {
@@ -62,7 +66,8 @@ interface Running {
  * bắt đầu từ lúc đó. Thua (chỉ ở pha né): không chữ. Mọi thứ mờ về đen, bánh răng nứt nằm yên giữa màn tối
  * `loseHoldSeconds` (confirm bỏ qua), rồi vết nứt khép lại (cue `mend`) và chính pha né đó mờ vào lại từ beat 0.
  *
- * Tạm thời (mốc 4.1): tháo xong tầng 3 thì hiện "hết" và `finished`; hội thoại khép trận sẽ thay ở mốc 4.3.
+ * Tháo xong tầng 3 thì mờ ra, rồi hội thoại khép trận (`resident.dialogue.close`, nền tối, trong cảnh trận). Đọc hết
+ * thì `finished`: cảnh kết của cư dân và việc lưu do bên ngoài làm.
  */
 export class BattleScene implements Scene {
   /** Pha né cuối cùng vừa thắng, hoặc pha tháo cuối. Đọc để test. */
@@ -74,18 +79,20 @@ export class BattleScene implements Scene {
   private gearAt: Point = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 };
   private readonly bench: Workbench;
   private pageState: PageState | null = null;
+  private closing: DialogueBox | null = null;
 
   constructor(
     readonly resident: ResidentData,
     private readonly input: Input,
     private readonly audio: AudioPort,
     private readonly factory: BattleFactory,
+    private readonly measure: MeasureText,
   ) {
     this.bench = new Workbench(resident.mechanism, DISASSEMBLY_FEEL);
     this.running = this.build(0);
   }
 
-  /** Trận đã xong (tháo hết tầng 3). */
+  /** Trận đã xong (tháo hết tầng 3 và đọc xong hội thoại khép trận). */
   get finished(): boolean {
     return this.done;
   }
@@ -95,9 +102,14 @@ export class BattleScene implements Scene {
     return this.pageState;
   }
 
-  /** Pha đang chạy (null khi trận đã xong). */
+  /** Pha đang chạy (null khi đang đọc hội thoại khép trận hoặc đã xong). */
   get current(): Scene | null {
-    return this.mode === "ended" ? null : this.running.scene;
+    return this.mode === "ended" || this.mode === "closing" ? null : this.running.scene;
+  }
+
+  /** Đang đọc hội thoại khép trận. */
+  get closingDialogue(): boolean {
+    return this.mode === "closing";
   }
 
   /** Bước hiện tại: 0 = né 1, 1 = tháo 1, ..., 5 = tháo 3. */
@@ -153,6 +165,15 @@ export class BattleScene implements Scene {
         }
         return;
       }
+      case "closing": {
+        if (this.input.wasPressed("mute")) this.audio.toggleMute();
+        this.closing?.update(this.input, this.audio);
+        if (this.closing?.done) {
+          this.done = true;
+          this.setMode("ended");
+        }
+        return;
+      }
       case "ended":
         return;
     }
@@ -162,7 +183,11 @@ export class BattleScene implements Scene {
     const { mode } = this;
     if (mode === "ended") {
       renderer.clear(FADE_COLOR);
-      renderer.text("hết", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 10, { size: 20, align: "center", color: "#ffffff" });
+      return;
+    }
+    if (mode === "closing") {
+      renderer.clear(BACKGROUND);
+      this.closing?.render(renderer);
       return;
     }
     if (mode === "loseHold" || mode === "mend") {
@@ -229,8 +254,8 @@ export class BattleScene implements Scene {
   private advance(): void {
     const next = this.running.step + 1;
     if (next >= ROUNDS * 2) {
-      this.done = true;
-      this.setMode("ended");
+      this.closing = new DialogueBox(DIALOGUES[this.resident.dialogue.close], this.measure);
+      this.setMode("closing");
       return;
     }
     this.running = this.build(next);

@@ -287,3 +287,4 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 3b.3 — 84c0a22 — R4_ROUNDS (ba lượt), test chỗ đặt bút, bot vẽ xong ≤ 60 giây; main chơi thử vòng ba lượt.
 - 3c.1 — 1621bc2 — tầng: Part.stage, Workbench.setStage/stageComplete, DisassemblePhase outcome, CLOCKWORK 3 tầng.
 - 4.1 — a53a683 — ResidentData, BattleScene (3 lượt, thua, dựng lại đúng pha), gear-cracked, cue mend.
+- 4.2 — 5bf4951 — DialogueBox (gõ chữ, tua X, dừng dấu câu), dialogues.ts, blip, measureText.

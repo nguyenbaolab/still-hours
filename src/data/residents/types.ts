@@ -1,11 +1,15 @@
+import type { DialogueId } from "../dialogues";
 import type { Mechanism } from "../mechanisms/types";
 import type { Pattern } from "../pattern-types";
 
 export type ResidentId = "r1" | "r2" | "r3" | "r4" | "boss";
 
+/** Cảnh kết của cư dân ở thị trấn (~10 giây, không bắt buộc có chữ). */
+export type VignetteKind = "phone" | "lookUp" | "hum" | "pencil" | "leave";
+
 /**
  * Dữ liệu của một cư dân (hoặc boss). Thêm cư dân = thêm một file dữ liệu, không sửa engine.
- * Các trường hội thoại, cảnh kết và vị trí trong thị trấn được thêm ở các mốc sau (4.3, 5.3).
+ * Vị trí trong thị trấn được thêm ở mốc 5.3.
  */
 export interface ResidentData {
   id: ResidentId;
@@ -15,4 +19,13 @@ export interface ResidentData {
   rounds: readonly [Pattern, Pattern, Pattern];
   /** Cỗ máy 3 tầng, `core` ở tầng 3. */
   mechanism: Mechanism;
+  dialogue: {
+    /** Trước trận, ở thị trấn, cạnh cư dân. */
+    open: DialogueId;
+    /** Sau trận, trong cảnh trận, nền tối. */
+    close: DialogueId;
+    /** Sau khi được giải thoát, ở thị trấn: Z để nghe một câu. */
+    idle: DialogueId;
+  };
+  vignette: VignetteKind;
 }

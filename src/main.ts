@@ -1,76 +1,70 @@
 import "./style.css";
 import { AudioEngine } from "./audio/audio-engine";
 import { DisassemblePhase } from "./battle/disassemble-phase";
-import { Workbench } from "./battle/mechanism";
 import { DodgePhase } from "./battle/dodge-phase";
-import type { PageState } from "./battle/page";
+import { Workbench } from "./battle/mechanism";
+import { strokesFromSegments, type Pt } from "./core/drawing";
 import { Input } from "./core/input";
 import { attachKeyboard } from "./core/keyboard";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
-import type { Pattern } from "./data/pattern-types";
-import type { ResidentData } from "./data/residents/types";
-import { BattleScene, createBattleFactory } from "./scenes/battle-scene";
-import { KEY_BINDINGS } from "./data/keybindings";
+import { DIALOGUES } from "./data/dialogues";
 import { DISASSEMBLY_FEEL } from "./data/disassembly-feel";
-import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
-import { CLOCKWORK } from "./data/mechanisms/clockwork";
+import { KEY_BINDINGS } from "./data/keybindings";
 import { R4_ROUNDS } from "./data/patterns/resident-4";
+import { RESIDENT_R4 } from "./data/residents/r4";
+import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
 import { SPRITES } from "./data/sprites";
+import { BattleScene, createBattleFactory } from "./scenes/battle-scene";
+import { DialogueScene } from "./scenes/dialogue-scene";
 import { PressStartScene } from "./scenes/press-start";
 import type { Scene } from "./scenes/scene";
+import { VignetteScene } from "./scenes/vignette";
 
-// Pattern đang chơi thử. Đổi thành RESIDENT3_PATTERN hoặc TEST_PATTERN
-// (import từ data/patterns/resident-3 hoặc data/patterns/test-pattern).
-const PLAYTEST_PATTERN: Pattern = R4_ROUNDS[0];
-
-// Cảnh đang chơi thử. "battle" = cả trận cư dân 4 (3 lượt, thua, tháo tầng; máy tạm), "dodge" = chỉ pha né,
-// "disassemble" = chỉ pha tháo.
-const PLAYTEST_PHASE: "battle" | "dodge" | "disassemble" = "battle";
+// Cảnh đang chơi thử, cho tới khi có Director và thị trấn (bước 5). "flow" = hội thoại mở → trận cư dân 4 →
+// cảnh kết → lặp lại; "dodge" = chỉ lượt né 1; "disassemble" = chỉ tháo tầng 1 của máy cư dân 4.
+const PLAYTEST_PHASE: "flow" | "dodge" | "disassemble" = "flow";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
 
 const renderer = new Renderer(canvas);
 for (const [id, data] of Object.entries(SPRITES)) renderer.sprites.definePixels(id, data);
+const measure = (text: string, size: number): number => renderer.measureText(text, size);
 
 const input = new Input();
 attachKeyboard(input, KEY_BINDINGS);
 const audio = new AudioEngine(AUDIO_FEEL, RHYTHM_FEEL.visualDelaySeconds);
 
-// Tạm thời main tự đổi cảnh: chờ người dùng tương tác (mở khóa âm thanh) rồi vào pha đang chơi thử.
-// Máy trạng thái cảnh thật sẽ có ở bước 4–5. Pha né chơi thử: thắng thì sang lượt kế (cùng một trang), thua thì chơi lại.
+const resident = RESIDENT_R4;
 const pressStart = new PressStartScene(audio);
 let scene: Scene = pressStart;
-let dodge: DodgePhase | null = null;
-let page: PageState | undefined;
-let round = 0;
-let bench: Workbench | null = null;
-let disassemble: DisassemblePhase | null = null;
-let stage = 1;
+let opening: DialogueScene | null = null;
+let battle: BattleScene | null = null;
+let vignette: VignetteScene | null = null;
 
-/** Chơi thử pha tháo: tầng 1 → 2 → 3 trên cùng một bàn, rồi lại từ đầu. */
-function startDisassemble(): DisassemblePhase {
-  if (!bench || stage > 3) {
-    bench = new Workbench(CLOCKWORK, DISASSEMBLY_FEEL);
-    stage = 1;
-  }
-  disassemble = new DisassemblePhase(input, audio, CLOCKWORK, bench, stage);
-  return disassemble;
+function startOpening(): DialogueScene {
+  opening = new DialogueScene(DIALOGUES[resident.dialogue.open], input, audio, measure);
+  return opening;
 }
-
-const TEMP_R4: ResidentData = { id: "r4", name: "Linh", rounds: R4_ROUNDS, mechanism: CLOCKWORK };
 
 function startBattle(): BattleScene {
-  const factory = createBattleFactory(input, audio, renderer.sprites.size("gear").width, TEMP_R4);
-  return new BattleScene(TEMP_R4, input, audio, factory);
+  const factory = createBattleFactory(input, audio, renderer.sprites.size("gear").width, resident);
+  battle = new BattleScene(resident, input, audio, factory, measure);
+  return battle;
 }
 
-function startDodge(pattern: Pattern): DodgePhase {
-  const phase = new DodgePhase(input, audio, renderer.sprites.size("gear").width, pattern, page ? { page } : {});
-  page = phase.page ?? undefined;
-  dodge = phase;
-  return phase;
+/** Tranh người chơi vừa vẽ, theo toạ độ khung né. */
+function drawingOf(scene: BattleScene): Pt[][] {
+  return scene.page ? strokesFromSegments(scene.page.sketch.segments) : [];
+}
+
+function start(): Scene {
+  if (PLAYTEST_PHASE === "dodge") return new DodgePhase(input, audio, renderer.sprites.size("gear").width, R4_ROUNDS[0]);
+  if (PLAYTEST_PHASE === "disassemble") {
+    return new DisassemblePhase(input, audio, resident.mechanism, new Workbench(resident.mechanism, DISASSEMBLY_FEEL), 1);
+  }
+  return startOpening();
 }
 
 startLoop({
@@ -78,21 +72,14 @@ startLoop({
     input.poll();
     scene.update();
     if (scene === pressStart && pressStart.ready) {
-      scene =
-        PLAYTEST_PHASE === "battle"
-          ? startBattle()
-          : PLAYTEST_PHASE === "disassemble"
-            ? startDisassemble()
-            : startDodge(PLAYTEST_PATTERN);
-    } else if (disassemble && scene === disassemble && disassemble.outcome === "done") {
-      stage++;
-      scene = startDisassemble();
-    } else if (dodge && scene === dodge && dodge.outcome !== "playing") {
-      if (dodge.outcome === "won") {
-        page?.closeRound();
-        round = (round + 1) % R4_ROUNDS.length;
-      }
-      scene = startDodge(PLAYTEST_PATTERN === R4_ROUNDS[0] ? R4_ROUNDS[round] ?? PLAYTEST_PATTERN : PLAYTEST_PATTERN);
+      scene = start();
+    } else if (opening && scene === opening && opening.finished) {
+      scene = startBattle();
+    } else if (battle && scene === battle && battle.finished) {
+      vignette = new VignetteScene(resident.vignette, input, { drawing: drawingOf(battle) });
+      scene = vignette;
+    } else if (vignette && scene === vignette && vignette.finished) {
+      scene = startOpening();
     }
   },
   render(alpha) {
