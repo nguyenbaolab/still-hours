@@ -19,6 +19,8 @@ import type { Scene } from "./scene";
 export interface DodgeLike extends Scene {
   readonly outcome: DodgeOutcome;
   readonly gearPosition: Point;
+  /** Số vòng pattern đã qua của lượt này (boss: giữ qua lần thua). */
+  readonly loopsSeen: number;
 }
 
 /** Phần của pha tháo mà `BattleScene` cần biết. */
@@ -28,7 +30,7 @@ export interface DisassembleLike extends Scene {
 
 /** Nơi dựng pha thật. Tách ra để test thay bằng pha giả có `outcome` điều khiển được. */
 export interface BattleFactory {
-  dodge(round: number, pattern: Pattern, page: PageState | null): DodgeLike;
+  dodge(round: number, pattern: Pattern, page: PageState | null, loopsSeen: number): DodgeLike;
   disassemble(stage: number, bench: Workbench): DisassembleLike;
 }
 
@@ -39,7 +41,8 @@ export function createBattleFactory(
   resident: ResidentData,
 ): BattleFactory {
   return {
-    dodge: (_round, pattern, page) => new DodgePhase(input, audio, gearSize, pattern, page ? { page } : {}),
+    dodge: (_round, pattern, page, loopsSeen) =>
+      new DodgePhase(input, audio, gearSize, pattern, { ...(page ? { page } : {}), loopsSeen }),
     disassemble: (stage, bench) => new DisassemblePhase(input, audio, resident.mechanism, bench, stage),
   };
 }
@@ -79,6 +82,8 @@ export class BattleScene implements Scene {
   private gearAt: Point = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 };
   private readonly bench: Workbench;
   private pageState: PageState | null = null;
+  /** Số vòng đã qua của lượt né hiện tại, giữ qua lần thua (khe cửa của boss rộng dần theo số này). Hết lượt thì về 0. */
+  private loops = 0;
   private closing: DialogueBox | null = null;
 
   constructor(
@@ -230,7 +235,7 @@ export class BattleScene implements Scene {
       const pattern = this.resident.rounds[round];
       if (!pattern) throw new Error(`${this.resident.id}: không có lượt ${round + 1}`);
       if (pattern.pencil && !this.pageState) this.pageState = new PageState(SKETCH_FEEL);
-      return { step, scene: this.factory.dodge(round, pattern, pattern.pencil ? this.pageState : null) };
+      return { step, scene: this.factory.dodge(round, pattern, pattern.pencil ? this.pageState : null, this.loops) };
     }
     return { step, scene: this.factory.disassemble(round + 1, this.bench) };
   }
@@ -242,6 +247,7 @@ export class BattleScene implements Scene {
       const dodge = scene as DodgeLike;
       if (dodge.outcome === "lost") {
         this.gearAt = dodge.gearPosition;
+        this.loops = dodge.loopsSeen;
         this.cracked = true;
         this.setMode("loseFade");
       } else if (dodge.outcome === "won") {
@@ -261,6 +267,7 @@ export class BattleScene implements Scene {
       this.setMode("closing");
       return;
     }
+    this.loops = 0;
     this.running = this.build(next);
     this.setMode("fadeIn");
   }

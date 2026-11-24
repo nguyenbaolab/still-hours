@@ -138,9 +138,21 @@ export type PatternEvent = BulletEvent | TempoEvent;
  * Pha né kết thúc thế nào (CLAUDE.md, "Cấu trúc một trận").
  * - `length`: `loop: false`, xong khi beat nghe được ≥ `lengthBeats`.
  * - `page`: `loop: true`, xong khi đã vẽ đủ `drawBeats` beat, hoặc hết `DRAW_FEEL.maxLoops` vòng dù chưa đủ.
+ * - `exit` (boss): `loop: true`, xong khi tâm bánh răng ra khỏi viền ngoài khung qua một khe cửa. Khe nằm trên cạnh `side`,
+ *   tâm ở `at` (0..1 dọc cạnh), mở ở `openBeat` của mỗi vòng, rộng `widths[k]` px trong `openBeats[k]` beat, với `k` = số vòng
+ *   đã qua (kẹp vào phần tử cuối). Từ vòng có `k` ≥ `widths.length` khe mở ngay từ beat 0.
  * Bỏ trống: `loop: false` coi như `length`; `loop: true` chạy mãi (pattern thử, test đồng bộ nhịp).
  */
-export type FinishRule = { kind: "length" } | { kind: "page"; drawBeats: number };
+export interface ExitFinish {
+  kind: "exit";
+  side: Side;
+  at: number;
+  openBeat: number;
+  widths: readonly number[];
+  openBeats: readonly number[];
+}
+
+export type FinishRule = { kind: "length" } | { kind: "page"; drawBeats: number } | ExitFinish;
 
 export interface Pattern {
   name: string;

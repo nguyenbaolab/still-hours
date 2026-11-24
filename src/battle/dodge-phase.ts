@@ -16,6 +16,7 @@ import { DISTRACTION_FEEL, DRAW_FEEL, SKETCH_FEEL } from "../data/sketch-feel";
 import { drawBackdrop } from "../scenes/backdrop";
 import type { Scene } from "../scenes/scene";
 import { BulletWorld } from "./bullets";
+import { exitView, hasExited, type ExitView } from "./exit";
 import { InkLayer } from "./ink-layer";
 import { lagClockHands } from "./lag-clock";
 import { Pace } from "./pace";
@@ -56,6 +57,8 @@ export type DodgeOutcome = "playing" | "won" | "lost";
 export interface DodgeOptions {
   /** Trang vẽ giữ qua các lần thua và các lượt (do `BattleScene` giữ). Không có thì tự tạo khi pattern có `pencil`. */
   page?: PageState;
+  /** Số vòng đã qua từ các lần thua trước của lượt này (boss: khe cửa rộng dần theo số vòng; không đặt lại khi thua). */
+  loopsSeen?: number;
 }
 
 type Stage = "play" | "reveal" | "clearing" | "done" | "lost";
@@ -86,6 +89,10 @@ export class DodgePhase implements Scene {
   private readonly pace: Pace;
   /** Đứng yên thì chậm nhịp và hiện cảnh nền (chỉ pattern có `still`). */
   private readonly stillness: Stillness | null;
+  /** Số vòng đã qua từ các lần thua trước (xem `DodgeOptions.loopsSeen`). */
+  private readonly carriedLoops: number;
+  /** Khe cửa ở tick này (chỉ pattern `finish: exit`). */
+  private exit: ExitView | null = null;
   private readonly ticks: TickScheduler;
   private readonly spawnContext: SpawnContext;
   private readonly ink = new InkLayer();
@@ -123,6 +130,7 @@ export class DodgePhase implements Scene {
     options: DodgeOptions = {},
   ) {
     this.pattern = pattern;
+    this.carriedLoops = options.loopsSeen ?? 0;
     this.player = new Player(PLAYER_FEEL, bodySize);
     this.player.place(this.arena.x + this.arena.w / 2, this.arena.y + this.arena.h / 2);
 
@@ -147,6 +155,11 @@ export class DodgePhase implements Scene {
 
   get outcome(): DodgeOutcome {
     return this.result;
+  }
+
+  /** Số vòng đã qua của lượt này, kể cả phần mang từ các lần thua trước. Boss giữ số này qua lần thua. */
+  get loopsSeen(): number {
+    return this.carriedLoops + this.runner.cycle;
   }
 
   /** Trang vẽ (null nếu pattern không có bút). */
@@ -188,6 +201,7 @@ export class DodgePhase implements Scene {
       return;
     }
 
+    this.updateExit();
     this.player.update(this.input, this.arena);
     // Quãng bánh răng tự đi trong tick này (chưa tính lực hút): lực hút kéo bánh răng không làm kim cô bé chạy.
     this.inputStep = Math.hypot(this.player.x - this.player.prevX, this.player.y - this.player.prevY);
@@ -296,10 +310,26 @@ export class DodgePhase implements Scene {
     this.idleShown++;
   }
 
+  /** Khe cửa của boss theo beat nghe được: mở hay đóng, và có đang cảnh báo không. Bánh răng chỉ lách qua khi khe mở. */
+  private updateExit(): void {
+    const finish = this.pattern.finish;
+    if (finish?.kind !== "exit") return;
+    this.exit = exitView(finish, this.pattern.lengthBeats, this.clock.beat, this.carriedLoops, this.arena);
+    this.player.door = this.exit.door;
+  }
+
   /** Xem pha đã xong chưa theo `finish`. Gọi cuối tick, sau khi đã loại trường hợp thua. */
   private checkFinish(): void {
     const finish = this.pattern.finish;
     const beat = this.clock.beat;
+    if (finish?.kind === "exit") {
+      if (hasExited(this.player.x, this.player.y, this.arena, finish.side)) {
+        this.stage = "clearing";
+        this.result = "won";
+        this.ticks.dropPending();
+      }
+      return;
+    }
     if (finish?.kind === "page") {
       const drawn = this.pageState?.drawnBeats ?? 0;
       // Trang luôn khép được: đủ beat vẽ, hoặc hết `maxLoops` vòng dù chưa đủ (đứng chờ không có lợi).
@@ -361,6 +391,7 @@ export class DodgePhase implements Scene {
     // Khung chiến đấu: viền trắng bao quanh vùng đen.
     renderer.rect(arena.x - border, arena.y - border, arena.w + 2 * border, arena.h + 2 * border, COLOR.frame);
     renderer.rect(arena.x, arena.y, arena.w, arena.h, COLOR.arena);
+    this.renderExit(renderer);
 
     const clearAlpha =
       this.stage === "clearing" && FLOW_FEEL.clearSeconds > 0 ? Math.max(0, 1 - this.clearAge / FLOW_FEEL.clearSeconds) : 1;
@@ -430,6 +461,23 @@ export class DodgePhase implements Scene {
     const angle = -Math.PI / 2 + Math.PI * 2 * Math.min(1, this.pageState.drawnBeats / finish.drawBeats);
     renderer.line(cx, cy, cx + Math.cos(angle) * (r - 3), cy + Math.sin(angle) * (r - 3), 2, COLOR.clockHand);
     renderer.disc(cx, cy, 2, COLOR.clockFace);
+  }
+
+  /** Khe cửa trên viền khung: mở thì viền bị cắt, 1 beat trước khi mở thì đoạn viền ở khe nhấp nháy. */
+  private renderExit(renderer: Renderer): void {
+    const view = this.exit;
+    if (!view || !(view.open || view.warn)) return;
+    const { arena } = this;
+    const border = BATTLE_LAYOUT.borderThickness;
+    const { side, from, to } = view.nextDoor;
+    const bar = (x: number, y: number, w: number, h: number): void => {
+      if (view.open) renderer.rect(x, y, w, h, COLOR.background);
+      else if (Math.floor(this.clock.time / BULLET_FEEL.telegraphFlashSeconds) % 2 === 0) renderer.rect(x, y, w, h, COLOR.glint);
+    };
+    if (side === "right") bar(arena.x + arena.w, from, border, to - from);
+    else if (side === "left") bar(arena.x - border, from, border, to - from);
+    else if (side === "top") bar(from, arena.y - border, to - from, border);
+    else bar(from, arena.y + arena.h, to - from, border);
   }
 
   /** Mặt đồng hồ trễ, ngay ngoài góc phải trên của khung: kim mờ giờ thật, kim sáng giờ kịch bản của beat đang nghe. */
@@ -519,12 +567,13 @@ export class DodgePhase implements Scene {
       page && finish?.kind === "page"
         ? `  bút ${this.holding ? "cầm" : "nằm"}  vẽ ${page.drawnBeats.toFixed(1)}/${finish.drawBeats}  nét ${page.sketch.count}`
         : "";
+    const exitText = this.exit ? `  khe ${this.exit.open ? "mở" : this.exit.warn ? "báo" : "đóng"}  vòng đã qua ${this.loopsSeen}` : "";
     const stillText = this.stillness ? `  đứng yên ${this.stillness.active ? "có" : "không"}` : "";
     const lines = [
       `DEBUG (F1)  tick ${this.tick}  phóng ${scaleText}`,
       `x ${player.x.toFixed(1)}  y ${player.y.toFixed(1)}  ${player.invincible ? "bất tử" : ""}`,
       `beat ${clock.beat.toFixed(2)}  BPM ${clock.bpm.toFixed(1)}  hệ số ${clock.tempo.paceAtBeat(clock.beat).toFixed(2)}  vòng ${this.runner.cycle + 1}`,
-      `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}${drawText}${stillText}`,
+      `đạn ${world.activeBullets}  cảnh báo ${world.telegraphs.size}  bỏ ${world.dropped}${drawText}${stillText}${exitText}`,
     ];
     lines.forEach((line, i) => renderer.text(line, 8, 8 + i * 20, { size: 16, color: COLOR.debugText }));
 

@@ -125,3 +125,14 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - `RESIDENT3_PATTERN` (pattern thử, `loop: true`) giữ lại vì `pace.test` và `pattern-runner.test` dùng nó; dữ liệu thật của r3 là `R3_ROUNDS` trong cùng file.
 - Chữ mỗi 3 beat (bắt đầu beat 2), đạn thường mỗi 4 beat (bắt đầu beat 4), xen `straight` hai viên và `aimed`: thưa hơn chữ như thiết kế, và hai nguồn này lệch pha nên có lúc phải chọn giữa né chữ và né đạn.
 - Bộ phận thêm cho đủ 3 bộ phận mỗi tầng của METRONOME: quả cân, cần lắc, núm lên dây, tấm đỡ, bánh răng (sprite placeholder).
+
+## 6.4
+
+- Khe cửa là hàm thuần theo beat nghe được (exitView), không đếm tick; Player.door do DodgePhase đặt mỗi tick trước khi bánh răng di chuyển.
+- Ra khỏi khung: cả thân phải lọt trong khe mới lách ra được (khe tối thiểu 24 px, validatePattern kiểm); đã ra ngoài mép thì hai bên khe là tường; đi tối đa nửa thân + 12 px ngoài viền, tâm vượt viền ngoài là thắng.
+- Khe đóng khi bánh răng đang ở ngoài mép: kẹp lại về trong khung ngay tick đó (không sát thương).
+- Khe không bao giờ cùng cạnh với đạn bắn tới (test: không đạn nào có rom bằng cạnh khe) để lối ra không bị chắn thẳng cửa.
+- Cảnh báo khe: đoạn viền ở khe nhấp nháy 1 beat trước khi mở (EXIT_WARN_BEATS); khe mở thì đoạn viền biến mất. Khe mở ngay từ beat 0 thì không có cảnh báo.
+- Thắng bằng khe đi cùng nhánh dọn đạn như length (clearing rồi won).
+- Lượt 2 của boss dùng still với cảnh 	ower (đã có sẵn trong ackdrops.ts); đạn xao nhãng không có bút nên chỉ hút.
+- Bộ phận của TOWER_CLOCK: bu lông ×2, nắp che; kim giờ, kim phút, mặt số; quả nặng, bộ bánh răng, con lắc, bộ thoát (core). Sprite placeholder dùng chung.

@@ -68,7 +68,11 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     (`lagClockHands`) + `LAG_CLOCK_FEEL` (rhythm-feel.ts) + mặt đồng hồ trễ vẽ trong `DodgePhase`; `data/patterns/resident-3.ts` (`R3_ROUNDS`:
     chữ mỗi 3 beat, đạn thường mỗi 4 beat; `RESIDENT3_PATTERN` giữ lại làm pattern thử cho test `pace` / `pattern-runner`);
     `data/mechanisms/metronome.ts` (`METRONOME`). Cảnh kết `hum` làm ở 6.5 / 7.2.
-- **Bước tiếp theo:** mốc 6.4 trong `AUTOPILOT.md` (boss: khe cửa).
+  - Bước 6.4: boss với khe cửa. `Pattern.finish: exit` + `battle/exit.ts` (`exitView`, `doorFor`, `hasExited`, hàm thuần theo beat),
+    `Player.door` (lách qua khe, hai bên khe là tường, khe đóng thì đẩy về), `DodgeOptions.loopsSeen` / `DodgePhase.loopsSeen`,
+    `BattleScene` giữ số vòng qua lần thua (về 0 khi sang lượt), `data/patterns/boss.ts` (`BOSS_ROUNDS`: giờ làm / ngẩng lên / vòng lặp),
+    `data/mechanisms/tower-clock.ts` (`TOWER_CLOCK`, core `escapement`). Cảnh kết `leave` làm ở 6.5 / 7.2.
+- **Bước tiếp theo:** mốc 6.5 trong `AUTOPILOT.md`.
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -755,7 +759,7 @@ Hiện đã có:
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: nội dung thật của r1–r3 và boss (bước 6; hiện là dữ liệu tạm).
+- Chưa có code: cảnh kết `phone`, `lookUp`, `hum`, `leave` và cue `ring` / `hum` / `bird` / `chime` (6.5, 7.2).
 - File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,
@@ -865,7 +869,7 @@ chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 
   cảnh báo dài thêm. Cảnh báo hết theo beat bắn, không theo giây đã đóng băng.
 - **Chính sách cư dân 3** (`Pace`): ôm một câu thì hạ `PACE_FEEL.drop` từ beat nguyên kế tiếp; câu đi hết khung không
   chạm thì hồi `PACE_FEEL.recover` ở đầu nhịp kế (`beatsPerBar`). Cùng một beat: hạ trước, rồi hồi, một lần `setPace`.
-  Hệ số kẹp trong [`floor`, 1]. Code hiện để sàn 0,8 (1 / 0,8 = 1,25); đã chốt đổi thành 0,7 ở mốc 6.3
+  Hệ số kẹp trong [`floor`, 1]. Sàn hiện là 0,7 (1 / 0,7 ≈ 1,43; đổi từ 0,8 ở mốc 6.3)
   (mục cư dân 3).
 
 ### Định dạng pattern (`data/pattern-types.ts`)
@@ -883,7 +887,7 @@ Pattern không khai `finish`: `loop: false` coi như `length`, `loop: true` ch�
 
 | Trường | Kiểu | Việc | Mốc |
 | ------ | ---- | ---- | --- |
-| `finish` | `{ kind: "length" }` \| `{ kind: "page"; drawBeats: number }` \| `{ kind: "exit"; side: Side; at: number; openBeat: number; widths: readonly number[]; openBeats: readonly number[] }` | Pha né kết thúc thế nào (mục "Cấu trúc một trận"). Bỏ trống: `loop: false` là `length`, `loop: true` chạy mãi. `length` cần `loop: false`; `page` và `exit` cần `loop: true` | xong (`length`, `page`); 6.4 (`exit`) |
+| `finish` | `{ kind: "length" }` \| `{ kind: "page"; drawBeats: number }` \| `{ kind: "exit"; side: Side; at: number; openBeat: number; widths: readonly number[]; openBeats: readonly number[] }` | Pha né kết thúc thế nào (mục "Cấu trúc một trận"). Bỏ trống: `loop: false` là `length`, `loop: true` chạy mãi. `length` cần `loop: false`; `page` và `exit` cần `loop: true` | xong (`length`, `page`, `exit`) |
 | `pencil` | `{ x: number; y: number }` | Chỗ bút nằm đầu lượt (cư dân 4). Bắt buộc khi `finish.kind` là `page`, cấm khi khác | xong |
 | `idleLines` | `readonly string[]` | Câu tự nhủ khi một vòng trọn vẹn trôi qua mà chưa cầm bút (chỉ pattern có `pencil`) | xong |
 | `still` | `{ backdrop: string }` | Đứng yên thì chậm nhịp và hiện cảnh nền (cư dân 2, boss lượt 2). Cấm đi cùng đạn `word` | xong |

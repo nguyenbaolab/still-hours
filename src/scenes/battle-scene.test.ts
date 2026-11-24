@@ -15,6 +15,9 @@ class FakeDodge implements DodgeLike {
   outcome: DodgeOutcome = "playing";
   updates = 0;
   gearPosition = { x: 300, y: 170 };
+  loopsSeen = 0;
+  /** `loopsSeen` mà `BattleScene` truyền vào lúc dựng. */
+  carried = 0;
   constructor(
     readonly round: number,
     readonly pattern: Pattern,
@@ -54,9 +57,10 @@ function setup(rounds: readonly [Pattern, Pattern, Pattern], startStep = 0) {
   const dodges: FakeDodge[] = [];
   const disassembles: FakeDisassemble[] = [];
   const factory: BattleFactory = {
-    dodge(round, pattern, page) {
+    dodge(round, pattern, page, loopsSeen) {
       log.push(`dodge${round + 1}`);
       const phase = new FakeDodge(round, pattern, page);
+      phase.carried = loopsSeen;
       dodges.push(phase);
       return phase;
     },
@@ -247,6 +251,36 @@ describe("BattleScene: thua", () => {
   });
 });
 
+describe("BattleScene: số vòng đã qua (khe cửa của boss)", () => {
+  it("thua giữ số vòng đã qua của lượt đó; sang lượt mới thì về 0", () => {
+    const s = setup([plain, plain, plain]);
+    expect(s.dodges[0]?.carried).toBe(0);
+    const first = s.dodges[0] as FakeDodge;
+    first.loopsSeen = 2;
+    first.outcome = "lost";
+    for (let i = 0; i < 400; i++) {
+      s.tick(true);
+      if (s.dodges.length > 1) break;
+    }
+    expect(s.dodges[1]?.carried).toBe(2);
+    // Thua lần nữa, lần này đã qua 4 vòng (2 mang từ trước + 2 vòng mới).
+    const second = s.dodges[1] as FakeDodge;
+    second.loopsSeen = 4;
+    second.outcome = "lost";
+    for (let i = 0; i < 400; i++) {
+      s.tick(true);
+      if (s.dodges.length > 2) break;
+    }
+    expect(s.dodges[2]?.carried).toBe(4);
+    // Thắng lượt 1, tháo xong, lượt 2: số vòng đặt lại.
+    (s.dodges[2] as FakeDodge).outcome = "won";
+    for (let i = 0; i < STEP_TICKS; i++) s.tick();
+    (s.disassembles[0] as FakeDisassemble).outcome = "done";
+    for (let i = 0; i < STEP_TICKS; i++) s.tick();
+    expect(s.dodges.at(-1)?.round).toBe(1);
+    expect(s.dodges.at(-1)?.carried).toBe(0);
+  });
+});
 describe("BattleScene: trang vẽ", () => {
   it("với lượt có bút, PageState truyền vào pha né mới là cùng một đối tượng (qua thua và qua lượt)", () => {
     const s = setup([pencilRound, pencilRound, pencilRound]);

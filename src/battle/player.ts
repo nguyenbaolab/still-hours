@@ -2,6 +2,10 @@ import { TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
 import { clamp, type Rect } from "../core/math";
 import type { PlayerFeel } from "../data/feel";
+import type { Door } from "./exit";
+
+/** Bánh răng được đi quá mép khung chừng này (px) ngoài nửa thân, để tâm ra khỏi viền ngoài qua khe. */
+const EXIT_OVERSHOOT = 12;
 
 /**
  * Bánh răng của người chơi. Toạ độ (x, y) là TÂM bánh răng, tính bằng pixel logic, không làm tròn.
@@ -14,6 +18,8 @@ export class Player {
   prevX = 0;
   prevY = 0;
   hp: number;
+  /** Khe cửa đang mở (boss). Có thì bánh răng được lách qua khe; không thì bị kẹp trong khung như thường. */
+  door: Door | null = null;
 
   /** Số tick bất tử còn lại; 0 = đang có thể bị trúng. */
   private invincibleTicks = 0;
@@ -60,18 +66,64 @@ export class Player {
     }
 
     const step = input.isDown("slow") ? this.slowPxPerTick : this.pxPerTick;
-    const half = this.bodySize / 2;
-    this.x = clamp(this.x + dx * step, arena.x + half, arena.x + arena.w - half);
-    this.y = clamp(this.y + dy * step, arena.y + half, arena.y + arena.h - half);
+    this.moveTo(this.x + dx * step, this.y + dy * step, arena);
 
     if (this.invincibleTicks > 0) this.invincibleTicks--;
   }
 
   /** Xê dịch thêm trong tick này (lực hút), không đụng `prev`, vẫn kẹp trong khung. */
   shift(dx: number, dy: number, arena: Rect): void {
+    this.moveTo(this.x + dx, this.y + dy, arena);
+  }
+
+  /**
+   * Đặt vị trí mới, kẹp trong khung. Có khe cửa thì: ở trong khung, chỉ lách ra được nếu cả thân nằm lọt trong khe; đã ở
+   * ngoài mép (trong khe) thì hai bên khe là tường; khe đóng khi đang ở ngoài mép thì bị đẩy về trong khung.
+   */
+  private moveTo(nx: number, ny: number, arena: Rect): void {
     const half = this.bodySize / 2;
-    this.x = clamp(this.x + dx, arena.x + half, arena.x + arena.w - half);
-    this.y = clamp(this.y + dy, arena.y + half, arena.y + arena.h - half);
+    const minX = arena.x + half;
+    const maxX = arena.x + arena.w - half;
+    const minY = arena.y + half;
+    const maxY = arena.y + arena.h - half;
+    const door = this.door;
+    const oldX = this.x;
+    const oldY = this.y;
+    let x = clamp(nx, minX, maxX);
+    let y = clamp(ny, minY, maxY);
+    if (door) {
+      const horizontal = door.side === "left" || door.side === "right";
+      const outward = door.side === "right" || door.side === "bottom" ? 1 : -1;
+      const limit = horizontal ? (outward > 0 ? maxX : minX) : outward > 0 ? maxY : minY;
+      const across = horizontal ? nx : ny;
+      const along = horizontal ? ny : nx;
+      const oldAcross = horizontal ? oldX : oldY;
+      const lo = door.from + half;
+      const hi = door.to - half;
+      const wantsOut = (across - limit) * outward > 1e-9;
+      const alreadyOut = (oldAcross - limit) * outward > 1e-9;
+      if (wantsOut || alreadyOut) {
+        let alongOut = along;
+        let acrossOut = across;
+        if (alreadyOut) {
+          alongOut = clamp(along, lo, hi);
+        } else if (along < lo || along > hi) {
+          // Chưa vào khe và không lọt: vẫn kẹp ở mép.
+          acrossOut = limit;
+        }
+        const reach = limit + outward * (half + EXIT_OVERSHOOT);
+        acrossOut = outward > 0 ? Math.min(acrossOut, reach) : Math.max(acrossOut, reach);
+        if (horizontal) {
+          x = acrossOut;
+          y = clamp(alongOut, minY, maxY);
+        } else {
+          y = acrossOut;
+          x = clamp(alongOut, minX, maxX);
+        }
+      }
+    }
+    this.x = x;
+    this.y = y;
   }
 
   /** Hitbox (nhỏ hơn hình vẽ) khi tâm ở (cx, cy). */

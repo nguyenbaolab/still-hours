@@ -308,4 +308,6 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 5.5 — f33f6b7 — GameFlow (Title→Intro→Town→trận→cảnh kết→lưu→…→Ending), dữ liệu tạm r1–r3/boss, flow.test, Title chờ phím sau màn kết (commit này lỡ kèm tmp/dbg.txt, xóa ở 5.6).
 - 5.6 — accd04e — core/debug-jump.ts (parseJump, phím số), GameFlow.queueJump/jump, BattleScene startStep, xóa PLAYTEST_*.
 - 6.1 — 8dfa316 — R1_ROUNDS (120→176 BPM), POCKET_WATCH (rhythmic false, không unscrew), test BPM cuối 176 và độ dài.
-- 6.2 — ac2f695 — Stillness + isStill, STILL_FEEL, Pattern.still, cảnh nền trong khung né, R2_ROUNDS, STOPWATCH.
+- 6.2 — ac2f695 — Stillness + isStill, STILL_FEEL, Pattern.still, cảnh nền trong khung né, R2_ROUNDS, STOPWATCH.
+
+- 6.3 — cb894e0 — PACE_FEEL.floor 0.7, 8 câu thật, lagClock + lagClockHands, R3_ROUNDS, METRONOME.

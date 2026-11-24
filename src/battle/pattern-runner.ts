@@ -43,6 +43,21 @@ export function validatePattern(pattern: Pattern, feel: BulletFeel): string[] {
       problems.push(`${pattern.name}: drawBeats phải > 0`);
     }
   }
+  if (pattern.finish?.kind === "exit") {
+    const exit = pattern.finish;
+    if (!pattern.loop) problems.push(`${pattern.name}: finish exit cần loop: true`);
+    if (!["left", "right", "top", "bottom"].includes(exit.side)) problems.push(`${pattern.name}: exit side không hợp lệ`);
+    if (!fraction(exit.at)) problems.push(`${pattern.name}: exit at phải trong [0, 1]`);
+    if (!(exit.openBeat >= 0 && exit.openBeat < pattern.lengthBeats)) {
+      problems.push(`${pattern.name}: exit openBeat phải trong [0, lengthBeats)`);
+    }
+    if (exit.widths.length === 0 || exit.widths.some((w) => !(w >= 24))) {
+      problems.push(`${pattern.name}: exit widths phải có phần tử và mỗi phần tử ≥ 24 px (bánh răng phải lọt)`);
+    }
+    if (exit.openBeats.length === 0 || exit.openBeats.some((b) => !(b > 0))) {
+      problems.push(`${pattern.name}: exit openBeats phải có phần tử và mỗi phần tử > 0`);
+    }
+  }
   if (pattern.pencil) {
     if (kind !== "page") problems.push(`${pattern.name}: pencil chỉ dùng với finish page`);
     if (!fraction(pattern.pencil.x) || !fraction(pattern.pencil.y)) {
