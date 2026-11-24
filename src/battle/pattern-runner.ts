@@ -1,10 +1,7 @@
 import type { TempoMap } from "../core/tempo-map";
-import { BATTLE_LAYOUT } from "../data/battle-layout";
 import type { BulletEvent, Pattern, PatternEvent, TempoEvent } from "../data/pattern-types";
 import type { BulletFeel } from "../data/rhythm-feel";
-import { PAPER_FEEL } from "../data/sketch-feel";
 import { NEGATIVE_PHRASES } from "../data/words";
-import { handsFromFigure } from "./paper";
 import { handlerFor, type SpawnContext } from "./spawners";
 
 /**
@@ -21,19 +18,6 @@ interface Scheduled {
 }
 
 const isTempo = (event: PatternEvent): event is TempoEvent => event.type === "tempo";
-
-/** Pattern có tranh giấy thì sinh thêm cặp kim từ hình, trước khi kiểm và chạy. */
-export function withPaperHands(pattern: Pattern): Pattern {
-  if (!pattern.paper) return pattern;
-  const hands = handsFromFigure(pattern.paper, BATTLE_LAYOUT.arena, PAPER_FEEL.beatsPerPass, PAPER_FEEL.handSpacing);
-  return {
-    ...pattern,
-    events: [
-      ...pattern.events,
-      ...hands.map((hand) => ({ beat: hand.beat, type: "hands" as const, x: hand.x, at: hand.at, pass: hand.pass })),
-    ],
-  };
-}
 
 /**
  * Kiểm tra pattern; trả về danh sách lỗi (rỗng = hợp lệ). Chủ yếu để bắt lỗi khi viết dữ liệu mới,
@@ -92,10 +76,6 @@ export function validatePattern(pattern: Pattern, feel: BulletFeel): string[] {
         if (event.radius !== undefined && !(event.radius > 0)) fail(i, "distraction: radius phải > 0");
         if (event.sprite !== undefined && event.sprite.length === 0) fail(i, "distraction: sprite rỗng");
         break;
-      case "hands":
-        if (!fraction(event.x) || !fraction(event.at)) fail(i, "hands: x và at phải trong [0, 1]");
-        if (!Number.isInteger(event.pass) || event.pass < 1) fail(i, "hands: pass phải là vòng >= 1");
-        break;
     }
 
     // Công bằng: đạn lớn/nguy hiểm phải được báo trước.
@@ -135,12 +115,11 @@ export class PatternRunner {
     private readonly feel: BulletFeel,
     defaultBpm: number,
   ) {
-    const full = withPaperHands(pattern);
-    const problems = validatePattern(full, feel);
+    const problems = validatePattern(pattern, feel);
     if (problems.length > 0) throw new Error(`Pattern không hợp lệ:\n${problems.join("\n")}`);
 
     // Sắp xếp theo beat; sort ổn định nên các sự kiện cùng beat giữ nguyên thứ tự khai báo.
-    const sorted = [...full.events].sort((a, b) => a.beat - b.beat);
+    const sorted = [...pattern.events].sort((a, b) => a.beat - b.beat);
     this.tempoEvents = sorted.filter(isTempo);
     this.bulletEvents = sorted.filter((event): event is BulletEvent => !isTempo(event));
     this.startBpm = pattern.bpm ?? defaultBpm;

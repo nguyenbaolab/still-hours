@@ -11,8 +11,6 @@
  * - Chỗ nào không khai báo thì lấy mặc định ở rhythm-feel.ts.
  */
 
-import type { PaperFigure } from "./paper";
-
 export type Side = "left" | "right" | "top" | "bottom";
 
 interface EventBase {
@@ -75,7 +73,7 @@ export interface BurstEvent extends EventBase, BulletOptions {
 }
 
 /**
- * Thứ xao nhãng, trông hấp dẫn. Trúng không trừ máu: cục gôm tẩy nét chì từ nét mới nhất.
+ * Thứ xao nhãng, trông hấp dẫn. Trúng không trừ máu. Khi bánh răng đang cầm bút thì bút rơi.
  * Lớn (bán kính ≥ bigRadius) hoặc đang có lực hút thì bắt buộc có cảnh báo.
  */
 export interface DistractionEvent extends EventBase {
@@ -124,20 +122,6 @@ export interface SweepEvent extends EventBase {
   damage?: number;
 }
 
-/**
- * Cặp kim kẹp một khe, trôi cùng giấy. Sinh từ hình, không viết tay.
- * `beat` là lúc cặp kim xuất hiện (đã ở trong khung hoặc vừa chạm mép phải).
- */
-export interface HandsEvent extends EventBase {
-  type: "hands";
-  /** Vị trí trên giấy, 0..1. */
-  x: number;
-  /** Độ cao tâm khe, 0..1. */
-  at: number;
-  /** Vòng giấy, bắt đầu từ 1. Hết vòng này thì kim biến mất. */
-  pass: number;
-}
-
 /** Đổi BPM kể từ `beat`: tức thì, hoặc tăng/giảm dần trong `overBeats` beat. */
 export interface TempoEvent {
   type: "tempo";
@@ -147,7 +131,7 @@ export interface TempoEvent {
   overBeats?: number;
 }
 
-export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent | DistractionEvent | HandsEvent;
+export type BulletEvent = StraightEvent | AimedEvent | BurstEvent | SweepEvent | WordEvent | DistractionEvent;
 export type PatternEvent = BulletEvent | TempoEvent;
 
 export interface Pattern {
@@ -158,12 +142,5 @@ export interface Pattern {
   lengthBeats: number;
   /** Hết vòng thì lặp lại (BPM trở về `bpm` ở đầu vòng mới). */
   loop: boolean;
-  /**
-   * Cuối mỗi vòng: tua lại nét đã vẽ (`replaySeconds`) rồi giữ tranh (`revealSeconds`).
-   * Pattern không bật cờ này thì vòng chạy liền, đồng hồ không bị giữ.
-   */
-  gallery?: boolean;
-  /** Tranh giấy. Không có thì bút không chạm giấy và bánh răng đi bốn hướng. */
-  paper?: PaperFigure;
   events: readonly PatternEvent[];
 }

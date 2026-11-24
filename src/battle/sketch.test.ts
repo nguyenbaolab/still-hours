@@ -7,16 +7,12 @@ const FEEL: SketchFeel = {
   slowWidth: 5,
   sampleDistance: 10,
   slowSampleDistance: 4,
-  eraseLength: 15,
-  eraserSpeed: 100,
-  erasedAlpha: 0.2,
+  replaySeconds: 2,
   revealSeconds: 2,
+  crayonWidth: 8,
+  crayonColor: "#fc0",
   color: "#fff",
-  eraserColor: "#fcc",
 };
-
-const ink = (sketch: Sketch): number => sketch.segments.filter((seg) => !seg.erased).reduce((sum, seg) => sum + seg.length, 0);
-const gone = (sketch: Sketch): number => sketch.segments.filter((seg) => seg.erased).reduce((sum, seg) => sum + seg.length, 0);
 
 describe("nét chì", () => {
   it("đứng yên không sinh đoạn, và khoảng lấy mẫu được tôn trọng", () => {
@@ -49,68 +45,39 @@ describe("nét chì", () => {
     expect(fast.count).toBe(0);
   });
 
-  it("tẩy ngược từ nét mới nhất, hết đoạn này thì sang đoạn cũ", () => {
-    const sketch = new Sketch(FEEL);
-    for (const x of [0, 10, 20, 30]) sketch.sample(x, 0, false);
-    sketch.erase(15);
-
-    expect(ink(sketch)).toBeCloseTo(15, 6);
-    expect(gone(sketch)).toBeCloseTo(15, 6);
-    expect(sketch.segments[0]?.erased).toBe(false);
-    expect(sketch.segments[0]?.length).toBeCloseTo(10, 6);
-    expect(sketch.segments[0]?.x0).toBeCloseTo(0, 6);
-    expect(sketch.segments.at(-1)?.erased).toBe(true);
-    expect(sketch.segments.at(-1)?.x1).toBeCloseTo(30, 6);
-
-    sketch.erase(10);
-    expect(ink(sketch)).toBeCloseTo(5, 6);
-    expect(sketch.segments[0]?.erased).toBe(false);
-    expect(sketch.segments[0]?.x0).toBeCloseTo(0, 6);
-  });
-
-  it("đường ngắn hơn độ dài tẩy thì tẩy hết, không cắt phần còn lại", () => {
+  it("nhấc bút thì điểm tới không nối với nét cũ", () => {
     const sketch = new Sketch(FEEL);
     sketch.sample(0, 0, false);
     sketch.sample(10, 0, false);
-    sketch.erase(40);
     expect(sketch.count).toBe(1);
-    expect(sketch.segments[0]?.erased).toBe(true);
-    expect(sketch.segments[0]?.length).toBeCloseTo(10, 6);
+
+    sketch.lift();
+    expect(sketch.pen).toBeNull();
+    sketch.sample(100, 100, false);
+    expect(sketch.count).toBe(1);
+    sketch.sample(110, 100, false);
+    expect(sketch.count).toBe(2);
+    const last = sketch.segments[1];
+    expect(last?.x0).toBe(100);
+    expect(last?.y0).toBe(100);
   });
 
-  it("cắt giữa một đoạn: phần cũ giữ mực, phần mới thành vết tẩy", () => {
-    const sketch = new Sketch(FEEL);
-    sketch.sample(0, 0, false);
-    sketch.sample(20, 0, false);
-    sketch.erase(7);
-
-    const solid = sketch.segments.filter((seg) => !seg.erased);
-    const erased = sketch.segments.filter((seg) => seg.erased);
-    expect(solid).toHaveLength(1);
-    expect(erased).toHaveLength(1);
-    expect(solid[0]?.length).toBeCloseTo(13, 6);
-    expect(solid[0]?.x0).toBeCloseTo(0, 6);
-    expect(solid[0]?.x1).toBeCloseTo(13, 6);
-    expect(erased[0]?.length).toBeCloseTo(7, 6);
-    expect(erased[0]?.x0).toBeCloseTo(13, 6);
-    expect(erased[0]?.x1).toBeCloseTo(20, 6);
-  });
-
-  it("phát lại đúng thứ tự đã vẽ, vết tẩy nằm giữa chứ không bị đưa lên đầu", () => {
+  it("phát lại đúng thứ tự đã vẽ, khúc cuối bị cắt giữa đoạn", () => {
     const sketch = new Sketch(FEEL);
     for (const x of [0, 10, 20, 30]) sketch.sample(x, 0, false);
-    sketch.erase(10);
 
     expect(replayPieces(sketch.segments, 0)).toEqual([]);
     const early = replayPieces(sketch.segments, 5);
     expect(early).toHaveLength(1);
     expect(early[0]?.x0).toBeCloseTo(0, 6);
     expect(early[0]?.x1).toBeCloseTo(5, 6);
-    expect(early[0]?.erased).toBe(false);
 
     const mid = replayPieces(sketch.segments, 25);
     expect(mid.map((piece) => piece.x0)).toEqual([0, 10, 20]);
-    expect(mid[2]?.erased).toBe(true);
     expect(mid[2]?.x1).toBeCloseTo(25, 6);
+
+    const all = replayPieces(sketch.segments, 1000);
+    expect(all).toHaveLength(3);
+    expect(all[2]?.x1).toBeCloseTo(30, 6);
   });
 });

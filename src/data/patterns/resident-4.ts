@@ -1,20 +1,15 @@
 import type { Pattern } from "../pattern-types";
-import { CHILD_DRAWING } from "../figures/child-drawing";
 
 /**
- * Pattern thử của cô bé. Kim kẹp khe được sinh từ `paper` lúc tạo trận, không viết trong danh sách.
- * Đạn xao nhãng treo và đung đưa. Đạn thường khép dải trên và dải dưới.
- * 100 BPM, 56 beat ≈ 34 giây, bốn vòng giấy.
- *
- * Chơi thử: `PLAYTEST_PATTERN` trong src/main.ts.
+ * Pattern tạm của cô bé (mốc 3b.1): chỉ có đạn xao nhãng và đạn thường, chưa có bút.
+ * Mốc 3b.3 thay bằng ba lượt `R4_ROUNDS` ("Nhặt bút").
+ * 100 BPM, 56 beat ≈ 34 giây, có lặp.
  */
 export const RESIDENT4_PATTERN: Pattern = {
-  name: "trống giấy",
+  name: "nhặt bút (tạm)",
   bpm: 100,
   lengthBeats: 56,
   loop: true,
-  gallery: true,
-  paper: CHILD_DRAWING,
   events: [
     { beat: 4, type: "distraction", from: "top", at: 0.3, hang: true },
     { beat: 18, type: "distraction", from: "top", at: 0.72, hang: true },
