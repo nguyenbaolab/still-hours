@@ -15,10 +15,13 @@ export type CueName =
   | "pencilUp"
   | "pencilDrop"
   | "drawTick"
-  | "mend";
+  | "mend"
+  | "blip";
 
-export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName, time: number): void {
-  if (cue === "wordAbsorb") thud(ctx, destination, time);
+/** `hz`: cao độ riêng của tiếng (chỉ `blip` dùng: mỗi người nói một cao độ). */
+export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName, time: number, hz?: number): void {
+  if (cue === "blip") blip(ctx, destination, time, hz ?? 440);
+  else if (cue === "wordAbsorb") thud(ctx, destination, time);
   else if (cue === "wordRelease") breath(ctx, destination, time);
   else if (cue === "unscrew") click(ctx, destination, time, 1400);
   else if (cue === "lift") scrape(ctx, destination, time);
@@ -167,4 +170,21 @@ function pencilDrop(ctx: AudioContext, destination: AudioNode, time: number): vo
     osc.start(time + tap.at);
     osc.stop(time + tap.at + 0.07);
   }
+}
+
+/** Tiếng chữ hiện ra trong hội thoại: một nốt vuông rất ngắn, mềm. */
+function blip(ctx: AudioContext, destination: AudioNode, time: number, hz: number): void {
+  const osc = ctx.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(hz, time);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(FLOOR, time);
+  gain.gain.exponentialRampToValueAtTime(0.07, time + 0.003);
+  gain.gain.exponentialRampToValueAtTime(FLOOR, time + 0.045);
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 1800;
+  osc.connect(filter).connect(gain).connect(destination);
+  osc.start(time);
+  osc.stop(time + 0.05);
 }

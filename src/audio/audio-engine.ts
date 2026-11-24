@@ -13,7 +13,7 @@ export interface AudioPort extends TimeSource {
   readonly muted: boolean;
   toggleMute(): void;
   /** Tiếng phản hồi ngay lập tức (ôm / nhả một câu). Đi qua gain tổng, nên tắt tiếng là tắt luôn. */
-  playCue(cue: CueName): void;
+  playCue(cue: CueName, hz?: number): void;
 }
 
 /** Độ trễ đầu ra (giây) tối đa chấp nhận; số báo cáo vô lý hơn thế bị cắt. */
@@ -83,9 +83,9 @@ export class AudioEngine implements AudioPort {
     this.applyVolume();
   }
 
-  playCue(cue: CueName): void {
+  playCue(cue: CueName, hz?: number): void {
     if (!this.ctx || !this.master || !this.unlocked) return;
-    synthCue(this.ctx, this.master, cue, this.ctx.currentTime);
+    synthCue(this.ctx, this.master, cue, this.ctx.currentTime, hz);
   }
 
   contextTime(): number {

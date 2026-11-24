@@ -31,7 +31,10 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước 4.1: `ResidentData` (`data/residents/types.ts`), `FLOW_FEEL`, `scenes/battle-scene.ts` (`BattleScene`: 3 lượt,
     mờ đen giữa pha, màn thua không chữ rồi dựng lại đúng pha né, sprite `gear-cracked`, cue `mend`). Tháo xong tầng 3 thì
     tạm hiện "hết". `PLAYTEST_PHASE` mặc định là `"battle"` (cư dân 4 với máy tạm `CLOCKWORK`).
-- **Bước tiếp theo:** mốc 4.2 trong `AUTOPILOT.md` (hội thoại).
+  - Bước 4.2: hội thoại. `data/dialogues.ts` (mọi đoạn thoại của game, `SPEAKERS`), `scenes/dialogue-box.ts`
+    (`DialogueBox`, `wrapText`, `pauseAfter`), `Renderer.measureText`, `DIALOGUE_FEEL` (trong `flow-feel.ts`), cue `blip`
+    (`playCue(cue, hz?)`).
+- **Bước tiếp theo:** mốc 4.3 trong `AUTOPILOT.md` (cư dân 4 hoàn chỉnh).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill

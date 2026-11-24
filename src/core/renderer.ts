@@ -148,6 +148,12 @@ export class Renderer {
     this.ctx.globalAlpha = previous;
   }
 
+  /** Bề ngang (pixel logic) của một chuỗi ở cỡ `size`. Dùng để ngắt dòng; không vẽ gì. */
+  measureText(content: string, size: number): number {
+    this.ctx.font = `${size}px ${FONT_FAMILY}`;
+    return this.ctx.measureText(content).width;
+  }
+
   /** Vẽ sprite theo id; (x, y) là góc trên trái. Toạ độ được làm tròn để pixel luôn khớp lưới. */
   sprite(id: string, x: number, y: number): void {
     this.ctx.drawImage(this.sprites.get(id), Math.round(x), Math.round(y));

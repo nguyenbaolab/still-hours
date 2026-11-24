@@ -36,6 +36,8 @@ export class FakeAudio implements AudioPort {
   muted = false;
   readonly plays: PlayRecord[] = [];
   readonly cues: CueName[] = [];
+  /** Cao độ đi kèm từng cue (undefined nếu không có), cùng thứ tự với `cues`. */
+  readonly cueHz: (number | undefined)[] = [];
   readonly tickSink: TickSink;
 
   constructor(
@@ -69,8 +71,9 @@ export class FakeAudio implements AudioPort {
     this.muted = !this.muted;
   }
 
-  playCue(cue: CueName): void {
+  playCue(cue: CueName, hz?: number): void {
     this.cues.push(cue);
+    this.cueHz.push(hz);
   }
 }
 
