@@ -14,7 +14,8 @@ export type CueName =
   | "clack"
   | "pencilUp"
   | "pencilDrop"
-  | "drawTick";
+  | "drawTick"
+  | "mend";
 
 export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName, time: number): void {
   if (cue === "wordAbsorb") thud(ctx, destination, time);
@@ -25,6 +26,11 @@ export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName,
   else if (cue === "pencilUp") scratch(ctx, destination, time, 3200, 0.1, 0.1);
   else if (cue === "pencilDrop") pencilDrop(ctx, destination, time);
   else if (cue === "drawTick") scratch(ctx, destination, time, 5200, 0.03, 0.035);
+  else if (cue === "mend") {
+    // Một tiếng cạch nhỏ (vết nứt khép lại), rồi một tiếng tích.
+    click(ctx, destination, time, 700);
+    click(ctx, destination, time + 0.22, 1800);
+  }
   else knock(ctx, destination, time);
 }
 

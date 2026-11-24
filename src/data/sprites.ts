@@ -18,6 +18,22 @@ export const SPRITES = {
       "....#....",
     ],
   },
+  /** Bánh răng nứt: màn thua. Cùng kích thước với `gear`. */
+  "gear-cracked": {
+    scale: 2,
+    palette: { "#": "#e0b04a", o: "#9c6b24", x: "#3a2a12" },
+    rows: [
+      "....#....",
+      ".#.##..#.",
+      ".####.##.",
+      ".##oxo##.",
+      "###x.o###",
+      ".##oxx##.",
+      ".##.###..",
+      ".#..##.#.",
+      "....#....",
+    ],
+  },
   /** Đạn xao nhãng: một viên kẹo sáng, để sau này thay bằng PNG cùng id. */
   distraction: {
     scale: 2,

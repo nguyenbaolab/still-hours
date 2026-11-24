@@ -9,10 +9,13 @@ export interface FlowFeel {
   clearSeconds: number;
   /** Màn thua: bánh răng nứt nằm yên giữa màn tối. */
   loseHoldSeconds: number;
+  /** Sau khi vết nứt khép lại (bánh răng lành), chờ bấy nhiêu giây rồi pha né mờ vào lại. */
+  mendSeconds: number;
 }
 
 export const FLOW_FEEL: FlowFeel = {
   fadeSeconds: 0.4,
   clearSeconds: 0.6,
   loseHoldSeconds: 1.2,
+  mendSeconds: 0.35,
 };

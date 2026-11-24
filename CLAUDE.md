@@ -23,12 +23,15 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     (màn thua có ở mốc 4.1). `main.ts` chơi thử `R4_ROUNDS` khi `PLAYTEST_PHASE` là `"dodge"`.
   - Bước (3c): pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK` (commit `1a057f3`), rồi tầng (mốc 3c.1): `Part.stage`,
     `Workbench.setStage` / `stageComplete`, `DisassemblePhase(input, audio, mechanism, bench, stage)` với `outcome`
-    (`playing` / `done`), `CLOCKWORK` chia 3 tầng. `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (tháo
-    tầng 1 → 2 → 3 rồi lại từ đầu; đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
+    (`playing` / `done`), `CLOCKWORK` chia 3 tầng. `PLAYTEST_PHASE` trong `main.ts` chọn `"battle"`, `"dodge"` hoặc
+    `"disassemble"`.
 - **Phiên thiết kế 2026-11-24 (chỉ tài liệu, không code):** thiết kế lại cư dân 4 thành **"Nhặt bút"** (mục cư dân 4),
   chốt mọi quyết định còn mở (cấu trúc trận, thua, màn bắt đầu/mở đầu/kết, thị trấn, hội thoại, cư dân 1–3 và boss,
   lưu tiến trình, font VT323, phím nhảy cóc), và tạo `AUTOPILOT.md` với kế hoạch từng mốc.
-- **Bước tiếp theo:** bước 4 trong `AUTOPILOT.md` (mốc 4.1: dữ liệu cư dân và `BattleScene`).
+  - Bước 4.1: `ResidentData` (`data/residents/types.ts`), `FLOW_FEEL`, `scenes/battle-scene.ts` (`BattleScene`: 3 lượt,
+    mờ đen giữa pha, màn thua không chữ rồi dựng lại đúng pha né, sprite `gear-cracked`, cue `mend`). Tháo xong tầng 3 thì
+    tạm hiện "hết". `PLAYTEST_PHASE` mặc định là `"battle"` (cư dân 4 với máy tạm `CLOCKWORK`).
+- **Bước tiếp theo:** mốc 4.2 trong `AUTOPILOT.md` (hội thoại).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill

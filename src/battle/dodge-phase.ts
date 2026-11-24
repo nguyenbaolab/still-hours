@@ -149,6 +149,11 @@ export class DodgePhase implements Scene {
     return this.pageState;
   }
 
+  /** Tâm bánh răng (màn thua vẽ bánh răng nứt đúng chỗ này). */
+  get gearPosition(): Point {
+    return { x: this.player.x, y: this.player.y };
+  }
+
   get holdingPencil(): boolean {
     return this.holding;
   }

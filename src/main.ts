@@ -9,6 +9,8 @@ import { attachKeyboard } from "./core/keyboard";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import type { Pattern } from "./data/pattern-types";
+import type { ResidentData } from "./data/residents/types";
+import { BattleScene, createBattleFactory } from "./scenes/battle-scene";
 import { KEY_BINDINGS } from "./data/keybindings";
 import { DISASSEMBLY_FEEL } from "./data/disassembly-feel";
 import { AUDIO_FEEL, RHYTHM_FEEL } from "./data/rhythm-feel";
@@ -22,8 +24,9 @@ import type { Scene } from "./scenes/scene";
 // (import từ data/patterns/resident-3 hoặc data/patterns/test-pattern).
 const PLAYTEST_PATTERN: Pattern = R4_ROUNDS[0];
 
-// Pha đang chơi thử. "disassemble" = tháo lắp, "dodge" = né đạn.
-const PLAYTEST_PHASE: "dodge" | "disassemble" = "disassemble";
+// Cảnh đang chơi thử. "battle" = cả trận cư dân 4 (3 lượt, thua, tháo tầng; máy tạm), "dodge" = chỉ pha né,
+// "disassemble" = chỉ pha tháo.
+const PLAYTEST_PHASE: "battle" | "dodge" | "disassemble" = "battle";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
@@ -56,6 +59,13 @@ function startDisassemble(): DisassemblePhase {
   return disassemble;
 }
 
+const TEMP_R4: ResidentData = { id: "r4", name: "Linh", rounds: R4_ROUNDS, mechanism: CLOCKWORK };
+
+function startBattle(): BattleScene {
+  const factory = createBattleFactory(input, audio, renderer.sprites.size("gear").width, TEMP_R4);
+  return new BattleScene(TEMP_R4, input, audio, factory);
+}
+
 function startDodge(pattern: Pattern): DodgePhase {
   const phase = new DodgePhase(input, audio, renderer.sprites.size("gear").width, pattern, page ? { page } : {});
   page = phase.page ?? undefined;
@@ -68,7 +78,12 @@ startLoop({
     input.poll();
     scene.update();
     if (scene === pressStart && pressStart.ready) {
-      scene = PLAYTEST_PHASE === "disassemble" ? startDisassemble() : startDodge(PLAYTEST_PATTERN);
+      scene =
+        PLAYTEST_PHASE === "battle"
+          ? startBattle()
+          : PLAYTEST_PHASE === "disassemble"
+            ? startDisassemble()
+            : startDodge(PLAYTEST_PATTERN);
     } else if (disassemble && scene === disassemble && disassemble.outcome === "done") {
       stage++;
       scene = startDisassemble();

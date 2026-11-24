@@ -285,3 +285,4 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 3b.1 — 4798045 — xóa trống giấy, tẩy, đuôi nét, cặp kim; SKETCH_FEEL/DISTRACTION_FEEL gộp lại.
 - 3b.2 — 7fe0c8e — bút, trang, đồng hồ cô bé, finish/pencil, outcome; trang luôn khép được (maxLoops).
 - 3b.3 — 84c0a22 — R4_ROUNDS (ba lượt), test chỗ đặt bút, bot vẽ xong ≤ 60 giây; main chơi thử vòng ba lượt.
+- 3c.1 — 1621bc2 — tầng: Part.stage, Workbench.setStage/stageComplete, DisassemblePhase outcome, CLOCKWORK 3 tầng.
