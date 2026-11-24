@@ -1,4 +1,5 @@
 import type { AudioPort } from "../audio/audio-engine";
+import { BackgroundTicker } from "../audio/background-ticker";
 import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
 import { fitStrokes, type Pt } from "../core/drawing";
@@ -7,7 +8,7 @@ import { decodeDrawing } from "../core/save";
 import type { Renderer } from "../core/renderer";
 import { BATTLE_LAYOUT } from "../data/battle-layout";
 import { DIALOGUES, type DialogueId } from "../data/dialogues";
-import { TOWN_FEEL } from "../data/flow-feel";
+import { AMBIENCE_FEEL, TOWN_FEEL } from "../data/flow-feel";
 import type { ResidentData, ResidentId } from "../data/residents/types";
 import {
   TOWN_AMBIENCE,
@@ -95,6 +96,8 @@ export class TownScene implements Scene {
   private readonly layers: AmbienceLayers;
   private readonly wallStrokes: Pt[][];
   private readonly random: () => number;
+  /** Tiếng tích xa. Dựng ở tick đầu tiên (không dựng khi cảnh chỉ để vẽ, như trong màn kết). */
+  private ticker: BackgroundTicker | null = null;
   /** Số tick còn lại tới tiếng chim kế tiếp. */
   private birdTicks = 0;
 
@@ -175,7 +178,23 @@ export class TownScene implements Scene {
     return clamp(this.x - GAME_WIDTH / 2, 0, Math.max(0, this.worldWidth - GAME_WIDTH));
   }
 
+  /** Gió và tiếng tích xa: bật ở tick đầu, tắt khi rời cảnh. */
+  private updateBed(): void {
+    if (!this.ticker) {
+      this.ticker = new BackgroundTicker(this.audio, AMBIENCE_FEEL.townTickBpm, this.audio.distantSink, AMBIENCE_FEEL.tickDelaySeconds);
+      this.audio.setWind(AMBIENCE_FEEL.windLevel);
+    }
+    this.ticker.update();
+  }
+
+  leave(): void {
+    this.ticker?.stop();
+    this.ticker = null;
+    this.audio.setWind(0);
+  }
+
   update(): void {
+    this.updateBed();
     this.tick++;
     if (this.layers.birds && --this.birdTicks <= 0) {
       this.audio.playCue("bird");

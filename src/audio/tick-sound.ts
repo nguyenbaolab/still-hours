@@ -13,12 +13,25 @@ import type { TickKind, TickSink } from "./tick-scheduler";
 const NOISE_SECONDS = 0.05;
 const FLOOR = 0.0001; // exponentialRamp không đi từ/đến 0 được
 
-export function createTickSink(ctx: AudioContext, destination: AudioNode, feel: AudioFeel): TickSink {
+/** Giọng riêng của một sink: `gain` nhân vào độ to, `softnessHz` thay cho `feel.softnessHz` (tiếng tích xa: nhỏ và đục). */
+export interface TickVoice {
+  gain: number;
+  softnessHz: number;
+}
+
+export function createTickSink(ctx: AudioContext, destination: AudioNode, feel: AudioFeel, voice?: TickVoice): TickSink {
   const bus = ctx.createBiquadFilter();
   bus.type = "lowpass";
-  bus.frequency.value = feel.softnessHz;
+  bus.frequency.value = voice?.softnessHz ?? feel.softnessHz;
   bus.Q.value = 0.5;
-  bus.connect(destination);
+  if (voice) {
+    const level = ctx.createGain();
+    level.gain.value = voice.gain;
+    level.connect(destination);
+    bus.connect(level);
+  } else {
+    bus.connect(destination);
+  }
 
   const noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * NOISE_SECONDS), ctx.sampleRate);
   const samples = noise.getChannelData(0);

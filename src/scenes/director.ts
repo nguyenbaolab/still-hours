@@ -50,6 +50,7 @@ export class Director {
 
   /** Đổi cảnh ngay, không mờ (lúc khởi động hoặc nhảy cóc). */
   cut(scene: Scene): void {
+    if (scene !== this.current) this.current.leave?.();
     this.current = scene;
     this.mode = "idle";
     this.pending = null;
@@ -72,6 +73,7 @@ export class Director {
         if (this.clock >= FLOW_FEEL.fadeSeconds && this.pending) {
           const make = this.pending;
           this.pending = null;
+          this.current.leave?.();
           this.current = make();
           this.mode = "in";
           this.clock = 0;

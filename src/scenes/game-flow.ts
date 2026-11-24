@@ -1,4 +1,5 @@
 import type { AudioPort } from "../audio/audio-engine";
+import { BackgroundTicker } from "../audio/background-ticker";
 import type { PageState } from "../battle/page";
 import { strokesFromSegments, type Pt } from "../core/drawing";
 import type { Input } from "../core/input";
@@ -8,7 +9,7 @@ import { jumpForKey, residentsBefore, type JumpTarget } from "../core/debug-jump
 import { DEBUG } from "../core/debug";
 import { BATTLE_LAYOUT } from "../data/battle-layout";
 import { DIALOGUES } from "../data/dialogues";
-import { FLOW_FEEL } from "../data/flow-feel";
+import { AMBIENCE_FEEL, FLOW_FEEL } from "../data/flow-feel";
 import type { ResidentData, ResidentId } from "../data/residents/types";
 import { TOWN, TOWN_NPCS, type Tile } from "../data/town";
 import { Director } from "./director";
@@ -160,7 +161,12 @@ export class GameFlow {
 
   private newTitle(): TitleScene {
     const { store, audio, input } = this.deps;
-    return new TitleScene(audio, input, { exists: () => store.exists(), clear: () => store.clear() });
+    return new TitleScene(
+      audio,
+      input,
+      { exists: () => store.exists(), clear: () => store.clear() },
+      () => new BackgroundTicker(audio, AMBIENCE_FEEL.titleTickBpm, audio.tickSink, AMBIENCE_FEEL.tickDelaySeconds),
+    );
   }
 
   private backToTitle(): Scene {

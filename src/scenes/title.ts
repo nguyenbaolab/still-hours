@@ -1,3 +1,4 @@
+import type { BackgroundTicker } from "../audio/background-ticker";
 import { GAME_WIDTH } from "../core/config";
 import { ACTIONS, type Input } from "../core/input";
 import type { Renderer } from "../core/renderer";
@@ -37,11 +38,14 @@ export class TitleScene implements Scene {
   private outcome: TitleResult | null = null;
   /** Âm thanh đã mở khóa từ trước (quay lại màn bắt đầu sau màn kết): phải đợi một phím thật, không tự đi tiếp. */
   private readonly needsKey: boolean;
+  private ticker: BackgroundTicker | null = null;
 
   constructor(
     private readonly audio: AudioGate,
     private readonly input: Input,
     private readonly save: SaveInfo,
+    /** Dựng tiếng tích của màn (mỗi giây một tiếng) khi âm thanh đã sẵn sàng. Bỏ trống: màn im lặng. */
+    private readonly makeTicker?: () => BackgroundTicker,
   ) {
     this.needsKey = audio.ready;
   }
@@ -66,6 +70,10 @@ export class TitleScene implements Scene {
 
   update(): void {
     this.tick++;
+    if (this.phase !== "done") {
+      if (!this.ticker && this.audio.ready && this.makeTicker) this.ticker = this.makeTicker();
+      this.ticker?.update();
+    }
     switch (this.phase) {
       case "press": {
         if (!this.audio.ready) return;
@@ -104,6 +112,13 @@ export class TitleScene implements Scene {
   private finish(result: TitleResult): void {
     this.phase = "done";
     this.outcome = result;
+    this.leave();
+  }
+
+  /** Rời màn: hủy tiếng tích đã hẹn. */
+  leave(): void {
+    this.ticker?.stop();
+    this.ticker = null;
   }
 
   render(renderer: Renderer): void {

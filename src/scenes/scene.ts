@@ -8,4 +8,6 @@ export interface Scene {
   render(renderer: Renderer, alpha: number): void;
   /** `false` = tick của cảnh này không tính vào thời gian chơi (màn bắt đầu). Bỏ trống = có tính. */
   readonly countsPlayTime?: boolean;
+  /** Cảnh sắp bị thay: dọn âm thanh nền (hủy tiếng tích đã hẹn, tắt gió). Bỏ trống nếu không có gì để dọn. */
+  leave?(): void;
 }

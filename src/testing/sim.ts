@@ -41,6 +41,12 @@ export class FakeAudio implements AudioPort {
   /** Cao độ đi kèm từng cue (undefined nếu không có), cùng thứ tự với `cues`. */
   readonly cueHz: (number | undefined)[] = [];
   readonly tickSink: TickSink;
+  /** Tiếng tích xa: ghi riêng, để test thấy lớp nền mà không lẫn với tích tắc của trận. */
+  readonly distantPlays: PlayRecord[] = [];
+  readonly distantSink: TickSink;
+  /** Độ to gió nền gần nhất được đặt, và lịch sử các lần đặt. */
+  wind = 0;
+  readonly windHistory: number[] = [];
 
   constructor(
     start = 5,
@@ -48,6 +54,17 @@ export class FakeAudio implements AudioPort {
     readonly latency = 0.03,
   ) {
     this.t = start;
+    this.distantSink = {
+      play: (time, kind) => {
+        const record: PlayRecord = { time, kind, calledAt: this.t, cancelled: false };
+        this.distantPlays.push(record);
+        return {
+          cancel: () => {
+            record.cancelled = true;
+          },
+        };
+      },
+    };
     this.tickSink = {
       play: (time, kind) => {
         const record: PlayRecord = { time, kind, calledAt: this.t, cancelled: false };
@@ -63,6 +80,11 @@ export class FakeAudio implements AudioPort {
 
   contextTime(): number {
     return this.t;
+  }
+
+  setWind(level: number): void {
+    this.wind = level;
+    this.windHistory.push(level);
   }
 
   heardTime(): number {

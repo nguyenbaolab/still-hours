@@ -182,3 +182,38 @@ export const STILL_FEEL: StillFeel = {
   backdropAlpha: 0.6,
 };
 
+
+/** Lớp âm thanh nền (CLAUDE.md, "Nhạc nền"): gió và tiếng tích xa ở thị trấn, một tiếng tích mỗi giây ở màn bắt đầu. */
+export interface AmbienceFeel {
+  /** Độ to của gió ở thị trấn (gain 0..1, trước gain tổng). */
+  windLevel: number;
+  /** Gió vào/ra dần trong bấy nhiêu giây. */
+  windFadeSeconds: number;
+  /** Gió dập dềnh chậm: chu kỳ (giây) và độ sâu (0..1). */
+  windSwellSeconds: number;
+  windSwellDepth: number;
+  /** Tần số cắt thấp của gió (Hz): thấp hơn thì ù hơn. */
+  windLowpassHz: number;
+  /** BPM của tiếng tích xa ở thị trấn. */
+  townTickBpm: number;
+  /** BPM của tiếng tích ở màn bắt đầu (60 = mỗi giây một tiếng). */
+  titleTickBpm: number;
+  /** Tiếng tích xa nhỏ hơn tiếng tích trong trận (nhân gain) và đục hơn (cắt cao, Hz). */
+  distantGain: number;
+  distantSoftnessHz: number;
+  /** Tiếng tích đầu tiên rơi sau bấy nhiêu giây kể từ lúc cảnh bắt đầu. */
+  tickDelaySeconds: number;
+}
+
+export const AMBIENCE_FEEL: AmbienceFeel = {
+  windLevel: 0.07,
+  windFadeSeconds: 1.2,
+  windSwellSeconds: 9,
+  windSwellDepth: 0.5,
+  windLowpassHz: 520,
+  townTickBpm: 40,
+  titleTickBpm: 60,
+  distantGain: 0.3,
+  distantSoftnessHz: 900,
+  tickDelaySeconds: 0.4,
+};

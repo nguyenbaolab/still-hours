@@ -1,8 +1,10 @@
 import type { TimeSource } from "../core/beat-clock";
 import { clamp } from "../core/math";
+import { AMBIENCE_FEEL, type AmbienceFeel } from "../data/flow-feel";
 import type { AudioFeel } from "../data/rhythm-feel";
 import { playCue as synthCue, type CueName } from "./cues";
 import { createTickSink } from "./tick-sound";
+import { createWindBed, type WindBed } from "./wind";
 import type { TickSink } from "./tick-scheduler";
 
 /** Phần của âm thanh mà trận đấu cần. AudioEngine thật hiện thực nó; kiểm thử dùng bản giả. */
@@ -10,10 +12,14 @@ export interface AudioPort extends TimeSource {
   /** Thời gian thô của AudioContext (giây), hệ thời gian dùng để hẹn giờ phát âm thanh. */
   contextTime(): number;
   readonly tickSink: TickSink | null;
+  /** Tiếng tích xa (nhỏ, đục) cho lớp nền thị trấn và màn bắt đầu. Null nếu không có âm thanh. */
+  readonly distantSink: TickSink | null;
   readonly muted: boolean;
   toggleMute(): void;
   /** Tiếng phản hồi ngay lập tức (ôm / nhả một câu). Đi qua gain tổng, nên tắt tiếng là tắt luôn. */
   playCue(cue: CueName, hz?: number): void;
+  /** Độ to của gió nền (0 = im), vào/ra dần. Chưa mở khóa âm thanh thì nhớ lại và áp dụng khi mở khóa. */
+  setWind(level: number): void;
 }
 
 /** Độ trễ đầu ra (giây) tối đa chấp nhận; số báo cáo vô lý hơn thế bị cắt. */
@@ -31,7 +37,10 @@ const MUTE_FADE_SECONDS = 0.02;
  */
 export class AudioEngine implements AudioPort {
   tickSink: TickSink | null = null;
+  distantSink: TickSink | null = null;
 
+  private wind: WindBed | null = null;
+  private windLevel = 0;
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private unlocked = false;
@@ -43,6 +52,7 @@ export class AudioEngine implements AudioPort {
   constructor(
     private readonly feel: AudioFeel,
     private readonly visualDelaySeconds: number,
+    private readonly ambience: AmbienceFeel = AMBIENCE_FEEL,
   ) {
     if (typeof AudioContext === "undefined") {
       this.unavailable = true;
@@ -94,6 +104,11 @@ export class AudioEngine implements AudioPort {
     synthCue(this.ctx, this.master, cue, this.ctx.currentTime, hz);
   }
 
+  setWind(level: number): void {
+    this.windLevel = Math.max(0, level);
+    this.wind?.setLevel(this.windLevel, this.ambience.windFadeSeconds);
+  }
+
   contextTime(): number {
     return this.ctx ? this.ctx.currentTime : performance.now() / 1000;
   }
@@ -121,6 +136,12 @@ export class AudioEngine implements AudioPort {
         this.ctx = ctx;
         this.master = master;
         this.tickSink = createTickSink(ctx, master, this.feel);
+        this.distantSink = createTickSink(ctx, master, this.feel, {
+          gain: this.ambience.distantGain,
+          softnessHz: this.ambience.distantSoftnessHz,
+        });
+        this.wind = createWindBed(ctx, master, this.ambience);
+        this.wind.setLevel(this.windLevel, 0);
         this.applyVolume(true);
         ctx.addEventListener("statechange", () => this.syncState());
       } catch {

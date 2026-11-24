@@ -83,7 +83,12 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     `main.ts` chờ `document.fonts.load` (tối đa 3 giây) trước khi chạy vòng lặp, preload trong `index.html`, `CREDITS.md` và dòng ghi
     công trong `data/credits.ts`, lớp debug mẫu dấu ở cỡ 16/20/24/32, `WORD_FEEL.advanceEm` 0,4 (advance thật của VT323). Script kiểm
     `cmap` (tạm, ở `tmp/`, không commit): 0 ký tự thiếu.
-- **Bước tiếp theo:** mốc 7.2 trong `AUTOPILOT.md` (âm thanh: kiểm cue, nền thị trấn, tích tắc màn bắt đầu và màn kết).
+  - Bước 7.2: âm thanh nền và test. `audio/wind.ts` (gió: nhiễu lặp lọc thấp, dập dềnh chậm), `audio/background-ticker.ts`
+    (`BackgroundTicker`: tích đều trên đồng hồ nhịp thật), `AudioPort.setWind` / `distantSink` (tích xa: nhỏ và đục, `createTickSink` nhận
+    `TickVoice`), `AMBIENCE_FEEL` (`flow-feel.ts`), `Scene.leave?()` do `Director` gọi khi đổi cảnh. Thị trấn: gió + tích xa 40 BPM;
+    màn bắt đầu: tích 60 BPM. `CUE_NAMES`; `testing/fake-context.ts` (AudioContext giả nghiêm như thật); test cho mọi cue, sink, gió,
+    `AudioEngine` (mở khóa, tắt tiếng, gió) và cảnh. Chưa nghe bằng tai.
+- **Bước tiếp theo:** mốc 7.3 trong `AUTOPILOT.md` (hình ảnh placeholder).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -743,7 +748,7 @@ Hiện đã có:
   `clamp`, `lerp`), `input.ts` (lớp trừu tượng hành động), `keyboard.ts` (nguồn input bàn phím),
   `tempo-map.ts` (đổi qua lại beat ↔ giây khi BPM thay đổi), `beat-clock.ts` (đồng hồ nhịp của một trận).
 - `audio/`: `audio-engine.ts` (AudioContext: mở khóa, tắt/bật tiếng, **nguồn thời gian chủ**), `tick-scheduler.ts`
-  (hẹn trước tiếng tích tắc theo đúng bản đồ tempo), `tick-sound.ts` (tổng hợp tiếng đồng hồ cơ), `cues.ts`
+  (hẹn trước tiếng tích tắc theo đúng bản đồ tempo), `tick-sound.ts` (tổng hợp tiếng đồng hồ cơ), `wind.ts` (gió nền), `background-ticker.ts` (tích nền), `cues.ts`
   (tiếng ôm / nhả một câu, tiếng vặn, nhấc, gỡ, cạch).
 - `battle/`: `dodge-phase.ts` (pha né đạn: khung, thanh máu, lớp debug, ghép mọi thứ), `player.ts` (bánh răng),
   `pattern-runner.ts` (chạy pattern theo beat, kiểm tra tính công bằng), `spawners.ts` (một handler cho mỗi loại

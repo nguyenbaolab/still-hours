@@ -5,22 +5,26 @@
 
 const FLOOR = 0.0001;
 
-export type CueName =
-  | "wordAbsorb"
-  | "wordRelease"
-  | "unscrew"
-  | "lift"
-  | "unhook"
-  | "clack"
-  | "pencilUp"
-  | "pencilDrop"
-  | "drawTick"
-  | "mend"
-  | "blip"
-  | "ring"
-  | "hum"
-  | "bird"
-  | "chime";
+/** Mọi tiếng phản hồi. Danh sách dạng mảng để test chạy qua từng tiếng một. */
+export const CUE_NAMES = [
+  "wordAbsorb",
+  "wordRelease",
+  "unscrew",
+  "lift",
+  "unhook",
+  "clack",
+  "pencilUp",
+  "pencilDrop",
+  "drawTick",
+  "mend",
+  "blip",
+  "ring",
+  "hum",
+  "bird",
+  "chime",
+] as const;
+
+export type CueName = (typeof CUE_NAMES)[number];
 
 /** `hz`: cao độ riêng của tiếng (chỉ `blip` dùng: mỗi người nói một cao độ). */
 export function playCue(ctx: AudioContext, destination: AudioNode, cue: CueName, time: number, hz?: number): void {

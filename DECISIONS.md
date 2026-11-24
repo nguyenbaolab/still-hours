@@ -163,3 +163,13 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - `WORD_FEEL.advanceEm` 0,6 → 0,4 (advance thật của VT323, 400/1000 em), giữ nguyên nguyên tắc hitbox bằng 70% khung chữ vẽ ra. Hệ quả: khung chữ hẹp hơn khoảng một phần ba so với trước, nên chữ ở cư dân 3 dễ né hơn một chút; nếu muốn như cũ, tăng `WORD_FEEL.fontSize` hoặc `hitboxScale`. Ghi vào PLAYTEST.md.
 - Cỡ chữ: giữ 16 (gợi ý phím, debug, chữ của đạn), 20 (hội thoại), 24, 32–48 (tiêu đề). Chữ debug của pha tháo từ 12 lên 16 vì 16 là cỡ nhỏ nhất của VT323.
 - `main.ts` chờ `document.fonts.load` (tối đa 3 giây) rồi mới `startLoop`; `font-display: block` và `<link rel=preload>` để font về sớm.
+
+## 7.2
+
+- Cue ing, hum, ird, chime, pencilUp, pencilDrop, drawTick, lip, mend đã có từ các mốc trước; mốc này thêm test cho **mọi** cue (`CUE_NAMES` thay cho kiểu liệt kê tay) trên `FakeContext`: mỗi nguồn có `start` rồi `stop`, nối tới đầu ra, không `exponentialRamp` tới giá trị ≤ 0, mọi cue dưới 4 giây.
+- Nền thị trấn: gió (`audio/wind.ts`, nhiễu trắng 3 giây lặp, lọc thấp 520 Hz, dập dềnh chu kỳ 9 giây sâu 50%, gain `AMBIENCE_FEEL.windLevel` 0,07) và tiếng tích xa 40 BPM (`distantSink`: cùng bộ tổng hợp tiếng tích, nhân gain 0,3 và cắt cao 900 Hz). Gió và tích xa đi qua gain tổng nên M tắt cả hai (test: gain tổng về 0).
+- Màn bắt đầu: một tiếng mỗi giây (60 BPM) bằng sink **thường** (không phải sink xa): đó là âm thanh duy nhất của màn nên để rõ. Tích/tắc xen kẽ như mọi nơi khác. Chỉ chạy sau khi âm thanh mở khóa, dừng hẳn và hủy tiếng đã hẹn khi chọn xong.
+- Vòng đời: thêm `Scene.leave?()`, `Director` gọi cho cảnh cũ khi `fadeTo` đổi cảnh hay `cut`. Cảnh thị trấn bật gió và tích xa ở tick `update` đầu tiên (nên `TownScene` chỉ để vẽ trong màn kết không phát gì; màn kết có lớp tích tắc riêng). Phương án bỏ: để `GameFlow` bật/tắt gió theo loại cảnh (dễ quên khi thêm đường chuyển cảnh mới).
+- Màn kết: các lớp tích tắc chồng nhau đã có từ 5.4 (nhịp `ENDING_FEEL.tickBpms`); không đổi.
+- `testing/fake-context.ts` cố ý nghiêm như WebAudio thật. Đã phá thử có chủ đích: bỏ `dropPending` ở `BackgroundTicker.stop` thì test vỡ.
+- Chưa nghe bằng tai: độ to gió (0,07), độ đục tích xa, hồi chuông `ring`. Ghi vào PLAYTEST.md.
