@@ -55,6 +55,63 @@ export const DIALOGUE_FEEL: DialogueFeel = {
   maxLines: 3,
 };
 
+/** Cảnh mở đầu (CLAUDE.md, "Màn mở đầu"). Giây, pixel logic 640×360. */
+export interface IntroFeel {
+  /** Nhịp tích tắc của cảnh mở. 60 = một tiếng mỗi giây. */
+  tickBpm: number;
+  /** Sau bấy nhiêu giây thì tiếng tích tắc đầu tiên. */
+  firstTickSeconds: number;
+  /** Tích tắc chạy một mình bấy nhiêu giây trước khi dòng đầu hiện. */
+  leadSeconds: number;
+  /** Dòng có chỉ số này (tính từ 0) là chỗ tích tắc dừng hẳn: dòng 2 của lời dẫn. */
+  stopAtLine: number;
+  /** Im lặng bấy nhiêu giây sau khi tích tắc dừng, rồi chữ của dòng đó mới hiện. */
+  silenceSeconds: number;
+  /** Mặt đồng hồ trong cảnh, và giờ nó dừng ở đó. */
+  clock: { x: number; y: number; radius: number };
+  stoppedAt: { hour: number; minute: number };
+}
+
+export const INTRO_FEEL: IntroFeel = {
+  tickBpm: 60,
+  firstTickSeconds: 0.5,
+  leadSeconds: 3,
+  stopAtLine: 1,
+  silenceSeconds: 1.5,
+  clock: { x: 320, y: 78, radius: 44 },
+  stoppedAt: { hour: 4, minute: 17 },
+};
+
+/** Màn kết (CLAUDE.md, "Màn kết"). Giây. */
+export interface EndingFeel {
+  /** Camera trôi từ tháp về phía tây trong bấy nhiêu giây, không điều khiển. */
+  driftSeconds: number;
+  /** Mờ đen sau khi camera dừng. */
+  fadeSeconds: number;
+  /** "Vẫn chưa muộn." hiện sau bấy nhiêu giây kể từ lúc dòng thời gian hiện. */
+  closingLineAfterSeconds: number;
+  /** Chỉ bấm confirm qua được thẻ thời gian sau bấy nhiêu giây kể từ lúc dòng thời gian hiện. */
+  confirmAfterSeconds: number;
+  /** Công trạng tự cuộn bấy nhiêu giây; confirm bỏ qua sau `creditsGuardSeconds`. */
+  creditsSeconds: number;
+  creditsGuardSeconds: number;
+  /** Mỗi lớp tích tắc một nhịp: tháp, rồi từng cư dân camera đi ngang (r4, r3, r2, r1). */
+  tickBpms: readonly number[];
+  /** Một lớp mới bắt đầu sau bấy nhiêu giây kể từ lúc camera đi ngang. */
+  layerDelaySeconds: number;
+}
+
+export const ENDING_FEEL: EndingFeel = {
+  driftSeconds: 40,
+  fadeSeconds: 1.5,
+  closingLineAfterSeconds: 2,
+  confirmAfterSeconds: 4,
+  creditsSeconds: 20,
+  creditsGuardSeconds: 1,
+  tickBpms: [60, 66, 72, 80, 88],
+  layerDelaySeconds: 0.2,
+};
+
 /** Lưu tiến trình (CLAUDE.md, "Lưu tiến trình"). */
 export interface SaveFeel {
   /** Sai số (px) khi giản lược tranh của r4 bằng Ramer–Douglas–Peucker. */

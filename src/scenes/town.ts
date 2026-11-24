@@ -129,8 +129,7 @@ export class TownScene implements Scene {
   }
 
   get cameraX(): number {
-    const width = (this.map.rows[0]?.length ?? 0) * this.tile;
-    return clamp(this.x - GAME_WIDTH / 2, 0, Math.max(0, width - GAME_WIDTH));
+    return clamp(this.x - GAME_WIDTH / 2, 0, Math.max(0, this.worldWidth - GAME_WIDTH));
   }
 
   update(): void {
@@ -218,8 +217,27 @@ export class TownScene implements Scene {
   }
 
   render(renderer: Renderer, alpha: number): void {
+    const px = lerp(this.prevX, this.x, alpha);
+    const py = lerp(this.prevY, this.y, alpha);
+    this.drawWorld(renderer, this.cameraX, { x: px, y: py });
+
+    if (this.mode === "spot" && this.spotView > 0) {
+      drawBackdrop(renderer, this.spotId, { x: 0, y: 0, w: GAME_WIDTH, h: GAME_HEIGHT }, this.spotView, this.tick / TICK_RATE);
+    }
+    if (this.mode === "dialogue") this.dialogue?.render(renderer);
+  }
+
+  /** Chiều rộng bản đồ (px). */
+  get worldWidth(): number {
+    return (this.map.rows[0]?.length ?? 0) * this.tile;
+  }
+
+  /**
+   * Vẽ bản đồ, cổng và cư dân với camera ở `camX`; có `keeper` thì vẽ cả người thợ ở toạ độ thế giới đó.
+   * Không đổi trạng thái. Màn kết dùng để vẽ thị trấn với camera tự trôi và không có người thợ.
+   */
+  drawWorld(renderer: Renderer, camX: number, keeper: { x: number; y: number } | null): void {
     const t = this.tile;
-    const camX = this.cameraX;
     const camY = TOWN_FEEL.cameraOffsetY;
     renderer.clear(COLOR.background);
 
@@ -239,8 +257,6 @@ export class TownScene implements Scene {
     this.renderGates(renderer, camX, camY);
 
     // Cư dân và người thợ, xếp theo hàng để cái thấp hơn che cái cao hơn.
-    const px = lerp(this.prevX, this.x, alpha);
-    const py = lerp(this.prevY, this.y, alpha);
     const sprites: { y: number; draw: () => void }[] = [];
     for (const npc of TOWN_NPCS) {
       const id = this.freed.includes(npc.id) ? npc.freedSprite : npc.sprite;
@@ -251,16 +267,16 @@ export class TownScene implements Scene {
         draw: () => renderer.sprite(id, (npc.tile.x + 0.5) * t - camX - size.width / 2, bottom - size.height - 2),
       });
     }
-    const keeperId = `keeper-${this.facing}`;
-    const keeper = renderer.sprites.size(keeperId);
-    const keeperBottom = py + TOWN_FEEL.hitbox.h / 2 + camY;
-    sprites.push({ y: keeperBottom, draw: () => renderer.sprite(keeperId, px - camX - keeper.width / 2, keeperBottom - keeper.height) });
-    sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
-
-    if (this.mode === "spot" && this.spotView > 0) {
-      drawBackdrop(renderer, this.spotId, { x: 0, y: 0, w: GAME_WIDTH, h: GAME_HEIGHT }, this.spotView, this.tick / TICK_RATE);
+    if (keeper) {
+      const keeperId = `keeper-${this.facing}`;
+      const keeperSize = renderer.sprites.size(keeperId);
+      const keeperBottom = keeper.y + TOWN_FEEL.hitbox.h / 2 + camY;
+      sprites.push({
+        y: keeperBottom,
+        draw: () => renderer.sprite(keeperId, keeper.x - camX - keeperSize.width / 2, keeperBottom - keeperSize.height),
+      });
     }
-    if (this.mode === "dialogue") this.dialogue?.render(renderer);
+    sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
   }
 
   /** Vài nét trang trí lên ô: cửa, cây, biển, bàn, lan can. */

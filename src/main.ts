@@ -10,7 +10,7 @@ import { attachKeyboard } from "./core/keyboard";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import { greyscaleSprite } from "./core/sprites";
-import { browserStorage, SaveStore } from "./core/save";
+import { browserStorage, newSave, SaveStore } from "./core/save";
 import { DIALOGUES } from "./data/dialogues";
 import { DISASSEMBLY_FEEL } from "./data/disassembly-feel";
 import { KEY_BINDINGS } from "./data/keybindings";
@@ -24,14 +24,17 @@ import type { PixelSpriteData } from "./core/sprites";
 import { BattleScene, createBattleFactory } from "./scenes/battle-scene";
 import { DialogueScene } from "./scenes/dialogue-scene";
 import { Director } from "./scenes/director";
+import { EndingScene } from "./scenes/ending";
+import { IntroScene } from "./scenes/intro";
 import type { Scene } from "./scenes/scene";
 import { TitleScene } from "./scenes/title";
 import { TownScene } from "./scenes/town";
 import { VignetteScene } from "./scenes/vignette";
 
 // Cảnh đang chơi thử, cho tới khi có Director và thị trấn (bước 5). "flow" = hội thoại mở → trận cư dân 4 →
-// cảnh kết → lặp lại; "dodge" = chỉ lượt né 1; "disassemble" = chỉ tháo tầng 1 của máy cư dân 4.
-const PLAYTEST_PHASE: "town" | "flow" | "dodge" | "disassemble" = "town";
+// cảnh kết → lặp lại; "dodge" = chỉ lượt né 1; "disassemble" = chỉ tháo tầng 1 của máy cư dân 4; "ending" = màn kết
+// (không xóa bản lưu thật). "town" = Bắt đầu mới thì cảnh mở đầu rồi thị trấn, Tiếp tục thì thẳng thị trấn.
+const PLAYTEST_PHASE: "town" | "flow" | "dodge" | "disassemble" | "ending" = "town";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
 if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
@@ -61,7 +64,10 @@ function startTown(): TownScene {
 const store = new SaveStore(browserStorage(), () => DEBUG.session);
 audio.setMuted(store.loadSettings().muted);
 let savedMuted = audio.muted;
-const title = new TitleScene(audio, input, { exists: () => store.exists(), clear: () => store.clear() });
+function makeTitle(): TitleScene {
+  return new TitleScene(audio, input, { exists: () => store.exists(), clear: () => store.clear() });
+}
+let title = makeTitle();
 const director = new Director(input, audio, title);
 
 // Đóng tab hoặc tab bị ẩn: chỉ cập nhật thời gian chơi, và chỉ khi đã có bản lưu.
@@ -73,6 +79,27 @@ document.addEventListener("visibilitychange", () => {
 let opening: DialogueScene | null = null;
 let battle: BattleScene | null = null;
 let vignette: VignetteScene | null = null;
+let intro: IntroScene | null = null;
+let ending: EndingScene | null = null;
+
+function startIntro(): IntroScene {
+  intro = new IntroScene(DIALOGUES.introOpening, input, audio, measure);
+  return intro;
+}
+
+/** Màn kết: thị trấn với mọi người đã được giải thoát. Phiên chơi thử "ending" không xóa bản lưu thật. */
+function startEnding(): EndingScene {
+  const everyone: ResidentId[] = ["r1", "r2", "r3", "r4", "boss"];
+  const world = new TownScene(TOWN, RESIDENTS, { freed: everyone }, input, audio, measure);
+  const save = { clear: () => (PLAYTEST_PHASE === "ending" ? undefined : store.clear()) };
+  ending = new EndingScene(world, input, audio, save, director.playSeconds);
+  return ending;
+}
+
+/** Xong cảnh mở đầu: ghi `seenIntro` để lần "Tiếp tục" sau không chiếu lại. */
+function markIntroSeen(): void {
+  store.write({ ...(store.load() ?? newSave()), seenIntro: true, playSeconds: director.playSeconds });
+}
 
 function startOpening(): DialogueScene {
   opening = new DialogueScene(DIALOGUES[resident.dialogue.open], input, audio, measure);
@@ -95,7 +122,8 @@ function start(): Scene {
   if (PLAYTEST_PHASE === "disassemble") {
     return new DisassemblePhase(input, audio, resident.mechanism, new Workbench(resident.mechanism, DISASSEMBLY_FEEL), 1);
   }
-  if (PLAYTEST_PHASE === "town") return startTown();
+  if (PLAYTEST_PHASE === "ending") return startEnding();
+  if (PLAYTEST_PHASE === "town") return title.result === "new" ? startIntro() : startTown();
   return startOpening();
 }
 
@@ -111,6 +139,14 @@ startLoop({
     const scene = director.scene;
     if (scene === title && title.result) {
       director.fadeTo(start);
+    } else if (intro && scene === intro && intro.finished) {
+      markIntroSeen();
+      director.fadeTo(startTown);
+    } else if (ending && scene === ending && ending.finished) {
+      director.fadeTo(() => {
+        title = makeTitle();
+        return title;
+      });
     } else if (town && scene === town && town.request) {
       town.clearRequest();
       director.fadeTo(startBattle);

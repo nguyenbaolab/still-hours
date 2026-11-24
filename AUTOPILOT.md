@@ -291,3 +291,4 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 4.3 — de242d3 — ALARM_CLOCK, RESIDENT_R4, hội thoại khép trận, vignette pencil, drawing utils, content.test.
 - 5.1 — 2f9a9ee — Director (chuyển cảnh, debug chung, playSeconds), TitleScene thay press-start.
 - 5.2 — 2d8064a — core/save.ts (parseSave, SaveStore, giản lược tranh), cài đặt muted, móc pagehide.
+- 5.3 — 910a44f — data/town.ts (64×11, cổng, NPC, chỗ ngắm cảnh), TownScene (đi lại, va chạm ô, camera, tương tác), backdrop.

@@ -41,7 +41,15 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước 5.1: `scenes/director.ts` (`Director`: chuyển cảnh có mờ, cờ debug chung `core/debug.ts`, tắt/bật tiếng, đếm
     `playSeconds`), `scenes/title.ts` (`TitleScene` thay `press-start.ts`; menu Tiếp tục / Bắt đầu lại khi có bản lưu).
     Các cảnh không còn tự xử lý F1 và M.
-- **Bước tiếp theo:** mốc 5.2 trong `AUTOPILOT.md` (lưu tiến trình).
+  - Bước 5.2: `core/save.ts` (`parseSave`, `serializeSave`, `SaveStore`, giản lược tranh), cài đặt `muted`, móc `pagehide`.
+  - Bước 5.3: `data/town.ts` (bản đồ 64 × 11, `TOWN_NPCS`, chỗ ngắm cảnh, biển, cổng), `scenes/town.ts` (`TownScene`:
+    đi lại, va chạm ô, camera, tương tác, cổng, chỗ ngắm cảnh), `scenes/backdrop.ts`. `TownScene.drawWorld` vẽ thế giới
+    với camera cho trước (màn kết dùng).
+  - Bước 5.4: `core/format.ts` (`formatPlayTime`), `scenes/intro.ts` (`IntroScene`: tích tắc dừng hẳn ở dòng 2, im lặng
+    rồi hiện chữ), `scenes/ending.ts` (`EndingScene`: camera trôi, tích tắc chồng lớp, thẻ thời gian, "Vẫn chưa muộn.",
+    công trạng, xóa bản lưu), `data/credits.ts`, `INTRO_FEEL` / `ENDING_FEEL`. `main.ts`: "Bắt đầu" mới → cảnh mở đầu →
+    thị trấn (ghi `seenIntro`); `PLAYTEST_PHASE = "ending"` để xem màn kết (không xóa bản lưu thật).
+- **Bước tiếp theo:** mốc 5.5 trong `AUTOPILOT.md` (vòng chơi trọn vẹn với dữ liệu tạm cho r1–r3 và boss).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -709,7 +717,7 @@ Hiện đã có:
   `sketch.ts` (danh sách đoạn nét chì, tua lại), `page.ts` (trang vẽ: nhặt bút, bút rơi, beat vẽ), `ink-layer.ts` (canvas
   phụ cho nét lúc chơi), `mechanism.ts` (thứ tự tháo, nhịp, con trỏ), `disassemble-phase.ts` (pha tháo lắp).
 - `scenes/`: `scene.ts` (giao diện `Scene`), `director.ts`, `title.ts`, `battle-scene.ts`, `dialogue-box.ts`,
-  `dialogue-scene.ts`, `vignette.ts`.
+  `dialogue-scene.ts`, `vignette.ts`, `town.ts`, `backdrop.ts`, `intro.ts`, `ending.ts`.
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
@@ -728,7 +736,7 @@ Hiện đã có:
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: lưu tiến trình trong `core/`, hội thoại, thị trấn, ghép pha né với pha tháo lắp.
+- Chưa có code: vòng chơi nối thị trấn với trận và lưu `freed` (mốc 5.5), nhảy cóc (5.6), nội dung r1–r3 và boss (bước 6).
 - File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,
@@ -972,6 +980,12 @@ Nét chì, bút và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel log
 | Mờ đen giữa các cảnh                           | `FLOW_FEEL.fadeSeconds` (0,4)                 |
 | Đạn còn lại mờ đi khi pha `length` xong        | `FLOW_FEEL.clearSeconds` (0,6)                |
 | Bánh răng nứt nằm yên bao lâu khi thua         | `FLOW_FEEL.loseHoldSeconds` (1,2)             |
+| Cảnh mở: tích tắc một mình trước dòng đầu      | `INTRO_FEEL.leadSeconds` (3)                  |
+| Cảnh mở: im lặng sau khi tích tắc dừng         | `INTRO_FEEL.silenceSeconds` (1,5)             |
+| Màn kết: camera trôi bao lâu                   | `ENDING_FEEL.driftSeconds` (40)               |
+| Màn kết: "Vẫn chưa muộn." hiện sau / bấm được sau | `closingLineAfterSeconds` (2), `confirmAfterSeconds` (4) |
+| Màn kết: công trạng cuộn bao lâu / chống lỡ tay | `creditsSeconds` (20), `creditsGuardSeconds` (1) |
+| Màn kết: nhịp từng lớp tích tắc                | `ENDING_FEEL.tickBpms` (60…88)                |
 
 Pha tháo lắp nằm ở `data/disassembly-feel.ts`:
 

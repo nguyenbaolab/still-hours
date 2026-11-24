@@ -58,3 +58,26 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - **Cư dân chưa giải thoát xám** là bản xám tính từ bảng màu của sprite có màu (`greyscaleSprite`), đăng ký thêm lúc khởi động.
 - **`Director` giữ F1 và M** cho mọi cảnh; các cảnh không còn tự xử lý, và nhãn "tắt tiếng" do Director vẽ.
 - **Màn bắt đầu** coi âm thanh sẵn sàng (`audio.ready`) là đã nhấn phím: không có API "phím nào cũng được".
+
+## 5.4
+
+- **Tích tắc của cảnh mở** dùng `BeatClock` + `TickScheduler` như pha né (đồng hồ âm thanh vẫn là chủ), 60 BPM. Khi sang
+  dòng 2 gọi `dropPending()` rồi ngừng cập nhật bộ hẹn: tiếng đã hẹn mà chưa phát bị hủy, nên "dừng hẳn" là thật. Kim giây
+  đứng ở chỗ nó dừng. Bỏ: tắt âm lượng (vẫn có thể rò một tiếng đã hẹn).
+- **Màn kết vẽ thị trấn bằng `TownScene.drawWorld(renderer, camX, null)`**, tách khỏi `render`, thay vì chép mã vẽ hay
+  thêm cờ "ẩn người thợ" vào `TownScene`. Màn kết dựng một `TownScene` với mọi cư dân đã giải thoát chỉ để vẽ.
+- **Lớp tích tắc chồng dần** theo vị trí tâm camera đi ngang: cửa tháp (ngay từ đầu), rồi r4, r3, r2, r1, nhịp
+  60/66/72/80/88 để các lớp lệch pha nhau. Các lớp **chạy tiếp tới hết thẻ thời gian và công trạng**: "thế giới đã chạy
+  lại" là ý của dòng cuối. Chỉ dừng (hủy tiếng đã hẹn) khi màn kết xong. Bỏ: cắt tiếng khi mờ đen (mất sức nặng của câu cuối).
+- **"Việc nhỏ" của cư dân ở màn kết** (điện thoại và sóng chuông, ô trời xanh, nốt nhạc, cây bút chì) vẽ bằng hình khối
+  placeholder ngay trong `EndingScene`; thay bằng sprite ở bước 7.
+- **Thẻ thời gian:** `confirmAfterSeconds` (4 giây) tính từ lúc dòng thời gian hiện, nên "Vẫn chưa muộn." (hiện ở giây 2)
+  luôn nằm trên màn ít nhất 2 giây trước khi qua được. Công trạng có `creditsGuardSeconds` 1 giây chống lỡ tay (thiết kế
+  chỉ nói "confirm bỏ qua").
+- **`EndingScene.countsPlayTime = false`**, thời gian chơi được chốt lúc dựng cảnh (`director.playSeconds`), để con số trên
+  màn không nhích trong lúc đọc.
+- **Công trạng** chỉ ghi điều đang đúng (âm thanh WebAudio, hình bằng mã); dòng font VT323 và giấy phép OFL thêm ở mốc 7.1.
+- **Câu "Vẫn chưa muộn."** nằm ở `ENDING_LINE` (`data/credits.ts`); test kiểm nó không lặp trong hội thoại hay công trạng.
+- **Bản lưu được tạo khi xong cảnh mở đầu** (`seenIntro: true`), nên "Tiếp tục" sau đó vào thẳng thị trấn. Nạp `freed` từ bản
+  lưu và đứng cạnh cư dân vừa giải thoát là việc của mốc 5.5.
+- **`PLAYTEST_PHASE = "ending"`** không xóa bản lưu thật (truyền `clear` rỗng).
