@@ -15,6 +15,25 @@ export interface PixelSpriteData {
   readonly scale?: number;
 }
 
+/** Màu #rrggbb về xám cùng độ sáng (Rec. 601). Chuỗi khác dạng đó thì giữ nguyên. */
+export function greyOf(color: string): string {
+  const match = /^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(color);
+  if (!match) return color;
+  const r = parseInt(match[1] as string, 16);
+  const g = parseInt(match[2] as string, 16);
+  const b = parseInt(match[3] as string, 16);
+  const y = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+  const hex = y.toString(16).padStart(2, "0");
+  return `#${hex}${hex}${hex}`;
+}
+
+/** Bản xám của một sprite: cùng hình, mọi màu trong bảng màu thành xám cùng độ sáng. Dùng cho cư dân chưa giải thoát. */
+export function greyscaleSprite(data: PixelSpriteData): PixelSpriteData {
+  const palette: Record<string, string> = {};
+  for (const [key, color] of Object.entries(data.palette)) palette[key] = greyOf(color);
+  return data.scale === undefined ? { palette, rows: data.rows } : { palette, rows: data.rows, scale: data.scale };
+}
+
 function assertScale(scale: number): void {
   if (!Number.isInteger(scale) || scale < 1) throw new Error(`scale ${scale} phải là số nguyên >= 1`);
 }

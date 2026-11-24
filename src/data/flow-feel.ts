@@ -67,3 +67,33 @@ export const SAVE_FEEL: SaveFeel = {
   drawingEpsilon: 1.5,
   drawingMaxNumbers: 3000,
 };
+
+/** Đi lại trong thị trấn (CLAUDE.md, "Thị trấn"). Pixel logic 640×360. */
+export interface TownFeel {
+  /** Cạnh một ô (px). */
+  tile: number;
+  walkSpeed: number;
+  /** Giữ Shift: đi chậm. */
+  slowSpeed: number;
+  /** Hitbox chân của người thợ (px), tâm ở chân. */
+  hitbox: { w: number; h: number };
+  /** Z tương tác với đối tượng trong tầm này (px, từ tâm người thợ tới tâm đối tượng), theo hướng đang nhìn. */
+  interactRange: number;
+  /** Camera chỉ trôi ngang; chiều dọc lệch xuống bấy nhiêu px (bản đồ cao 352 so với màn 360). */
+  cameraOffsetY: number;
+  /** Chỗ ngắm cảnh: khung cảnh hiện toàn màn sau bấy nhiêu giây mờ. */
+  spotFadeSeconds: number;
+  /** Cổng "khoảnh khắc đông cứng" lấp lánh theo nhịp bấy nhiêu BPM. */
+  gateBpm: number;
+}
+
+export const TOWN_FEEL: TownFeel = {
+  tile: 32,
+  walkSpeed: 140,
+  slowSpeed: 70,
+  hitbox: { w: 20, h: 12 },
+  interactRange: 28,
+  cameraOffsetY: 4,
+  spotFadeSeconds: 1,
+  gateBpm: 40,
+};

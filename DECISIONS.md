@@ -41,3 +41,20 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
   (bot đi vòng chữ nhật không né). Sống sót được kiểm ở mốc 6.6 bằng bot né đạn.
 - **`main.ts` chơi thử pha né:** thắng thì `closeRound()` rồi sang lượt kế cùng trang, thua thì dựng lại pha với
   cùng trang. Tạm cho tới khi có `BattleScene` ở mốc 4.1.
+
+## 4–5.3
+
+- **Vị trí cư dân trong thị trấn** nằm ở `data/town.ts` (`TOWN_NPCS`: ô, cột cổng, sprite xám và có màu), không ở
+  `ResidentData.town` như bản thiết kế: thị trấn dựng trước khi r1–r3 và boss có `ResidentData` (mốc 5.5, bước 6), mà test
+  BFS cần đủ bốn cư dân từ đầu. `TownMap` không có `npcs`/`gates`: cổng suy ra từ `TOWN_NPCS` + `TOWN_GATE_ROWS`.
+- **Cổng chắn kín:** hàng 8–9 (vỉa hè) ở cột cổng đặt cây (`T`) để không đi vòng qua cổng đóng. Hàng 0–2 là tường, riêng
+  quảng trường mở lên nhưng cụt (cột 43 là tường).
+- **Sprite người thợ** 8×12 dữ liệu × `scale` 3 (24×36 px), không phải 16×24 × 2 như bản thiết kế (32×48): 24 px vừa với
+  hitbox chân 20×12 và ô 32 px; hai kích cỡ đều là placeholder, bước 7.3 thay.
+- **Đối tượng tương tác đều là ô cứng** (cư dân, biển, bàn, lan can, ghế, cửa): người thợ đứng cạnh và nhìn vào, nên
+  khoảng cách tâm–tâm luôn ≤ 26 px, nằm trong `interactRange` 28.
+- **Biển trong thị trấn** (`officeSign`, `noticeBoard`, `towerSign`) là chữ tự viết, ngắn, trung tính, ghi bằng người nói
+  `note`; thiết kế chỉ nói "biển" mà chưa có lời.
+- **Cư dân chưa giải thoát xám** là bản xám tính từ bảng màu của sprite có màu (`greyscaleSprite`), đăng ký thêm lúc khởi động.
+- **`Director` giữ F1 và M** cho mọi cảnh; các cảnh không còn tự xử lý, và nhãn "tắt tiếng" do Director vẽ.
+- **Màn bắt đầu** coi âm thanh sẵn sàng (`audio.ready`) là đã nhấn phím: không có API "phím nào cũng được".

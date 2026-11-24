@@ -290,3 +290,4 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 4.2 — 5bf4951 — DialogueBox (gõ chữ, tua X, dừng dấu câu), dialogues.ts, blip, measureText.
 - 4.3 — de242d3 — ALARM_CLOCK, RESIDENT_R4, hội thoại khép trận, vignette pencil, drawing utils, content.test.
 - 5.1 — 2f9a9ee — Director (chuyển cảnh, debug chung, playSeconds), TitleScene thay press-start.
+- 5.2 — 2d8064a — core/save.ts (parseSave, SaveStore, giản lược tranh), cài đặt muted, móc pagehide.

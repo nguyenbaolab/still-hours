@@ -33,6 +33,10 @@ export const DIALOGUES = {
   ],
   shopNote: say("note", "Đồng hồ nào cũng mở ra được."),
 
+  officeSign: say("note", "Cơ quan. Giờ làm việc: tới sáu giờ."),
+  noticeBoard: say("note", "Giấy dán kín bảng. Tờ nào cũng đã phai."),
+  towerSign: say("note", "Tháp đồng hồ. Kim dừng ở bốn giờ mười bảy."),
+
   r1Open: say("r1", "Thêm một tiếng nữa thôi. Rồi về."),
   r1Close: say("r1", "...Mấy giờ rồi nhỉ."),
   r1Idle: say("r1", "Chuông vẫn đang đổ."),
