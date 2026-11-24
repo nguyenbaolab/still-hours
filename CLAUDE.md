@@ -57,7 +57,10 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     (`data/keybindings.ts`), `GameFlow.queueJump` / `handleKey` / `jump` (chờ `audio.ready` rồi `director.cut`), `BattleScene` nhận
     `startStep` (nhảy vào giữa trận: các tầng trước coi như đã tháo). `PLAYTEST_PATTERN`, `PLAYTEST_PHASE` và `FlowDeps.override` đã
     xóa; chơi thử mọi cảnh bằng `?jump=` hoặc phím số khi F1 bật (xem "Phím debug và nhảy cóc").
-- **Bước tiếp theo:** mốc 6.1 trong `AUTOPILOT.md` (cư dân 1 thật).
+  - Bước 6.1: cư dân 1 thật. `data/patterns/resident-1.ts` (`R1_ROUNDS`: 120→144, 132→160, 144→176 BPM, 60/64/68 beat, chuỗi `straight`,
+    `aimed` 3 viên mỗi 4 beat, lượt 3 hai `sweep`), `data/mechanisms/pocket-watch.ts` (`POCKET_WATCH`, `rhythmic: false`, không
+    `unscrew`, `showHint`), `residents/r1.ts` dùng dữ liệu thật. Cảnh kết `phone` và cue `ring` làm ở 6.5 / 7.2.
+- **Bước tiếp theo:** mốc 6.2 trong `AUTOPILOT.md` (cư dân 2 và đứng yên).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -731,10 +734,10 @@ Hiện đã có:
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
   `sketch-feel.ts` (**độ dày nét, sáp màu, đung đưa, bút và trang vẽ `DRAW_FEEL`**), `flow-feel.ts` (**chuyển cảnh, dọn đạn,
   màn thua**),
-  `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
+  `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-1.ts` (`R1_ROUNDS`: tích tắc dồn dập), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
   `patterns/resident-4.ts` (`R4_ROUNDS`: ba lượt "Nhặt bút", vòng 32 beat, `finish: page`),
   `disassembly-feel.ts` (cửa sổ nhịp, số nấc, số beat giữ, chữ ký ức),
-  `mechanisms/clockwork.ts` (bộ máy đồng hồ thử).
+  `mechanisms/clockwork.ts` (bộ máy đồng hồ thử), `mechanisms/pocket-watch.ts` (đồng hồ quả quýt của cư dân 1).
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
   (pattern fixture + hàm tính giờ độc lập), `bots.ts` (bot thử: đi tới bút, đi vòng chữ nhật, đứng yên). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
   `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `battle/pace.test.ts`, `battle/words.test.ts`,

@@ -104,3 +104,9 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Thêm đích `title` (phím `0`, và `?jump=title`) ngoài hai đích CLAUDE.md liệt kê; hoa thường không phân biệt trong URL.
 - Nhảy cóc chờ `audio.ready` (cần một phím) rồi cắt thẳng (`director.cut`, không mờ), để đồng hồ nhịp của cảnh đích không dựng trên đồng hồ âm thanh chưa có. `DEBUG.session` bật ngay lúc xin nhảy, nên màn bắt đầu cũng không đọc bản lưu.
 - `r4.2d` (và `rX.Nd`): các tầng trước N coi như đã tháo (`Workbench.removed`); pha né lượt N dùng `startStep` chẵn tương tự.
+
+## 6.1
+
+- Vòng đệm và chốt cài (tầng 1), kim giờ và kim phút (tầng 2), bánh răng nhỏ (tầng 3) là bộ phận thêm cho đủ 3 bộ phận mỗi tầng như `content.test`; dùng sprite placeholder sẵn có (`cover`, `cog`, `clock-face`, `spring`, `balance`).
+- Chuỗi `straight` mỗi beat; lượt 2 và 3 thêm một viên ở nửa beat sau mỗi 8 beat (trên/dưới xen kẽ) cho nhịp dồn hơn. Độ khó thật chỉ kiểm bằng bot ở 6.6 và bằng tay người chơi.
+- Cảnh kết `phone` và cue `ring` dời sang 6.5 (cảnh ở thị trấn) và 7.2 (mọi cue), vì cảnh kết của r1–r3 và boss chỉ có chỗ ở thị trấn.
