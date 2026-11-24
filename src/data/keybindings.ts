@@ -16,3 +16,18 @@ export const KEY_BINDINGS: Readonly<Record<Action, readonly string[]>> = {
   debug: ["F1"],
   mute: ["KeyM"],
 };
+
+/**
+ * Phím nhảy cóc khi lớp debug (F1) đang bật: `KeyboardEvent.code` → tên đích (cùng dạng với `?jump=`, xem
+ * `core/debug-jump.ts`). Không đi qua `Input` vì không phải logic game.
+ */
+export const DEBUG_JUMP_KEYS: Readonly<Record<string, string>> = {
+  Digit1: "r1",
+  Digit2: "r2",
+  Digit3: "r3",
+  Digit4: "r4",
+  Digit5: "boss",
+  Digit6: "town",
+  Digit7: "ending",
+  Digit0: "title",
+};

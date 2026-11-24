@@ -52,9 +52,12 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
   - Bước 5.5: `scenes/game-flow.ts` (`GameFlow`: Title → Intro → Town → (hội thoại → trận → cảnh kết → lưu → Town) × 5 → Ending → Title;
     `townSpawnFor`), `data/residents/{r1,r2,r3,boss}.ts` là DỮ LIỆU TẠM (lượt rút từ pattern thử qua `patterns/placeholder.ts`, máy tạm
     `mechanisms/placeholder.ts`; hội thoại và câu ký ức đã là bản thật). Game chơi được từ đầu tới cuối. `main.ts` chỉ còn dựng
-    `GameFlow`; `PLAYTEST_PHASE` ("game" / "dodge" / "disassemble" / "ending") đi qua `FlowDeps.override`. `TitleScene` quay lại
-    sau màn kết thì đợi một phím thật.
-- **Bước tiếp theo:** mốc 5.6 trong `AUTOPILOT.md` (nhảy cóc `?jump=` và phím số khi bật debug).
+    `GameFlow`. `TitleScene` quay lại sau màn kết thì đợi một phím thật.
+  - Bước 5.6: `core/debug-jump.ts` (`JumpTarget`, `parseJump`, `parseJumpName`, `jumpForKey`, `residentsBefore`), `DEBUG_JUMP_KEYS`
+    (`data/keybindings.ts`), `GameFlow.queueJump` / `handleKey` / `jump` (chờ `audio.ready` rồi `director.cut`), `BattleScene` nhận
+    `startStep` (nhảy vào giữa trận: các tầng trước coi như đã tháo). `PLAYTEST_PATTERN`, `PLAYTEST_PHASE` và `FlowDeps.override` đã
+    xóa; chơi thử mọi cảnh bằng `?jump=` hoặc phím số khi F1 bật (xem "Phím debug và nhảy cóc").
+- **Bước tiếp theo:** mốc 6.1 trong `AUTOPILOT.md` (cư dân 1 thật).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -460,8 +463,7 @@ giờ nghe được.
 - Hình là sprite placeholder theo id. Cỗ máy thử `CLOCKWORK`: 4 ốc (`unscrew`) → mặt đồng hồ (`lift`) → tấm che
   (`lift`) → 2 bánh răng (`unhook`) → lò xo (`lift`) → bánh lắc (`unhook`, `core`). Ba câu ký ức tạm. Cỗ máy thử
   để `rhythmic: true` để nghe cửa sổ; cư dân 1 sẽ đặt `false`.
-- `main.ts` chọn pha chơi thử bằng `PLAYTEST_PHASE` (`"dodge"` hoặc `"disassemble"`), cùng kiểu với
-  `PLAYTEST_PATTERN`. Hai pha không gọi nhau.
+- Chơi thử một pha riêng: nhảy cóc `?jump=r4.2` (né) hoặc `?jump=r4.2d` (tháo), xem "Phím debug và nhảy cóc".
 - Kiểm lúc tạo máy: id trong `blockedBy` có thật, không trùng id, không có vòng, đúng một `core`, và có thứ tự
   tháo tới được `core`.
 - Con số cảm giác ở `src/data/disassembly-feel.ts`, vùng tháo ở `DISASSEMBLY_LAYOUT`, pixel logic 640×360.
@@ -628,7 +630,8 @@ dành thời gian cho gia đình và ngắm nhìn thế giới, đừng phí th�
   thường. Hàm thuần `parseJump(search)` có test.
 - Nhảy cóc coi mọi cư dân đứng trước đích là đã giải thoát, bật `debugSession`: không đọc ghi localStorage, góc phải trên
   hiện "DEBUG · không lưu".
-- `PLAYTEST_PATTERN` và `PLAYTEST_PHASE` trong `main.ts` bị xóa khi có `?jump=` (mốc 5.6).
+- `PLAYTEST_PATTERN` và `PLAYTEST_PHASE` đã xóa (mốc 5.6). `?jump=` và phím số đi qua `GameFlow.queueJump`; việc nhảy thật chờ âm thanh mở
+  khóa (phím đầu tiên), và `r4.2d` nghĩa là các tầng trước đã tháo sẵn (`BattleScene` `startStep`).
 
 ## Hình ảnh và âm thanh
 
@@ -741,7 +744,7 @@ Hiện đã có:
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
-- Chưa có code: nhảy cóc (5.6), nội dung thật của r1–r3 và boss (bước 6; hiện là dữ liệu tạm).
+- Chưa có code: nội dung thật của r1–r3 và boss (bước 6; hiện là dữ liệu tạm).
 - File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,
@@ -858,7 +861,7 @@ chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 
 
 Một pattern là danh sách sự kiện theo beat. **Thêm pattern mới = thêm file dữ liệu trong `data/patterns/`**
 (xuất một `Pattern`), rồi truyền vào `new DodgePhase(input, audio, bodySize, pattern)`; không sửa code engine.
-`DodgePhase` mặc định dùng `TEST_PATTERN`. `main.ts` đang truyền `PLAYTEST_PATTERN` (đổi một dòng để chơi pattern kia).
+`DodgePhase` mặc định dùng `TEST_PATTERN`. Chơi thử một pattern: nhảy cóc `?jump=` (mục "Phím debug và nhảy cóc").
 Pattern của cô bé (`resident-4.ts`, `R4_ROUNDS`) là kiểu `finish: page` có `pencil`: bút nằm yên, bánh răng cầm bút
 thì mọi bước đi để lại nét. Trang xong thì khung và đạn mờ đi, nét của lượt này được tua lại bằng sáp trong
 `SKETCH_FEEL.replaySeconds`, rồi giữ tranh `SKETCH_FEEL.revealSeconds`; sau đó `outcome` là `won`. Pha `length` xong thì

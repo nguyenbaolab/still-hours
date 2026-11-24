@@ -97,3 +97,10 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
   ngay. Sửa: nếu `audio.ready` đã đúng lúc dựng thì phải đợi một phím thật.
 - **Bản lưu ghi sau mỗi cư dân** gồm `drawing` (tranh r4, giản lược) từ lúc r4 xong trận; `finished: true` khi boss xong, nên
   "Tiếp tục" lúc đó vào thẳng màn kết. Thời gian chơi nối tiếp từ `playSeconds` của bản lưu.
+
+## 5.6
+
+- Nhảy cóc `town.<id>` đặt người thợ ngay phía đông cư dân giải thoát gần nhất (cùng `townSpawnFor` với Tiếp tục); `town.r1` và `town` đều ở tiệm.
+- Thêm đích `title` (phím `0`, và `?jump=title`) ngoài hai đích CLAUDE.md liệt kê; hoa thường không phân biệt trong URL.
+- Nhảy cóc chờ `audio.ready` (cần một phím) rồi cắt thẳng (`director.cut`, không mờ), để đồng hồ nhịp của cảnh đích không dựng trên đồng hồ âm thanh chưa có. `DEBUG.session` bật ngay lúc xin nhảy, nên màn bắt đầu cũng không đọc bản lưu.
+- `r4.2d` (và `rX.Nd`): các tầng trước N coi như đã tháo (`Workbench.removed`); pha né lượt N dùng `startStep` chẵn tương tự.

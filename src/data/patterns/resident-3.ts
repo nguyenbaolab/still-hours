@@ -4,7 +4,7 @@ import type { Pattern } from "../pattern-types";
  * Pattern thử của cư dân 3: những câu tiêu cực bay qua khung. 100 BPM, 60 beat ≈ 36 giây, có lặp.
  * Câu là chỉ số trong NEGATIVE_PHRASES; câu thật viết sau.
  *
- * Chơi thử pattern này hay TEST_PATTERN: sửa `PLAYTEST_PATTERN` trong src/main.ts.
+ * Chơi thử pattern này: `?jump=r3` (cư dân 3 dùng dữ liệu thật ở mốc 6.3).
  */
 export const RESIDENT3_PATTERN: Pattern = {
   name: "lời tiêu cực",

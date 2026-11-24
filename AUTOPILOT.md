@@ -305,4 +305,4 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 - 5.2 — 2d8064a — core/save.ts (parseSave, SaveStore, giản lược tranh), cài đặt muted, móc pagehide.
 - 5.3 — 910a44f — data/town.ts (64×11, cổng, NPC, chỗ ngắm cảnh), TownScene (đi lại, va chạm ô, camera, tương tác), backdrop.
 - 5.4 — ca89bea — formatPlayTime, IntroScene (tích tắc dừng ở dòng 2), EndingScene (trôi, thời gian, công trạng, xóa lưu), TownScene.drawWorld.
-
+- 5.5 — f33f6b7 — GameFlow (Title→Intro→Town→trận→cảnh kết→lưu→…→Ending), dữ liệu tạm r1–r3/boss, flow.test, Title chờ phím sau màn kết (commit này lỡ kèm tmp/dbg.txt, xóa ở 5.6).

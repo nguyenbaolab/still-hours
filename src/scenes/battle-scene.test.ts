@@ -49,7 +49,7 @@ const pencilRound: Pattern = {
   events: [],
 };
 
-function setup(rounds: readonly [Pattern, Pattern, Pattern]) {
+function setup(rounds: readonly [Pattern, Pattern, Pattern], startStep = 0) {
   const log: string[] = [];
   const dodges: FakeDodge[] = [];
   const disassembles: FakeDisassemble[] = [];
@@ -77,7 +77,7 @@ function setup(rounds: readonly [Pattern, Pattern, Pattern]) {
   };
   const audio = new FakeAudio(5, 0);
   const input = new Input();
-  const scene = new BattleScene(resident, input, audio, factory, (text) => text.length * 10);
+  const scene = new BattleScene(resident, input, audio, factory, (text) => text.length * 10, startStep);
   const tick = (confirm = false): void => {
     input.setActionState("test", "confirm", confirm);
     input.poll();
@@ -147,6 +147,25 @@ describe("BattleScene: thứ tự một trận", () => {
     }
     expect(s.disassembles.map((d) => d.stage)).toEqual([1, 2, 3]);
     expect(new Set(s.disassembles.map((d) => d.bench)).size).toBe(1);
+  });
+});
+
+describe("BattleScene: nhảy cóc vào giữa trận", () => {
+  it("bắt đầu ở bước 3 (tháo lượt 2): tầng 1 đã tháo, pha đầu tiên là tháo tầng 2", () => {
+    const { scene, log, disassembles } = setup([plain, plain, plain], 3);
+    expect(scene.step).toBe(3);
+    expect(log).toEqual(["dis2"]);
+    const bench = disassembles[0]?.bench as Workbench;
+    const stage1 = CLOCKWORK.parts.filter((p) => (p.stage ?? 1) === 1).map((p) => p.id);
+    expect(stage1.length).toBeGreaterThan(0);
+    for (const id of stage1) expect(bench.removed.has(id)).toBe(true);
+    for (const p of CLOCKWORK.parts.filter((q) => (q.stage ?? 1) >= 2)) expect(bench.removed.has(p.id)).toBe(false);
+  });
+
+  it("bắt đầu ở bước 4 (né lượt 3): tầng 1 và 2 đã tháo", () => {
+    const { scene, log } = setup([plain, plain, plain], 4);
+    expect(scene.step).toBe(4);
+    expect(log).toEqual(["dodge3"]);
   });
 });
 

@@ -1,7 +1,7 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { DisassemblePhase } from "../battle/disassemble-phase";
 import { DodgePhase, type DodgeOutcome } from "../battle/dodge-phase";
-import { Workbench } from "../battle/mechanism";
+import { stageOf, Workbench } from "../battle/mechanism";
 import { PageState, type Point } from "../battle/page";
 import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
@@ -87,9 +87,13 @@ export class BattleScene implements Scene {
     private readonly audio: AudioPort,
     private readonly factory: BattleFactory,
     private readonly measure: MeasureText,
+    /** Bước bắt đầu (0..5). Khác 0 chỉ khi nhảy cóc: các tầng trước coi như đã tháo. */
+    startStep = 0,
   ) {
     this.bench = new Workbench(resident.mechanism, DISASSEMBLY_FEEL);
-    this.running = this.build(0);
+    const round = Math.floor(startStep / 2) + 1;
+    for (const part of resident.mechanism.parts) if (stageOf(part) < round) this.bench.removed.add(part.id);
+    this.running = this.build(startStep);
   }
 
   /** Trận đã xong (tháo hết tầng 3 và đọc xong hội thoại khép trận). */

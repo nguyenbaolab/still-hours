@@ -4,6 +4,8 @@ import { strokesFromSegments, type Pt } from "../core/drawing";
 import type { Input } from "../core/input";
 import type { Renderer } from "../core/renderer";
 import { encodeDrawing, newSave, type SaveStore } from "../core/save";
+import { jumpForKey, residentsBefore, type JumpTarget } from "../core/debug-jump";
+import { DEBUG } from "../core/debug";
 import { BATTLE_LAYOUT } from "../data/battle-layout";
 import { DIALOGUES } from "../data/dialogues";
 import { FLOW_FEEL } from "../data/flow-feel";
@@ -30,13 +32,8 @@ export interface FlowDeps {
   measure: MeasureText;
   store: SaveStore;
   residents: readonly ResidentData[];
-  /** Dựng trận của một cư dân. */
-  makeBattle(resident: ResidentData): BattleLike;
-  /**
-   * Chơi thử một cảnh riêng thay cho luồng thật (`PLAYTEST_PHASE` trong main.ts, bỏ ở mốc 5.6). Có thì sau màn bắt đầu
-   * vào cảnh này; `finished` trả về true thì về màn bắt đầu.
-   */
-  override?: { make(): Scene; finished?(scene: Scene): boolean };
+  /** Dựng trận của một cư dân. `startStep` (0..5) khác 0 chỉ khi nhảy cóc vào giữa trận. */
+  makeBattle(resident: ResidentData, startStep?: number): BattleLike;
 }
 
 type Stage =
@@ -45,8 +42,7 @@ type Stage =
   | { kind: "town"; scene: TownScene }
   | { kind: "battle"; scene: BattleLike; resident: ResidentData }
   | { kind: "vignette"; scene: VignetteScene; resident: ResidentData }
-  | { kind: "ending"; scene: EndingScene }
-  | { kind: "custom"; scene: Scene };
+  | { kind: "ending"; scene: EndingScene };
 
 /** Ô người thợ đứng khi vào thị trấn sau khi `freed`: ngay phía đông của cư dân vừa giải thoát. Chưa ai thì undefined (tiệm). */
 export function townSpawnFor(freed: readonly ResidentId[]): Tile | undefined {
@@ -70,6 +66,7 @@ export class GameFlow {
   private drawing: number[] | null = null;
   private seenIntro = false;
   private strokes: Pt[][] = [];
+  private pendingJump: JumpTarget | null = null;
 
   constructor(private readonly deps: FlowDeps) {
     const title = this.newTitle();
@@ -89,8 +86,31 @@ export class GameFlow {
     return this.stage.scene;
   }
 
+  /**
+   * Xin nhảy cóc (URL `?jump=` hoặc phím số khi lớp debug bật). Vào phiên debug ngay (không đọc ghi bản lưu); việc nhảy
+   * thật chờ âm thanh mở khóa, để đồng hồ nhịp của cảnh đích không chạy trên đồng hồ chưa có.
+   */
+  queueJump(target: JumpTarget): void {
+    DEBUG.session = true;
+    this.pendingJump = target;
+  }
+
+  /** Xử lý phím số nhảy cóc. Trả về true nếu phím đó là phím nhảy cóc đang có hiệu lực. */
+  handleKey(code: string): boolean {
+    const target = jumpForKey(code, DEBUG.on);
+    if (!target) return false;
+    this.queueJump(target);
+    return true;
+  }
+
   update(): void {
     this.director.update();
+    const pending = this.pendingJump;
+    if (pending && this.deps.audio.ready) {
+      this.pendingJump = null;
+      this.jump(pending);
+      return;
+    }
     if (this.director.transitioning) return;
     const stage = this.stage;
     if (this.director.scene !== stage.scene) return;
@@ -133,11 +153,6 @@ export class GameFlow {
       case "ending":
         if (stage.scene.finished) this.director.fadeTo(() => this.backToTitle());
         return;
-      case "custom": {
-        const done = this.deps.override?.finished;
-        if (done?.(stage.scene)) this.director.fadeTo(() => this.backToTitle());
-        return;
-      }
     }
   }
 
@@ -160,12 +175,7 @@ export class GameFlow {
   }
 
   private afterTitle(result: TitleResult): Scene {
-    const { override, store } = this.deps;
-    if (override) {
-      const scene = override.make();
-      this.stage = { kind: "custom", scene };
-      return scene;
-    }
+    const { store } = this.deps;
     const save = result === "continue" ? store.load() : null;
     if (!save) {
       this.freedIds = [];
@@ -196,8 +206,8 @@ export class GameFlow {
     return scene;
   }
 
-  private newBattle(resident: ResidentData): Scene {
-    const scene = this.deps.makeBattle(resident);
+  private newBattle(resident: ResidentData, startStep = 0): Scene {
+    const scene = this.deps.makeBattle(resident, startStep);
     this.stage = { kind: "battle", scene, resident };
     return scene;
   }
@@ -215,6 +225,44 @@ export class GameFlow {
     const scene = new EndingScene(world, input, audio, { clear: () => store.clear() }, this.director.playSeconds);
     this.stage = { kind: "ending", scene };
     return scene;
+  }
+
+  /**
+   * Nhảy cóc: dựng thẳng cảnh đích, coi mọi cư dân đứng trước đích là đã giải thoát. Không mờ (đang chơi thử).
+   * Không bao giờ ghi bản lưu: `DEBUG.session` đã bật từ `queueJump`.
+   */
+  private jump(target: JumpTarget): void {
+    DEBUG.session = true;
+    const order = this.deps.residents.map((r) => r.id);
+    this.drawing = null;
+    this.strokes = [];
+    this.seenIntro = target.kind !== "intro";
+    switch (target.kind) {
+      case "title":
+        this.director.cut(this.backToTitle());
+        return;
+      case "intro":
+        this.freedIds = [];
+        this.director.cut(this.newIntro());
+        return;
+      case "ending":
+        this.freedIds = [...order];
+        this.director.cut(this.newEnding());
+        return;
+      case "town": {
+        this.freedIds = target.before ? residentsBefore(target.before, order) : [];
+        this.director.cut(this.newTown(townSpawnFor(this.freedIds), 0));
+        return;
+      }
+      case "battle": {
+        const resident = this.deps.residents.find((r) => r.id === target.id);
+        if (!resident) return;
+        this.freedIds = residentsBefore(target.id, order);
+        const step = (target.round - 1) * 2 + (target.phase === "disassemble" ? 1 : 0);
+        this.director.cut(this.newBattle(resident, step));
+        return;
+      }
+    }
   }
 
   /** Một cư dân được giải thoát: ghi nhận, lưu, rồi về thị trấn (hoặc sang màn kết nếu là boss). */

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { DEBUG } from "../core/debug";
 import { PageState } from "../battle/page";
 import { TICK_RATE } from "../core/config";
 import { decodeDrawing, newSave, SAVE_KEY, SaveStore, serializeSave, type SaveData, type StorageLike } from "../core/save";
@@ -55,16 +56,18 @@ function setup(initial?: SaveData | string) {
   const storage = memoryStorage();
   if (typeof initial === "string") storage.setItem(SAVE_KEY, initial);
   else if (initial) storage.setItem(SAVE_KEY, serializeSave(initial));
-  const store = new SaveStore(storage);
+  const store = new SaveStore(storage, () => DEBUG.session);
   const battles: ResidentId[] = [];
+  const startSteps: number[] = [];
   const flow = new GameFlow({
     input,
     audio,
     measure,
     store,
     residents: RESIDENTS,
-    makeBattle: (resident) => {
+    makeBattle: (resident, startStep = 0) => {
       battles.push(resident.id);
+      startSteps.push(startStep);
       return new FakeBattle(resident, resident.id === "r4" ? drawnPage() : null);
     },
   });
@@ -76,7 +79,7 @@ function setup(initial?: SaveData | string) {
     audio.t += 1 / TICK_RATE;
     tickCount++;
   };
-  return { input, audio, storage, store, flow, battles, step, ticks: () => tickCount };
+  return { input, audio, storage, store, flow, battles, startSteps, step, ticks: () => tickCount };
 }
 
 type Rig = ReturnType<typeof setup>;
@@ -275,5 +278,79 @@ describe("GameFlow: Tiếp tục", () => {
   it("bản lưu có nhưng chưa xem cảnh mở thì vẫn chiếu cảnh mở", () => {
     const rig = setup({ ...newSave(), seenIntro: false });
     drive(rig, () => rig.flow.stageKind === "intro");
+  });
+});
+
+describe("GameFlow: nhảy cóc", () => {
+  afterEach(() => {
+    DEBUG.on = false;
+    DEBUG.session = false;
+  });
+
+  it("nhảy vào r3: r1 và r2 coi như đã giải thoát, vào thẳng trận r3 lượt 1", () => {
+    const rig = setup();
+    rig.flow.queueJump({ kind: "battle", id: "r3", round: 1, phase: "dodge" });
+    drive(rig, () => rig.flow.stageKind === "battle");
+    expect(rig.battles).toEqual(["r3"]);
+    expect(rig.startSteps).toEqual([0]);
+    expect(rig.flow.freed).toEqual(["r1", "r2"]);
+    expect(DEBUG.session).toBe(true);
+  });
+
+  it("r4.2d: vào giữa trận ở bước tháo của lượt 2 (bước 3)", () => {
+    const rig = setup();
+    rig.flow.queueJump({ kind: "battle", id: "r4", round: 2, phase: "disassemble" });
+    drive(rig, () => rig.flow.stageKind === "battle");
+    expect(rig.startSteps).toEqual([3]);
+  });
+
+  it("phiên nhảy cóc không bao giờ ghi bản lưu, kể cả khi trận xong và cả khi đã có bản lưu thật", () => {
+    const real: SaveData = { ...newSave(), seenIntro: true, freed: ["r1"], playSeconds: 50 };
+    const rig = setup(real);
+    const before = rig.storage.data.get(SAVE_KEY);
+    rig.flow.queueJump({ kind: "battle", id: "r2", round: 1, phase: "dodge" });
+    drive(rig, () => rig.flow.stageKind === "town");
+    expect(rig.battles).toEqual(["r2"]);
+    expect(rig.flow.freed).toEqual(["r1", "r2"]);
+    expect(rig.storage.data.get(SAVE_KEY)).toBe(before);
+
+    const empty = setup();
+    empty.flow.queueJump({ kind: "battle", id: "r3", round: 1, phase: "dodge" });
+    drive(empty, () => empty.flow.stageKind === "town");
+    expect(empty.storage.data.size).toBe(0);
+  });
+
+  it("town.r3: ở thị trấn, r1 và r2 đã được giải thoát, đứng ngay đông r2", () => {
+    const rig = setup();
+    rig.flow.queueJump({ kind: "town", before: "r3" });
+    drive(rig, () => rig.flow.stageKind === "town");
+    const scene = rig.flow.scene as TownScene;
+    const tile = townSpawnFor(["r1", "r2"]) as Tile;
+    expect(Math.floor(scene.position.x / T)).toBe(tile.x);
+    expect(rig.flow.freed).toEqual(["r1", "r2"]);
+  });
+
+  it("town (không `before`) đứng ở tiệm, không ai giải thoát; ending và intro vào đúng cảnh", () => {
+    const rig = setup();
+    rig.flow.queueJump({ kind: "town", before: null });
+    drive(rig, () => rig.flow.stageKind === "town");
+    expect(rig.flow.freed).toEqual([]);
+    rig.flow.queueJump({ kind: "ending" });
+    drive(rig, () => rig.flow.stageKind === "ending");
+    expect(rig.flow.freed).toEqual(["r1", "r2", "r3", "r4", "boss"]);
+    rig.flow.queueJump({ kind: "intro" });
+    drive(rig, () => rig.flow.stageKind === "intro");
+    expect(rig.storage.data.size).toBe(0);
+  });
+
+  it("phím số chỉ nhảy khi lớp debug bật", () => {
+    const rig = setup();
+    expect(rig.flow.handleKey("Digit3")).toBe(false);
+    expect(DEBUG.session).toBe(false);
+    DEBUG.on = true;
+    expect(rig.flow.handleKey("Digit3")).toBe(true);
+    expect(DEBUG.session).toBe(true);
+    drive(rig, () => rig.flow.stageKind === "battle");
+    expect(rig.battles).toEqual(["r3"]);
   });
 });
