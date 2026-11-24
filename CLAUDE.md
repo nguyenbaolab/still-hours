@@ -18,15 +18,15 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     (thời gian đi hết khung, thời gian đạn bay qua khung, độ khó né sát) giữ nguyên.
   - Bước (3a): lời tiêu cực của cư dân 3 trong pha né đạn. Hệ số nhịp là lớp chung (`TempoMap.setPace`); đạn
     `word` không trừ máu. `main.ts` chọn pattern chơi thử qua hằng `PLAYTEST_PATTERN`.
-  - Bước (3b) vòng 1–3: nét chì, đạn xao nhãng, rồi trống giấy (commit `b506d7c`). Cơ chế đèn dẫn (vòng 2, commit
-    `a0c7eeb`) đã bỏ, thay bằng trống giấy. **Trống giấy cũng sẽ bị thay** (xem dưới).
+  - Bước (3b): "Nhặt bút" cho cư dân 4 (mốc 3b.1–3b.3 của AUTOPILOT): trống giấy và tẩy đã xóa; bút, trang vẽ, đồng hồ
+    của cô bé, `finish` (`length`, `page`), `DodgePhase.outcome`, ba lượt `R4_ROUNDS`. Hết máu thì `outcome` là `lost`
+    (màn thua có ở mốc 4.1). `main.ts` chơi thử `R4_ROUNDS` khi `PLAYTEST_PHASE` là `"dodge"`.
   - Bước (3c): pha tháo lắp dùng chung, cỗ máy thử `CLOCKWORK` (commit `1a057f3`). Chưa chơi thử.
     `PLAYTEST_PHASE` trong `main.ts` đang là `"disassemble"` (đổi thành `"dodge"` để về pha né). Hai pha chưa gọi nhau.
 - **Phiên thiết kế 2026-11-24 (chỉ tài liệu, không code):** thiết kế lại cư dân 4 thành **"Nhặt bút"** (mục cư dân 4),
   chốt mọi quyết định còn mở (cấu trúc trận, thua, màn bắt đầu/mở đầu/kết, thị trấn, hội thoại, cư dân 1–3 và boss,
   lưu tiến trình, font VT323, phím nhảy cóc), và tạo `AUTOPILOT.md` với kế hoạch từng mốc.
-- **Bước tiếp theo:** mốc 3b.1 trong `AUTOPILOT.md` (xóa trống giấy, chuẩn bị "Nhặt bút"). Code hiện tại vẫn là trống
-  giấy; hết máu vẫn chỉ reset (chưa có màn thua).
+- **Bước tiếp theo:** mốc 3c.1 trong `AUTOPILOT.md` (tầng của pha tháo lắp), rồi bước 4.
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill
@@ -692,28 +692,29 @@ Hiện đã có:
 - `battle/`: `dodge-phase.ts` (pha né đạn: khung, thanh máu, lớp debug, ghép mọi thứ), `player.ts` (bánh răng),
   `pattern-runner.ts` (chạy pattern theo beat, kiểm tra tính công bằng), `spawners.ts` (một handler cho mỗi loại
   đạn), `bullets.ts` (đạn, cảnh báo, va chạm, vẽ), `pool.ts` (pool đối tượng), `pace.ts` (khi nào hạ / hồi hệ số nhịp),
-  `sketch.ts` (danh sách đoạn nét chì, tẩy ngược, tua lại), `paper.ts` (giấy theo beat, bút, kiểm tranh, sinh kim),
-  `tail.ts` (đuôi nét lúc chơi), `mechanism.ts` (thứ tự tháo, nhịp, con trỏ), `disassemble-phase.ts` (pha tháo lắp).
+  `sketch.ts` (danh sách đoạn nét chì, tua lại), `page.ts` (trang vẽ: nhặt bút, bút rơi, beat vẽ), `ink-layer.ts` (canvas
+  phụ cho nét lúc chơi), `mechanism.ts` (thứ tự tháo, nhịp, con trỏ), `disassemble-phase.ts` (pha tháo lắp).
 - `scenes/`: `scene.ts` (giao diện `Scene`), `press-start.ts` (màn "Nhấn phím bất kỳ để bắt đầu").
 - `data/`: `feel.ts` (**cảm giác của người chơi**), `rhythm-feel.ts` (**cảm giác của nhịp, đạn, âm thanh**),
   `battle-layout.ts` (kích thước khung, thanh máu), `keybindings.ts` (phím → hành động), `sprites.ts` (sprite
   placeholder), `pattern-types.ts` (**định dạng pattern đạn**), `words.ts` (câu tạm của đạn chữ),
-  `sketch-feel.ts` (**độ dày nét, tẩy, đuôi, giấy, khe kim, sáp màu, đung đưa**),
-  `paper.ts` (kiểu tranh giấy), `figures/child-drawing.ts` (tranh trẻ con thử),
+  `sketch-feel.ts` (**độ dày nét, sáp màu, đung đưa, bút và trang vẽ `DRAW_FEEL`**), `flow-feel.ts` (**chuyển cảnh, dọn đạn,
+  màn thua**),
   `patterns/test-pattern.ts` (pattern thử đạn), `patterns/resident-3.ts` (pattern thử lời tiêu cực, ~36 giây),
-  `patterns/resident-4.ts` (trống giấy, ~34 giây, `gallery` + `paper`),
+  `patterns/resident-4.ts` (`R4_ROUNDS`: ba lượt "Nhặt bút", vòng 32 beat, `finish: page`),
   `disassembly-feel.ts` (cửa sổ nhịp, số nấc, số beat giữ, chữ ký ức),
   `mechanisms/clockwork.ts` (bộ máy đồng hồ thử).
 - `testing/`: `sim.ts` (đồng hồ âm thanh giả, `simulate` với jitter và lần treo, tích phân Simpson độc lập), `fixtures.ts`
-  (pattern fixture + hàm tính giờ độc lập). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
+  (pattern fixture + hàm tính giờ độc lập), `bots.ts` (bot thử: đi tới bút, đi vòng chữ nhật, đứng yên). Test: `core/tempo-map.test.ts`, `audio/tick-scheduler.test.ts`,
   `battle/rhythm-sync.test.ts`, `battle/pattern-runner.test.ts`, `battle/pace.test.ts`, `battle/words.test.ts`,
-  `battle/sketch.test.ts` (tẩy ngược, cắt đoạn, khoảng lấy mẫu, thứ tự tua lại),
-  `battle/paper.test.ts` (giấy theo beat, bút, khóa ngang, kim, kiểm tranh),
+  `battle/sketch.test.ts` (khoảng lấy mẫu, nhấc bút, thứ tự tua lại),
+  `battle/page.test.ts` (nhặt bút, bút rơi, kim đồng hồ, trang luôn khép được, `finish: length`),
+  `data/patterns/resident-4.test.ts` (ba lượt: hợp lệ, độ dài, chỗ đặt bút, bot vẽ xong),
   `battle/mechanism.test.ts` (thứ tự tháo, cửa sổ nhịp, nhấc, con trỏ, kiểm máy),
   `battle/distraction.test.ts` (không trừ máu, cảnh báo),
   `core/renderer.test.ts` (hệ số phóng).
 - Chưa có code: lưu tiến trình trong `core/`, hội thoại, thị trấn, ghép pha né với pha tháo lắp.
-- File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/page.ts`, `battle/stillness.ts`, `scenes/director.ts`,
+- File sẽ thêm theo kế hoạch (AUTOPILOT.md): `battle/stillness.ts`, `scenes/director.ts`,
   `scenes/title.ts`, `scenes/intro.ts`, `scenes/town.ts`, `scenes/battle-scene.ts`, `scenes/dialogue-box.ts`,
   `scenes/ending.ts`, `core/save.ts`, `core/debug-jump.ts`, `data/flow-feel.ts` (`FLOW_FEEL`, `DIALOGUE_FEEL`,
   `TOWN_FEEL`, `STILL_FEEL`, `SAVE_FEEL`), `data/dialogues.ts`, `data/town.ts`, `data/backdrops.ts`,
@@ -830,23 +831,24 @@ chưa phát, rồi hẹn lại theo tempo mới (đã kiểm: đổi 120 → 60 
 Một pattern là danh sách sự kiện theo beat. **Thêm pattern mới = thêm file dữ liệu trong `data/patterns/`**
 (xuất một `Pattern`), rồi truyền vào `new DodgePhase(input, audio, bodySize, pattern)`; không sửa code engine.
 `DodgePhase` mặc định dùng `TEST_PATTERN`. `main.ts` đang truyền `PLAYTEST_PATTERN` (đổi một dòng để chơi pattern kia).
-Pattern của cô bé đặt `gallery: true` và `paper` (các nét theo vòng). Lúc tạo trận, engine sinh thêm sự kiện `hands`
-từ tranh. Hết mỗi vòng pattern, khung và đạn mờ đi, nét người chơi đã vẽ được tua lại trong `PAPER_FEEL.replaySeconds`
-(cả vết tẩy, nét dày như sáp), rồi giữ tranh `SKETCH_FEEL.revealSeconds`. Không hiện hình mẫu. Nhịp chạy tiếp từ đúng
-mốc vừa khép. Pattern không có `gallery` thì vòng chạy liền và đồng hồ không bị giữ. Pattern không có `paper` thì bút
-không chạm giấy và bánh răng đi bốn hướng.
+Pattern của cô bé (`resident-4.ts`, `R4_ROUNDS`) là kiểu `finish: page` có `pencil`: bút nằm yên, bánh răng cầm bút
+thì mọi bước đi để lại nét. Trang xong thì khung và đạn mờ đi, nét của lượt này được tua lại bằng sáp trong
+`SKETCH_FEEL.replaySeconds`, rồi giữ tranh `SKETCH_FEEL.revealSeconds`; sau đó `outcome` là `won`. Pha `length` xong thì
+`outcome` là `won` ngay, đạn còn lại mờ đi trong `FLOW_FEEL.clearSeconds`. Hết máu thì `outcome` là `lost` và pha đóng băng.
+Pattern không khai `finish`: `loop: false` coi như `length`, `loop: true` chạy mãi (pattern thử, test đồng bộ nhịp).
 
-**Trường pattern đã chốt, chưa làm** (thay `gallery`, `paper`, `hands` ở mốc 3b.1–3b.2; các trường khác ở mốc ghi kèm):
+**Trường pattern** (`finish` kiểu `length` và `page`, `pencil`, `idleLines` đã làm; các trường khác ở mốc ghi kèm):
 
 | Trường | Kiểu | Việc | Mốc |
 | ------ | ---- | ---- | --- |
-| `finish` | `{ kind: "length" }` \| `{ kind: "page"; drawBeats: number }` \| `{ kind: "exit"; side: Side; at: number; openBeat: number; widths: readonly number[]; openBeats: readonly number[] }` | Pha né kết thúc thế nào (mục "Cấu trúc một trận"). Mặc định `length`. `length` cần `loop: false`; `page` và `exit` cần `loop: true` | 3b.2 (`length`, `page`), 6.4 (`exit`) |
-| `pencil` | `{ x: number; y: number }` | Chỗ bút nằm đầu lượt (cư dân 4). Bắt buộc khi `finish.kind` là `page`, cấm khi khác | 3b.2 |
+| `finish` | `{ kind: "length" }` \| `{ kind: "page"; drawBeats: number }` \| `{ kind: "exit"; side: Side; at: number; openBeat: number; widths: readonly number[]; openBeats: readonly number[] }` | Pha né kết thúc thế nào (mục "Cấu trúc một trận"). Bỏ trống: `loop: false` là `length`, `loop: true` chạy mãi. `length` cần `loop: false`; `page` và `exit` cần `loop: true` | xong (`length`, `page`); 6.4 (`exit`) |
+| `pencil` | `{ x: number; y: number }` | Chỗ bút nằm đầu lượt (cư dân 4). Bắt buộc khi `finish.kind` là `page`, cấm khi khác | xong |
+| `idleLines` | `readonly string[]` | Câu tự nhủ khi một vòng trọn vẹn trôi qua mà chưa cầm bút (chỉ pattern có `pencil`) | xong |
 | `still` | `{ backdrop: string }` | Đứng yên thì chậm nhịp và hiện cảnh nền (cư dân 2, boss lượt 2). Cấm đi cùng đạn `word` | 6.2 |
 | `lagClock` | `boolean` | Mặt đồng hồ trễ (cư dân 3, boss lượt 3) | 6.3 |
 
-`validatePattern` kiểm các ràng buộc trong bảng. Đạn `distraction` đổi luật ở mốc 3b.2: không tẩy nét; chỉ có tác
-dụng (làm rơi bút) khi pattern có `pencil` và bánh răng đang cầm bút.
+`validatePattern` kiểm các ràng buộc trong bảng. Đạn `distraction`: không tẩy nét; chỉ có tác dụng (làm rơi bút) khi
+pattern có `pencil` và bánh răng đang cầm bút.
 
 ```ts
 export const MY_PATTERN: Pattern = {
@@ -872,8 +874,7 @@ export const MY_PATTERN: Pattern = {
 | `sweep`    | kim đồng hồ quay quanh tâm (quay theo BEAT)            | `x`, `y`, `length`, `startAngleDeg`, `degreesPerBeat`, `durationBeats`, `hands` |
 | `tempo`    | đổi BPM kịch bản                                       | `bpm`, `overBeats` (0 = ngay)                                    |
 | `word`     | một câu ngắn bay từ mép khung; trúng không trừ máu     | `from`, `at`, `phrase` (chỉ số trong `data/words.ts`), `speed`   |
-| `distraction` | thứ xao nhãng; trúng không trừ máu, tẩy nét. `hang` thì treo và đung đưa | `from`, `at`, `speed`, `radius`, `sprite`, `hang` |
-| `hands`    | cặp kim kẹp khe, trôi cùng giấy, trừ máu. Sinh từ tranh | `x`, `at` (độ cao khe), `pass`                                  |
+| `distraction` | thứ xao nhãng; không trừ máu; cầm bút mà chạm thì bút rơi. `hang` thì treo và đung đưa | `from`, `at`, `speed`, `radius`, `sprite`, `hang` |
 
 Quy ước: `beat` là lúc đạn XUẤT HIỆN (có thể lẻ, ví dụ 40.5); vị trí trong khung là **tỉ lệ 0..1** (đổi kích thước khung
 không hỏng pattern); góc tính bằng độ (0° = sang phải, 90° = xuống); `speed`, `radius`, `damage` tùy chọn, mặc định ở
@@ -882,7 +883,7 @@ trong `battle/spawners.ts` (TypeScript buộc phải có handler cho mọi `type
 
 ### Công bằng: cảnh báo trước
 
-- Đạn **lớn** (`radius ≥ bigRadius`), **vòng tròn/quạt** (`burst`), **kim** (`sweep`), **cặp kim khe** (`hands`),
+- Đạn **lớn** (`radius ≥ bigRadius`), **vòng tròn/quạt** (`burst`), **kim** (`sweep`),
   **chữ** (`word`) và **đạn
   xao nhãng** (`distraction` khi `radius ≥ bigRadius` hoặc `DISTRACTION_FEEL.pull` > 0) BẮT BUỘC
   có cảnh báo nhấp nháy trước khi xuất hiện: mặc định `telegraphBeats` = 1 beat nhưng không ngắn hơn
@@ -929,31 +930,33 @@ Sau này dùng file thật: viết một `TickSink` khác (cùng giao diện) ph
 | Chữ to/nhỏ, bay nhanh/chậm, hitbox chữ         | `WORD_FEEL.fontSize` (16), `speed`, `hitboxScale` |
 | Câu tan / câu nổ lâu hay mau                   | `WORD_FEEL.fadeSeconds`, `absorbSeconds`      |
 
-Nét chì và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640×360). Bảng này tả code hiện tại (trống giấy);
-mốc 3b.1 xóa các dòng tẩy, đuôi, giấy, kim và thay bằng bảng `DRAW_FEEL` ở mục cư dân 4:
+Nét chì, bút và đạn xao nhãng nằm ở `data/sketch-feel.ts` (pixel logic 640×360); thời gian chuyển cảnh và dọn đạn ở
+`data/flow-feel.ts`:
 
 | Muốn…                                          | Chỉnh                                        |
 | ---------------------------------------------- | -------------------------------------------- |
+| Nhặt bút dễ/khó                                | `DRAW_FEEL.pickupRadius` (14)                 |
+| Chờ bao lâu mới nhặt lại được                  | `DRAW_FEEL.pickupDelaySeconds` (0,3)          |
+| Bút văng xa bao nhiêu khi rơi / cách mép       | `DRAW_FEEL.dropDistance` (56), `dropMargin` (20) |
+| Bút lóe sáng thưa/dày                          | `DRAW_FEEL.glintEveryBeats` (4)               |
+| Nét lúc chơi đậm/nhạt                          | `DRAW_FEEL.liveInkAlpha` (0,45)               |
+| Trần số đoạn nét                               | `DRAW_FEEL.maxSegments` (6000)                |
+| Bao nhiêu beat vẽ thì xong trang               | `finish.drawBeats` trong từng lượt của `resident-4.ts` |
+| Sau bao nhiêu vòng thì trang tự khép dù chưa đủ | `DRAW_FEEL.maxLoops` (3)                      |
+| Đi bao xa mỗi tick thì tính là đang vẽ         | `DRAW_FEEL.minMovePerTick` (0,5)              |
+| Mặt đồng hồ của cô bé to/nhỏ                   | `DRAW_FEEL.clockRadius` (14)                  |
+| Câu tự nhủ hiện bao lâu / tối đa mấy câu       | `DRAW_FEEL.idleLineSeconds` (3), `idleLineMax` (3) |
 | Nét mảnh/đậm khi đi thường hoặc khi giữ Shift  | `SKETCH_FEEL.width`, `slowWidth`              |
 | Nét gãy / mịn (khoảng lấy mẫu)                 | `sampleDistance`, `slowSampleDistance`        |
-| Mỗi lần chạm tẩy mất bao nhiêu đường đi        | `eraseLength`                                 |
-| Cục gôm chạy ngược nhanh/chậm                  | `eraserSpeed`                                 |
-| Vết tẩy còn thấy hay biến mất lúc lộ tranh (0 = mất hẳn) | `erasedAlpha`                          |
-| Tua lại nét đã vẽ bao lâu                      | `PAPER_FEEL.replaySeconds`                    |
-| Giữ tranh bao lâu sau khi tua xong             | `SKETCH_FEEL.revealSeconds`                   |
-| Đuôi nét lúc chơi dài bao lâu                  | `PAPER_FEEL.tailSeconds`                      |
-| Bút cách nét bao nhiêu thì còn chạm giấy       | `PAPER_FEEL.penRadius`                        |
-| Một vòng giấy dài bao nhiêu beat               | `PAPER_FEEL.beatsPerPass`                     |
-| Được lệch ngang khỏi cột giữa bao nhiêu (0 = khóa) | `PAPER_FEEL.horizontalRange`              |
-| Khe kim cao bao nhiêu / kim dày bao nhiêu      | `PAPER_FEEL.gap`, `handThickness`             |
-| Kim giật mỗi beat mạnh bao nhiêu               | `PAPER_FEEL.twitch`                           |
-| Kim dày đặc trên nét đến mức nào               | `PAPER_FEEL.handSpacing`                      |
-| Nét lộ tranh dày bao nhiêu, màu sáp nào        | `PAPER_FEEL.crayonWidth`, `crayonColor`       |
-| Chấm khép hai đầu khe to bao nhiêu             | `PAPER_FEEL.tipRadius`                        |
-| Nhện đung đưa rộng / nhanh / sợi dài bao nhiêu | `PAPER_FEEL.swingAmplitude`, `swingPerBeat`, `threadLength` |
-| Nhện treo bao nhiêu beat rồi biến              | `PAPER_FEEL.hangBeats`                        |
+| Tua lại nét đã vẽ bao lâu                      | `SKETCH_FEEL.replaySeconds` (2,8)             |
+| Giữ tranh bao lâu sau khi tua xong             | `SKETCH_FEEL.revealSeconds` (3,5)             |
+| Nét lộ tranh dày bao nhiêu, màu sáp nào        | `SKETCH_FEEL.crayonWidth` (9), `crayonColor`  |
 | Lực hút đạn xao nhãng (0 = tắt)                | `DISTRACTION_FEEL.pull`                       |
 | Đạn xao nhãng bay nhanh/chậm, to/nhỏ           | `DISTRACTION_FEEL.speed`, `radius`            |
+| Đạn treo: đung đưa rộng / nhanh / sợi dài / sống bao lâu | `DISTRACTION_FEEL.swingAmplitude`, `swingPerBeat`, `threadLength`, `hangBeats` |
+| Mờ đen giữa các cảnh                           | `FLOW_FEEL.fadeSeconds` (0,4)                 |
+| Đạn còn lại mờ đi khi pha `length` xong        | `FLOW_FEEL.clearSeconds` (0,6)                |
+| Bánh răng nứt nằm yên bao lâu khi thua         | `FLOW_FEEL.loseHoldSeconds` (1,2)             |
 
 Pha tháo lắp nằm ở `data/disassembly-feel.ts`:
 
@@ -992,7 +995,7 @@ Pha tháo lắp nằm ở `data/disassembly-feel.ts`:
 2. Đạn theo beat + tiếng tích tắc procedural.
 2b. Nâng độ phân giải logic từ 320×180 lên 640×360, giữ nguyên cảm giác chơi.
 3a. Lời tiêu cực của cư dân 3 trong pha né đạn (làm chậm nhịp).
-3b. Nét vẽ của cô bé trong pha né đạn. Vòng 1–3 đã làm; vòng mới "Nhặt bút" (mục cư dân 4) thay trống giấy.
+3b. Nét vẽ của cô bé trong pha né đạn: "Nhặt bút" (mục cư dân 4). Đã làm; trống giấy (vòng 1–3) đã bị thay.
 3c. Bản thô pha tháo lắp, dùng chung cho mọi cư dân. Thiết kế ở mục "Pha tháo lắp". Còn phần "Tầng".
 4. Vertical slice một cư dân hoàn chỉnh (cư dân 4: 3 lượt, thua, hội thoại, cảnh kết).
 5. Máy trạng thái cảnh + màn bắt đầu, mở đầu, kết + thị trấn + lưu tiến trình + nhảy cóc; khung trận tạm cho mọi cư dân.

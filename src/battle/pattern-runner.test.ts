@@ -3,7 +3,7 @@ import { TempoMap } from "../core/tempo-map";
 import { BATTLE_LAYOUT } from "../data/battle-layout";
 import type { Pattern, StraightEvent } from "../data/pattern-types";
 import { RESIDENT3_PATTERN } from "../data/patterns/resident-3";
-import { RESIDENT4_PATTERN } from "../data/patterns/resident-4";
+import { R4_ROUNDS } from "../data/patterns/resident-4";
 import { TEST_PATTERN } from "../data/patterns/test-pattern";
 import { BULLET_FEEL, RHYTHM_FEEL } from "../data/rhythm-feel";
 import { SYNC_FIXTURE } from "../testing/fixtures";
@@ -17,7 +17,7 @@ describe("validatePattern: dữ liệu thật và quy tắc công bằng", () =>
   it("pattern thử trong src/data/patterns hợp lệ (bắt lỗi khi bạn sửa pattern)", () => {
     expect(validatePattern(TEST_PATTERN, BULLET_FEEL)).toEqual([]);
     expect(validatePattern(RESIDENT3_PATTERN, BULLET_FEEL)).toEqual([]);
-    expect(validatePattern(RESIDENT4_PATTERN, BULLET_FEEL)).toEqual([]);
+    for (const round of R4_ROUNDS) expect(validatePattern(round, BULLET_FEEL)).toEqual([]);
   });
 
   it("fixture của test hợp lệ", () => {
