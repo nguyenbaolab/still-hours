@@ -5,6 +5,8 @@ import { parseJump } from "./core/debug-jump";
 import { FONT_FAMILY } from "./core/config";
 import { Input } from "./core/input";
 import { attachKeyboard } from "./core/keyboard";
+import { mountTouchControls } from "./core/touch-controls";
+import { wantsTouchControls } from "./core/touch-input";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
 import { greyscaleSprite } from "./core/sprites";
@@ -19,9 +21,11 @@ import { BattleScene, createBattleFactory } from "./scenes/battle-scene";
 import { GameFlow } from "./scenes/game-flow";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
-if (!canvas) throw new Error("Không tìm thấy #game trong index.html");
+const stage = document.querySelector<HTMLElement>("#stage");
+const touchRoot = document.querySelector<HTMLElement>("#touch");
+if (!canvas || !stage || !touchRoot) throw new Error("Không tìm thấy #game, #stage hoặc #touch trong index.html");
 
-const renderer = new Renderer(canvas);
+const renderer = new Renderer(canvas, stage);
 for (const [id, data] of Object.entries(SPRITES)) renderer.sprites.definePixels(id, data);
 // Cư dân chưa giải thoát vẽ bằng bản xám của sprite có màu.
 for (const npc of TOWN_NPCS) {
@@ -32,6 +36,26 @@ const measure = (text: string, size: number): number => renderer.measureText(tex
 
 const input = new Input();
 attachKeyboard(input, KEY_BINDINGS);
+mountTouchControls(touchRoot, input);
+
+/** Nút ảo chỉ trên máy cảm ứng. Màn dọc thì hiện dòng nhắc xoay ngang và co canvas theo khung còn lại. */
+function syncLayout(): void {
+  const coarse = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+  document.body.classList.toggle(
+    "show-touch",
+    wantsTouchControls({
+      coarse,
+      maxTouchPoints: navigator.maxTouchPoints || 0,
+      ontouchstart: "ontouchstart" in window,
+    }),
+  );
+  document.body.classList.toggle("portrait", window.innerHeight > window.innerWidth);
+  renderer.fit();
+}
+
+syncLayout();
+window.addEventListener("resize", syncLayout);
+document.addEventListener("gesturestart", (event) => event.preventDefault());
 const audio = new AudioEngine(AUDIO_FEEL, RHYTHM_FEEL.visualDelaySeconds);
 
 // Kho lưu: phiên debug (nhảy cóc, mốc 5.6) không bao giờ đọc ghi. Chế độ riêng tư: chơi không lưu, không báo lỗi.

@@ -92,7 +92,11 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     quả cân, cần/con lắc) và gán vào 5 máy; sửa `r4-pencil` bị lệch một cột. `data/sprites.test.ts`: mọi sprite đều chữ nhật, đủ
     màu, mọi id mà dữ liệu tham chiếu có thật, bản xám dựng được từ bản màu. Ô thị trấn, cảnh nền, cảnh kết đã có hình từ 5.3–6.5.
   - Bước 7.4: `PLAYTEST.md` (cách chạy, phím, nhảy cóc, lỗi đã biết, chỗ không chắc, con số nên chỉnh). Lượt chạy tự động DỪNG ở đây.
-- **Bước tiếp theo:** chủ dự án chơi thử theo `PLAYTEST.md` (lần đầu game chạy trong trình duyệt thật), rồi quyết các mục "Chỗ không
+  - Mốc M: điều khiển cảm ứng. `core/touch-input.ts` (`TouchInput`, nguồn `touch`, mỗi `pointerId` một nút) và
+    `core/touch-controls.ts` (Pointer Events, không giả lập bàn phím). Nút chỉ hiện khi `pointer: coarse` hoặc máy có touch.
+    D-pad trái, Xác nhận / Huỷ phải. Màn dọc: `canvasCssSize` co vừa khít, dòng "Xoay ngang để chơi". Màn bắt đầu không tích
+    trước bước chạm hoặc bấm; dòng chữ là "Chạm hoặc nhấn phím để bắt đầu".
+- **Bước tiếp theo:** chủ dự án chơi thử theo `PLAYTEST.md` (lần đầu game chạy trong trình duyệt thật, kể cả một máy cảm ứng), rồi quyết các mục "Chỗ không
   chắc". Sau đó mới tới việc thay sprite placeholder bằng PNG và thử nghiệm âm thanh bằng tai.
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng

@@ -286,6 +286,10 @@ bộ phận máy mới; ô thị trấn có màu riêng; cảnh nền `Backdrop`
 - Xong khi: mọi id sprite được tham chiếu trong `src/data/` đều có trong `SPRITES` (test mới trong `content.test.ts`).
 - Commit: `feat: placeholder art pass for town, residents and parts`.
 
+**Mốc M. Điều khiển cảm ứng.** Chỉ hiện trên thiết bị cảm ứng (`matchMedia "(pointer: coarse)"` hoặc phát hiện touch); máy tính thì ẩn. D-pad bốn hướng bên trái, hai nút bên phải (Xác nhận = Z/Enter, Huỷ = X, giữ để tua chữ). Pointer Events, mỗi `pointerId` một ngón; `pointerup` / `pointercancel` / mất focus thì nhả, không kẹt phím. Không giả lập bàn phím: ghi vào `Input` bằng nguồn `touch`. Nút bán trong suốt, nằm ngoài canvas khi còn chỗ. Màn dọc: canvas khít khung nhìn (giữ 16:9), dòng "Xoay ngang để chơi". Chặn cuộn, zoom, chọn chữ, menu giữ lâu. AudioContext resume ở lần chạm đầu; màn bắt đầu không tích tắc trước bước chạm hoặc bấm.
+- Xong khi: test nhấn, nhả, nhiều ngón, `pointercancel` xanh; `npm run build` sạch; `npm test` xanh.
+- Commit: `feat: touch controls for coarse pointers`.
+
 **7.4 PLAYTEST.md và dừng.** Viết PLAYTEST.md theo mục "Điểm dừng" (kèm danh sách "Chỗ không chắc" gom từ DECISIONS.md và
 6.6), cập nhật "Trạng thái hiện tại" trong CLAUDE.md, commit, push, DỪNG.
 - Commit: `docs: playtest guide after autopilot run`.

@@ -10,6 +10,25 @@ export function pixelArtScale(deviceWidth: number, deviceHeight: number): number
   return fitScale >= 1 ? Math.floor(fitScale) : fitScale;
 }
 
+/**
+ * Kích thước CSS của canvas để nằm gọn trong khung `boxWidth` × `boxHeight` (pixel CSS), giữ 16:9.
+ * Khung ngang: hệ số nguyên như `pixelArtScale` (pixel art sắc trên máy tính).
+ * Khung dọc: co vừa khít, kể cả hệ số lẻ, vì làm tròn xuống để canvas điện thoại thành một ô nhỏ giữa màn.
+ */
+export function canvasCssSize(
+  boxWidth: number,
+  boxHeight: number,
+  dpr: number,
+): { width: number; height: number; scale: number } {
+  const ratio = dpr > 0 ? dpr : 1;
+  if (!(boxWidth > 0) || !(boxHeight > 0)) return { width: 0, height: 0, scale: 0 };
+  const portrait = boxHeight > boxWidth;
+  const scale = portrait
+    ? Math.min((boxWidth * ratio) / GAME_WIDTH, (boxHeight * ratio) / GAME_HEIGHT)
+    : pixelArtScale(boxWidth * ratio, boxHeight * ratio);
+  return { scale, width: (GAME_WIDTH * scale) / ratio, height: (GAME_HEIGHT * scale) / ratio };
+}
+
 export interface TextOptions {
   color?: string;
   /** Cỡ chữ theo pixel logic (không phải pixel màn hình). */
@@ -29,7 +48,11 @@ export class Renderer {
   pixelScale = 1;
   private readonly ctx: CanvasRenderingContext2D;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    /** Khung để canvas nằm gọn vào. Bỏ trống thì dùng phần tử cha. */
+    private readonly frame: HTMLElement | null = canvas.parentElement,
+  ) {
     canvas.width = GAME_WIDTH;
     canvas.height = GAME_HEIGHT;
 
@@ -41,15 +64,20 @@ export class Renderer {
 
     this.fit();
     window.addEventListener("resize", () => this.fit());
+    if (this.frame && typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => this.fit()).observe(this.frame);
+    }
   }
 
-  /** Tính lại kích thước hiển thị. Dùng pixel thiết bị (devicePixelRatio) để tỉ lệ nguyên thật sự là nguyên. */
-  private fit(): void {
-    const dpr = window.devicePixelRatio || 1;
-    const scale = pixelArtScale(window.innerWidth * dpr, window.innerHeight * dpr);
-    this.pixelScale = scale;
-    this.canvas.style.width = `${(GAME_WIDTH * scale) / dpr}px`;
-    this.canvas.style.height = `${(GAME_HEIGHT * scale) / dpr}px`;
+  /** Tính lại kích thước hiển thị theo khung chứa. Gọi khi xoay máy hoặc thanh điều khiển hiện/ẩn. */
+  fit(): void {
+    const boxW = this.frame ? this.frame.clientWidth : window.innerWidth;
+    const boxH = this.frame ? this.frame.clientHeight : window.innerHeight;
+    const size = canvasCssSize(boxW, boxH, window.devicePixelRatio || 1);
+    if (!(size.width > 0)) return;
+    this.pixelScale = size.scale;
+    this.canvas.style.width = `${size.width}px`;
+    this.canvas.style.height = `${size.height}px`;
   }
 
   clear(color: string): void {

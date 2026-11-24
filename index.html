@@ -2,12 +2,27 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Still Hours</title>
     <link rel="preload" href="/assets/fonts/VT323-Regular.ttf" as="font" type="font/ttf" crossorigin />
   </head>
   <body>
-    <canvas id="game"></canvas>
+    <div id="stage">
+      <canvas id="game"></canvas>
+      <p id="rotate-hint">Xoay ngang để chơi</p>
+    </div>
+    <div id="touch">
+      <div id="dpad" class="pad">
+        <button type="button" data-control="up" aria-label="Lên"></button>
+        <button type="button" data-control="left" aria-label="Trái"></button>
+        <button type="button" data-control="down" aria-label="Xuống"></button>
+        <button type="button" data-control="right" aria-label="Phải"></button>
+      </div>
+      <div id="actions" class="pad">
+        <button type="button" data-control="cancel">Huỷ</button>
+        <button type="button" data-control="confirm">Xác nhận</button>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

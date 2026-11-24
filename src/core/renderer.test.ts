@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pixelArtScale } from "./renderer";
+import { canvasCssSize, pixelArtScale } from "./renderer";
 
 describe("pixelArtScale", () => {
   it.each([
@@ -21,5 +21,20 @@ describe("pixelArtScale", () => {
 
   it("chưa đủ bội số tiếp theo thì giữ bội số thấp hơn", () => {
     expect(pixelArtScale(1919, 1079)).toBe(2);
+  });
+});
+
+describe("canvasCssSize", () => {
+  it("khung ngang giữ hệ số nguyên", () => {
+    expect(canvasCssSize(1920, 1080, 1)).toEqual({ scale: 3, width: 1920, height: 1080 });
+    expect(canvasCssSize(1919, 1079, 1).scale).toBe(2);
+  });
+
+  it("khung dọc co vừa khít chiều hẹp, không làm tròn xuống thành ô nhỏ", () => {
+    // Điện thoại 390×624 css, dpr 3: chiều hẹp là bề ngang. Hệ số nguyên sẽ ra 213 px, còn thiếu một phần ba màn.
+    const size = canvasCssSize(390, 624, 3);
+    expect(size.width).toBeCloseTo(390, 5);
+    expect(size.height).toBeCloseTo(390 * (360 / 640), 5);
+    expect(size.scale).toBeGreaterThan(1);
   });
 });

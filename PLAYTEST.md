@@ -2,14 +2,15 @@
 
 Hướng dẫn chơi thử sau lượt chạy tự động (AUTOPILOT.md). Game đã nối trọn vòng: màn bắt đầu → mở đầu → thị trấn → 5 trận
 (4 cư dân và boss) → màn kết. **Toàn bộ lượt này chưa được chạy trong trình duyệt thật** (luật cấm bật `npm run dev`); mọi thứ
-được kiểm bằng `npm test` (403 test), `npm run build` và bot mô phỏng. Nên chuyện đầu tiên là mở game lên xem có chạy không.
+được kiểm bằng `npm test` (413 test), `npm run build` và bot mô phỏng. Nên chuyện đầu tiên là mở game lên xem có chạy không.
+Trên điện thoại cũng nên mở một lần: đó là lần đầu có nút cảm ứng.
 
 ## Cách chạy
 
 ```
 npm install
 npm run dev          # mở địa chỉ Vite in ra, thường http://localhost:5173
-npm test             # 403 test, ~1 giây
+npm test             # 413 test, ~1 giây
 npm run build        # tsc rồi build ra dist/
 npx wrangler dev     # xem bản dist/ như production (cần npm run build trước)
 ```
@@ -26,6 +27,17 @@ Không deploy. Chủ dự án tự chạy `npm run deploy` khi muốn.
 | X hoặc Esc | Hủy; **giữ X để tua nhanh chữ** trong hội thoại |
 | M | Tắt/bật tiếng |
 | F1 | Lớp debug (hitbox, beat, BPM, số đạn, dòng mẫu dấu tiếng Việt) |
+
+### Cảm ứng
+
+Điện thoại và máy có cảm ứng hiện thêm nút. Máy tính chỉ có chuột thì không hiện.
+
+- Trái: bốn hướng. Giữ để đi; chạm một cái để chọn dòng menu hoặc bộ phận khi tháo.
+- Phải: **Xác nhận** (như Z) và **Huỷ** (như X). Giữ Huỷ để tua chữ. Giữ Xác nhận để nhấc bộ phận trong pha tháo.
+- Bấm được nhiều ngón cùng lúc (vừa đi vừa bấm Xác nhận).
+- Không có nút đi chậm. Trên cảm ứng luôn đi tốc độ thường, nét chì của Linh là nét thường.
+- Màn dọc có dòng "Xoay ngang để chơi". Canvas co vừa chiều ngang; nút nằm bên dưới, không đè khung chơi.
+- Màn bắt đầu: "Chạm hoặc nhấn phím để bắt đầu". Chạm một cái vừa mở khóa tiếng vừa vào game. Tiếng tích của màn này chưa chạy trước cú chạm đó.
 
 ### Nhảy thẳng tới từng cư dân
 

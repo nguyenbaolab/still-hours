@@ -180,3 +180,13 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Phương án bỏ: vẽ lại các sprite đã có cho "đẹp hơn" (AUTOPILOT: không viết lại phần đã chạy được chỉ để đẹp hơn); thêm tư thế đông cứng riêng cho từng cư dân (bản xám đã đủ nói "đông cứng"); sprite cửa tháp (cửa `D` đã vẽ bằng `decorate`).
 - Test mới tìm ra lỗi thật: `r4-pencil` có hàng cuối ngắn hơn một cột. Đã sửa.
 - `main.ts` chỉ dựng bản xám từ `TOWN_NPCS`; test kiểm bản xám dựng được và mọi màu của nó thật sự xám.
+
+## M
+
+- Nút ảo là một nguồn của `Input` tên `touch` (`setActionState`), không phát `KeyboardEvent`. Bàn phím giữ nguồn `keyboard`, nên thả ngón không nhả phím đang giữ và ngược lại. Scene và test cũ không đổi.
+- Hiện nút khi `(pointer: coarse)` hoặc `maxTouchPoints > 0` hoặc có `ontouchstart`. Máy chỉ có chuột thì ẩn. Máy lai (chuột là con trỏ chính nhưng có cảm ứng) vẫn hiện, vì yêu cầu gồm "phát hiện touch".
+- Bố cục: màn dọc thì thanh nút nằm dưới canvas, ngoài vùng vẽ. Màn ngang thì nút nổi hai mép (`pointer-events` chỉ trên nút, chỗ giữa xuyên xuống canvas). Khi hệ số nguyên không chừa đủ mép đen (điện thoại ngang), nút bán trong suốt đè lên góc canvas. Phương án bỏ: luôn chừa một hàng nút cả khi ngang (canvas bị thấp thêm, khung né nhỏ đi).
+- Canvas: `canvasCssSize`. Khung ngang giữ `pixelArtScale` (bảng 1920×1080 → 3, thiếu một pixel thì giữ bội thấp hơn). Khung dọc co vừa khít chiều hẹp, hệ số lẻ, vì làm tròn xuống trên điện thoại dpr 3 ra canvas rộng khoảng 213 px giữa màn.
+- Pha tháo không cần nút thứ ba. Chọn bộ phận là `wasPressed` lên/xuống/trái/phải (một lần chạm, giống một lần bấm mũi tên), vặn và gỡ là chạm Xác nhận, nhấc là giữ Xác nhận. Huỷ không dùng trong pha tháo; nút Huỷ dành cho menu và giữ để tua hội thoại (`isDown("cancel")`). Không có nút đi chậm (Shift): né và đi trong thị trấn bằng tốc độ thường, nét chì của Linh là nét thường. Phương án bỏ: thêm nút Slow (chật trên điện thoại, và không pha nào bắt buộc phải có).
+- Âm thanh: `AudioEngine` đã `resume` trong `pointerdown` (capture, trước khi nút `preventDefault`), nên lần chạm đầu mở khóa được AudioContext. Màn bắt đầu: dòng "Chạm hoặc nhấn phím để bắt đầu". Tích tắc của màn không chạy khi còn đang chờ bước đó (trước đây, nếu âm thanh đã mở khóa từ màn kết, tích chạy ngay lúc chờ phím). Vào thẳng vì âm thanh chưa sẵn lúc dựng màn (`needsKey` sai) thì bước mở khóa chính là lần chạm, không bắt chạm thêm.
+- Chặn thao tác trình duyệt: `touch-action: none`, `user-select: none`, viewport `maximum-scale=1, user-scalable=no, viewport-fit=cover`, `preventDefault` trên pointerdown/touchstart/contextmenu của vùng nút, và `gesturestart` trên trang. Nút cách tai thỏ bằng `safe-area-inset`.

@@ -108,9 +108,16 @@ describe("tích mỗi giây ở màn bắt đầu", () => {
     return { scene, input, audio };
   }
 
-  it("mỗi giây một tiếng, trong lúc chờ phím và cả khi đang ở menu", () => {
+  it("chưa chạm thì im; sau bước mở màn thì mỗi giây một tiếng", () => {
     const { scene, input, audio } = title();
+    run(audio, input, 2 * TICK_RATE, () => scene.update());
+    expect(audio.plays).toHaveLength(0);
+
+    input.setActionState("test", "up", true);
+    run(audio, input, 1, () => scene.update());
+    input.setActionState("test", "up", false);
     run(audio, input, 6 * TICK_RATE, () => scene.update());
+    expect(scene.inMenu).toBe(true);
     expect(audio.plays.length).toBeGreaterThanOrEqual(5);
     for (const gap of gaps(audio.plays)) expect(gap).toBeCloseTo(1, 6);
   });
@@ -118,8 +125,11 @@ describe("tích mỗi giây ở màn bắt đầu", () => {
   it("chọn xong thì dừng hẳn, tiếng đã hẹn bị hủy", () => {
     const { scene, input, audio } = title();
     const tick = (): void => scene.update();
-    run(audio, input, 3 * TICK_RATE, tick);
-    // Chạy tới lúc có một tiếng đã hẹn mà chưa phát, rồi chọn ngay (ba tick, ngắn hơn thời gian hẹn trước).
+    // Bước mở màn (âm thanh đã sẵn nên phải bấm thật) rồi mới có tích tắc.
+    input.setActionState("test", "up", true);
+    run(audio, input, 1, tick);
+    input.setActionState("test", "up", false);
+    // Chạy tới lúc có một tiếng đã hẹn mà chưa phát, rồi chọn ngay.
     for (let guard = 0; guard < TICK_RATE * 3 && !audio.plays.some((p) => p.time > audio.t); guard++) run(audio, input, 1, tick);
     expect(audio.plays.some((p) => p.time > audio.t)).toBe(true);
     // Phím đầu tiên (âm thanh đã sẵn nên bản này chờ một phím thật) rồi confirm ở menu.

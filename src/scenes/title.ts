@@ -24,8 +24,8 @@ type Phase = "press" | "menu" | "confirmReset" | "done";
 const MENU = ["Tiếp tục", "Bắt đầu lại"] as const;
 
 /**
- * Màn bắt đầu: bánh răng, "Still Hours", dòng nhấp nháy "Nhấn phím bất kỳ để bắt đầu". Phím đầu tiên mở khóa âm thanh
- * (trình duyệt chỉ cho phát sau một thao tác), nên màn chờ `audio.ready`. Sau đó: không có bản lưu thì vào thẳng màn
+ * Màn bắt đầu: bánh răng, "Still Hours", dòng nhấp nháy "Chạm hoặc nhấn phím để bắt đầu". Lần chạm hoặc phím đầu mở khóa
+ * âm thanh (trình duyệt chỉ cho phát sau một thao tác), nên màn chờ `audio.ready` và chưa tích tắc trước bước đó. Sau đó: không có bản lưu thì vào thẳng màn
  * mở đầu (`result` = "new"); có bản lưu thì hiện menu "Tiếp tục" / "Bắt đầu lại" (lên/xuống, confirm). "Bắt đầu lại"
  * hỏi thêm một dòng trước khi xóa bản lưu cũ.
  */
@@ -70,21 +70,17 @@ export class TitleScene implements Scene {
 
   update(): void {
     this.tick++;
-    if (this.phase !== "done") {
-      if (!this.ticker && this.audio.ready && this.makeTicker) this.ticker = this.makeTicker();
-      this.ticker?.update();
-    }
     switch (this.phase) {
       case "press": {
-        if (!this.audio.ready) return;
-        if (this.needsKey && !ACTIONS.some((action) => this.input.wasPressed(action))) return;
+        if (!this.audio.ready) break;
+        if (this.needsKey && !ACTIONS.some((action) => this.input.wasPressed(action))) break;
         if (this.save.exists()) {
           this.phase = "menu";
           this.choice = 0;
         } else {
           this.finish("new");
         }
-        return;
+        break;
       }
       case "menu": {
         if (this.input.wasPressed("up")) this.choice = (this.choice + MENU.length - 1) % MENU.length;
@@ -93,7 +89,7 @@ export class TitleScene implements Scene {
           if (this.choice === 0) this.finish("continue");
           else this.phase = "confirmReset";
         }
-        return;
+        break;
       }
       case "confirmReset": {
         if (this.input.wasPressed("confirm")) {
@@ -102,10 +98,15 @@ export class TitleScene implements Scene {
         } else if (this.input.wasPressed("cancel")) {
           this.phase = "menu";
         }
-        return;
+        break;
       }
       case "done":
-        return;
+        break;
+    }
+    // Tích tắc chỉ sau bước chạm/bấm (đã rời màn "nhấn để bắt đầu") và khi âm thanh đã mở khóa.
+    if (this.phase !== "done" && this.phase !== "press") {
+      if (!this.ticker && this.audio.ready && this.makeTicker) this.ticker = this.makeTicker();
+      this.ticker?.update();
     }
   }
 
@@ -131,7 +132,7 @@ export class TitleScene implements Scene {
     if (this.phase === "press" || this.phase === "done") {
       // Nhấp nháy chậm: hiện 40 tick, ẩn 20 tick.
       if (this.tick % 60 < 40) {
-        renderer.text("Nhấn phím bất kỳ để bắt đầu", cx, 208, { size: 24, align: "center", color: "#ffffff" });
+        renderer.text("Chạm hoặc nhấn phím để bắt đầu", cx, 208, { size: 24, align: "center", color: "#ffffff" });
       }
     } else if (this.phase === "menu") {
       MENU.forEach((label, i) => {
@@ -144,7 +145,7 @@ export class TitleScene implements Scene {
       });
     } else {
       renderer.text("Xóa tiến trình cũ?", cx, 196, { size: 24, align: "center", color: "#ffffff" });
-      renderer.text("Z: có · X: không", cx, 226, { size: 20, align: "center", color: "#d8c9a3" });
+      renderer.text("Xác nhận: có · Huỷ: không", cx, 226, { size: 20, align: "center", color: "#d8c9a3" });
     }
 
     renderer.text("Mũi tên / WASD: di chuyển     Shift: đi chậm     Z: xác nhận", cx, 276, {
