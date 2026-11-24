@@ -173,3 +173,10 @@ Quyết định tự chốt trong lượt chạy tự động (AUTOPILOT.md). M�
 - Màn kết: các lớp tích tắc chồng nhau đã có từ 5.4 (nhịp `ENDING_FEEL.tickBpms`); không đổi.
 - `testing/fake-context.ts` cố ý nghiêm như WebAudio thật. Đã phá thử có chủ đích: bỏ `dropPending` ở `BackgroundTicker.stop` thì test vỡ.
 - Chưa nghe bằng tai: độ to gió (0,07), độ đục tích xa, hồi chuông `ring`. Ghi vào PLAYTEST.md.
+
+## 7.3
+
+- Kế hoạch gốc nói "sprite cho người thợ, 5 cư dân (tư thế đông cứng và tư thế kết), bút chì, cửa tháp": phần lớn đã có từ các mốc trước (`keeper-*` bốn hướng, `r1`…`r4`, `boss`, bản xám dựng từ bản màu trong `main.ts`, `r2-up`, `r4-pencil`, `pencil`; ô thị trấn có `decorate`; cảnh nền `BACKDROPS` bảy cảnh; cảnh kết có hình). Mốc này chỉ làm phần còn thiếu thật: năm sprite bộ phận máy riêng thay cho việc dùng chung `cog`/`screw`/`spring` cho mọi thứ.
+- Phương án bỏ: vẽ lại các sprite đã có cho "đẹp hơn" (AUTOPILOT: không viết lại phần đã chạy được chỉ để đẹp hơn); thêm tư thế đông cứng riêng cho từng cư dân (bản xám đã đủ nói "đông cứng"); sprite cửa tháp (cửa `D` đã vẽ bằng `decorate`).
+- Test mới tìm ra lỗi thật: `r4-pencil` có hàng cuối ngắn hơn một cột. Đã sửa.
+- `main.ts` chỉ dựng bản xám từ `TOWN_NPCS`; test kiểm bản xám dựng được và mọi màu của nó thật sự xám.

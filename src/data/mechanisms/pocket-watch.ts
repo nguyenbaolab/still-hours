@@ -10,7 +10,7 @@ function hit(x: number, y: number, w: number, h: number): PartBox {
  *  1. nắp sau, rồi vòng đệm và chốt cài (câu ký ức đầu, ở chốt);
  *  2. mặt số, rồi hai kim (câu thứ hai, ở kim phút);
  *  3. bánh răng, dây cót (câu thứ ba), bánh lắc (core, câu cuối).
- * Sprite còn là placeholder dùng chung; mốc 7.3 vẽ lại.
+ * Sprite: ốc, nắp, bánh răng, lò xo dùng chung; kim, vòng, núm, cân, cần có hình riêng (mốc 7.3).
  */
 export const POCKET_WATCH: Mechanism = {
   name: "đồng hồ quả quýt",
@@ -20,10 +20,10 @@ export const POCKET_WATCH: Mechanism = {
   parts: [
     // Tầng 1
     { id: "back", sprite: "cover", x: 0.5, y: 0.34, hit: hit(0.5, 0.34, 0.3, 0.26), blockedBy: [], operation: "lift", stage: 1 },
-    { id: "gasket", sprite: "cog", x: 0.25, y: 0.76, hit: hit(0.25, 0.76, 0.16, 0.2), blockedBy: ["back"], operation: "unhook", stage: 1 },
+    { id: "gasket", sprite: "ring", x: 0.25, y: 0.76, hit: hit(0.25, 0.76, 0.16, 0.2), blockedBy: ["back"], operation: "unhook", stage: 1 },
     {
       id: "clasp",
-      sprite: "cog",
+      sprite: "ring",
       x: 0.75,
       y: 0.76,
       hit: hit(0.75, 0.76, 0.16, 0.2),
@@ -34,10 +34,10 @@ export const POCKET_WATCH: Mechanism = {
     },
     // Tầng 2
     { id: "face", sprite: "clock-face", x: 0.5, y: 0.34, hit: hit(0.5, 0.34, 0.24, 0.3), blockedBy: [], operation: "lift", stage: 2 },
-    { id: "hand-hour", sprite: "cog", x: 0.25, y: 0.76, hit: hit(0.25, 0.76, 0.16, 0.2), blockedBy: ["face"], operation: "unhook", stage: 2 },
+    { id: "hand-hour", sprite: "hand", x: 0.25, y: 0.76, hit: hit(0.25, 0.76, 0.16, 0.2), blockedBy: ["face"], operation: "unhook", stage: 2 },
     {
       id: "hand-minute",
-      sprite: "cog",
+      sprite: "hand",
       x: 0.75,
       y: 0.76,
       hit: hit(0.75, 0.76, 0.16, 0.2),

@@ -316,6 +316,8 @@ Sau mỗi commit, thêm một dòng: mốc, hash commit, ghi chú ngắn.
 
 - 6.5 — d994a5b — TOWN_AMBIENCE, ambienceFor/birdDelay, TownInit.drawing, 4 cảnh kết VignetteScene, cue ring/hum/bird/chime, sprite r2-up và boss.
 
+- 7.2 — 4865897 — wind.ts, BackgroundTicker, distantSink, Scene.leave, AMBIENCE_FEEL, fake-context, test mọi cue/AudioEngine/nền.
+
 - 7.1 — 336d608 — font VT323 tự host, FONT_FAMILY, chờ font trước khi chạy, CREDITS.md, debug cỡ 16/20/24/32, advanceEm 0,4, cmap 0 thiếu.
 
 - 6.6 — c7e6c24 (sửa ở 1d778bc) — testing/dodger.ts, testing/playthrough.test.ts: bot né 15 lượt đều thắng, bot tháo 5 máy, đối chứng đứng yên.

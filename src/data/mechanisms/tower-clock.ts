@@ -32,8 +32,8 @@ export const TOWER_CLOCK: Mechanism = {
       memory: "Tiệm chưa bao giờ đóng cửa sớm.",
     },
     // Tầng 2
-    { id: "hand-hour", sprite: "cog", x: 0.22, y: 0.26, hit: hit(0.22, 0.26, 0.16, 0.2), blockedBy: [], operation: "unhook", stage: 2 },
-    { id: "hand-minute", sprite: "cog", x: 0.78, y: 0.26, hit: hit(0.78, 0.26, 0.16, 0.2), blockedBy: [], operation: "unhook", stage: 2 },
+    { id: "hand-hour", sprite: "hand", x: 0.22, y: 0.26, hit: hit(0.22, 0.26, 0.16, 0.2), blockedBy: [], operation: "unhook", stage: 2 },
+    { id: "hand-minute", sprite: "hand", x: 0.78, y: 0.26, hit: hit(0.78, 0.26, 0.16, 0.2), blockedBy: [], operation: "unhook", stage: 2 },
     {
       id: "dial",
       sprite: "clock-face",
@@ -46,11 +46,11 @@ export const TOWER_CLOCK: Mechanism = {
       memory: "Lá thư viết xong, chưa gửi.",
     },
     // Tầng 3
-    { id: "weight", sprite: "cover", x: 0.24, y: 0.26, hit: hit(0.24, 0.26, 0.22, 0.2), blockedBy: [], operation: "lift", stage: 3 },
+    { id: "weight", sprite: "weight", x: 0.24, y: 0.26, hit: hit(0.24, 0.26, 0.22, 0.2), blockedBy: [], operation: "lift", stage: 3 },
     { id: "train", sprite: "cog", x: 0.76, y: 0.26, hit: hit(0.76, 0.26, 0.16, 0.18), blockedBy: ["weight"], operation: "unhook", stage: 3 },
     {
       id: "pendulum",
-      sprite: "spring",
+      sprite: "rod",
       x: 0.24,
       y: 0.74,
       hit: hit(0.24, 0.74, 0.16, 0.2),

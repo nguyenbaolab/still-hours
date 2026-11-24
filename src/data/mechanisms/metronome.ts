@@ -9,7 +9,7 @@ function hit(x: number, y: number, w: number, h: number): PartBox {
  *  1. hai ốc, rồi nắp hộp (câu ký ức đầu, ở nắp hộp);
  *  2. quả cân, cần lắc, rồi núm lên dây (câu thứ hai, ở núm);
  *  3. tấm đỡ, bánh răng, lò xo (câu thứ ba), bánh lắc (core, câu cuối).
- * Sprite còn là placeholder dùng chung; mốc 7.3 vẽ lại.
+ * Sprite: ốc, nắp, bánh răng, lò xo dùng chung; kim, vòng, núm, cân, cần có hình riêng (mốc 7.3).
  */
 export const METRONOME: Mechanism = {
   name: "máy đếm nhịp",
@@ -31,11 +31,11 @@ export const METRONOME: Mechanism = {
       memory: "Sân khấu trường, tràng vỗ tay đầu tiên.",
     },
     // Tầng 2
-    { id: "weight", sprite: "cog", x: 0.5, y: 0.2, hit: hit(0.5, 0.2, 0.14, 0.18), blockedBy: [], operation: "lift", stage: 2 },
-    { id: "rod", sprite: "spring", x: 0.22, y: 0.6, hit: hit(0.22, 0.6, 0.16, 0.2), blockedBy: ["weight"], operation: "unhook", stage: 2 },
+    { id: "weight", sprite: "weight", x: 0.5, y: 0.2, hit: hit(0.5, 0.2, 0.14, 0.18), blockedBy: [], operation: "lift", stage: 2 },
+    { id: "rod", sprite: "rod", x: 0.22, y: 0.6, hit: hit(0.22, 0.6, 0.16, 0.2), blockedBy: ["weight"], operation: "unhook", stage: 2 },
     {
       id: "key",
-      sprite: "screw",
+      sprite: "crown",
       x: 0.78,
       y: 0.6,
       hit: hit(0.78, 0.6, 0.14, 0.18),

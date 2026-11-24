@@ -9,7 +9,7 @@ function hit(x: number, y: number, w: number, h: number): PartBox {
  *  1. hai ốc, rồi nắp lưng (câu ký ức đầu, ở nắp lưng);
  *  2. núm vặn, kim giây, rồi mặt số (câu thứ hai, ở mặt số);
  *  3. tấm đỡ, bánh răng, lò xo (câu thứ ba), bánh lắc (core, câu cuối).
- * Sprite còn là placeholder dùng chung; mốc 7.3 vẽ lại.
+ * Sprite: ốc, nắp, bánh răng, lò xo dùng chung; kim, vòng, núm, cân, cần có hình riêng (mốc 7.3).
  */
 export const STOPWATCH: Mechanism = {
   name: "đồng hồ bấm giờ",
@@ -31,8 +31,8 @@ export const STOPWATCH: Mechanism = {
       memory: "Con diều mắc trên dây điện.",
     },
     // Tầng 2
-    { id: "crown", sprite: "screw", x: 0.2, y: 0.25, hit: hit(0.2, 0.25, 0.12, 0.16), blockedBy: [], operation: "unscrew", stage: 2 },
-    { id: "hand", sprite: "cog", x: 0.8, y: 0.25, hit: hit(0.8, 0.25, 0.14, 0.18), blockedBy: ["crown"], operation: "unhook", stage: 2 },
+    { id: "crown", sprite: "crown", x: 0.2, y: 0.25, hit: hit(0.2, 0.25, 0.12, 0.16), blockedBy: [], operation: "unscrew", stage: 2 },
+    { id: "hand", sprite: "hand", x: 0.8, y: 0.25, hit: hit(0.8, 0.25, 0.14, 0.18), blockedBy: ["crown"], operation: "unhook", stage: 2 },
     {
       id: "face",
       sprite: "clock-face",

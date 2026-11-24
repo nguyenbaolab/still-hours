@@ -9,7 +9,7 @@ function hit(x: number, y: number, w: number, h: number): PartBox {
  *  1. ba ốc và nắp sau (câu ký ức đầu);
  *  2. hai kim, rồi mặt số (câu thứ hai);
  *  3. tấm che, bánh răng, lò xo (câu thứ ba), bánh lắc (core, câu cuối).
- * Sprite còn là placeholder dùng chung; mốc 7.3 vẽ lại.
+ * Sprite: ốc, nắp, bánh răng, lò xo dùng chung; kim, vòng, núm, cân, cần có hình riêng (mốc 7.3).
  */
 export const ALARM_CLOCK: Mechanism = {
   name: "đồng hồ báo thức",
@@ -32,8 +32,8 @@ export const ALARM_CLOCK: Mechanism = {
       memory: "Hộp chì màu mười hai cây.",
     },
     // Tầng 2
-    { id: "hand-a", sprite: "cog", x: 0.25, y: 0.3, hit: hit(0.25, 0.3, 0.16, 0.18), blockedBy: [], operation: "unhook", stage: 2 },
-    { id: "hand-b", sprite: "cog", x: 0.75, y: 0.3, hit: hit(0.75, 0.3, 0.16, 0.18), blockedBy: [], operation: "unhook", stage: 2 },
+    { id: "hand-a", sprite: "hand", x: 0.25, y: 0.3, hit: hit(0.25, 0.3, 0.16, 0.18), blockedBy: [], operation: "unhook", stage: 2 },
+    { id: "hand-b", sprite: "hand", x: 0.75, y: 0.3, hit: hit(0.75, 0.3, 0.16, 0.18), blockedBy: [], operation: "unhook", stage: 2 },
     {
       id: "face",
       sprite: "clock-face",

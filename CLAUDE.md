@@ -88,7 +88,10 @@ Game web 2D lấy cảm hứng từ Undertale. Tên folder và tên Cloudflare W
     `TickVoice`), `AMBIENCE_FEEL` (`flow-feel.ts`), `Scene.leave?()` do `Director` gọi khi đổi cảnh. Thị trấn: gió + tích xa 40 BPM;
     màn bắt đầu: tích 60 BPM. `CUE_NAMES`; `testing/fake-context.ts` (AudioContext giả nghiêm như thật); test cho mọi cue, sink, gió,
     `AudioEngine` (mở khóa, tắt tiếng, gió) và cảnh. Chưa nghe bằng tai.
-- **Bước tiếp theo:** mốc 7.3 trong `AUTOPILOT.md` (hình ảnh placeholder).
+  - Bước 7.3: hình ảnh placeholder. Thêm sprite `hand`, `ring`, `crown`, `weight`, `rod` cho bộ phận máy (kim, vòng đệm/móc, núm,
+    quả cân, cần/con lắc) và gán vào 5 máy; sửa `r4-pencil` bị lệch một cột. `data/sprites.test.ts`: mọi sprite đều chữ nhật, đủ
+    màu, mọi id mà dữ liệu tham chiếu có thật, bản xám dựng được từ bản màu. Ô thị trấn, cảnh nền, cảnh kết đã có hình từ 5.3–6.5.
+- **Bước tiếp theo:** mốc 7.4 trong `AUTOPILOT.md` (viết PLAYTEST.md rồi dừng).
 - **Vấn đề còn mở:**
   1. **Dọn tiến trình nền trên Windows.** Dừng một tác vụ nền (`npm run dev`, `npx wrangler dev`) bằng công cụ dừng
      tác vụ chỉ tắt lớp vỏ: `node`, `vite`, `workerd.exe` con vẫn sống và giữ cổng (5173, 5199, 8787); nếu chỉ kill

@@ -74,7 +74,7 @@ export const SPRITES = {
   "r4-pencil": {
     scale: 2,
     palette: { h: "#3a2a1a", s: "#e8c8a0", d: "#c0504d", y: "#f0b429", p: "#f2c1c8" },
-    rows: ["..hhhh..p", ".hhhhhhy.", ".hssssyh.", ".hssssh..", "..dddd...", ".dddddd..", ".dddddd..", "..d..d.."],
+    rows: ["..hhhh..p", ".hhhhhhy.", ".hssssyh.", ".hssssh..", "..dddd...", ".dddddd..", ".dddddd..", "..d..d..."],
   },
   /** Người thợ đồng hồ (người chơi), nhìn xuống. */
   "keeper-down": {
@@ -282,5 +282,35 @@ export const SPRITES = {
     scale: 2,
     palette: { "#": "#f2d23c", o: "#9c6b24" },
     rows: ["...#...", ".#####.", "##o.o##", "...#...", "##o.o##", ".#####.", "...#..."],
+  },
+  /** Kim đồng hồ: một nét chéo có đuôi. */
+  hand: {
+    scale: 2,
+    palette: { "#": "#e8e2d4", o: "#8d887e" },
+    rows: [".......#", "......#o", ".....#o.", "....#o..", "...#o...", "..#o....", ".##o....", "##o....."],
+  },
+  /** Vòng đệm / móc cài: một vòng tròn rỗng. */
+  ring: {
+    scale: 2,
+    palette: { "#": "#c9a85a", o: "#7a6030" },
+    rows: ["..#####..", ".#ooooo#.", "#o.....o#", "#o.....o#", "#o.....o#", "#o.....o#", ".#ooooo#.", "..#####.."],
+  },
+  /** Núm vặn dây cót. */
+  crown: {
+    scale: 2,
+    palette: { "#": "#e0b04a", o: "#9c6b24" },
+    rows: [".#####.", "#######", "#o#o#o#", "#######", "..#o#..", "..#o#..", "..###.."],
+  },
+  /** Quả cân. */
+  weight: {
+    scale: 2,
+    palette: { "#": "#9a9ca6", o: "#55575e" },
+    rows: ["...#...", "..###..", ".#####.", "#######", "#######", "#ooooo#", "#######"],
+  },
+  /** Thanh dài có bi ở đầu (con lắc, cần). */
+  rod: {
+    scale: 2,
+    palette: { "#": "#d7d2c8", o: "#8d887e" },
+    rows: ["..#..", "..#..", "..#..", "..#..", "..#..", "..#..", "..o..", ".###.", "#####", ".###."],
   },
 } as const satisfies Record<string, PixelSpriteData>;
