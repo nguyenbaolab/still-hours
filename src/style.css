@@ -11,7 +11,9 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #000;
+  background: #100e0c;
+  color: #f4efe4;
+  font-family: "VT323", monospace;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -30,19 +32,42 @@ body {
   min-height: 0;
   display: grid;
   place-items: center;
+  background: #100e0c;
+}
+
+/* Vị trí và kích thước do Renderer.fit() ghi theo GUIDE_SLOT. Trong suốt, không chặn chạm. */
+#guide-slot {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  box-sizing: border-box;
+  background: transparent;
+  pointer-events: none;
 }
 
 #rotate-hint {
   display: none;
   position: absolute;
-  top: 8px;
-  left: 0;
-  right: 0;
+  z-index: 2;
+  top: 10px;
+  left: 50%;
+  right: auto;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  transform: translateX(-50%);
   margin: 0;
+  padding: 2px 12px 4px;
   text-align: center;
-  color: #d8c9a3;
+  white-space: nowrap;
+  color: #f0e2c4;
+  background: rgba(16, 14, 12, 0.88);
+  border: 2px solid #c4b48a;
   font-family: "VT323", monospace;
   font-size: 22px;
+  line-height: 1;
   pointer-events: none;
 }
 
@@ -103,16 +128,19 @@ body.show-touch:not(.portrait) #touch {
 }
 
 #touch button {
+  --mark: rgba(244, 239, 228, 0.95);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  background: rgba(216, 201, 163, 0.28);
-  color: #fff8ea;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  border-radius: 12px;
+  background: rgba(22, 18, 14, 0.82);
+  color: #f4efe4;
+  border: 2px solid rgba(224, 196, 138, 0.9);
+  border-radius: 10px;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45);
   font-family: "VT323", monospace;
   font-size: 22px;
+  letter-spacing: 0.02em;
   padding: 0 10px;
   margin: 0;
   outline: none;
@@ -140,32 +168,55 @@ body.show-touch:not(.portrait) #touch {
   transform: translate(-50%, -60%);
   border-left: 9px solid transparent;
   border-right: 9px solid transparent;
-  border-bottom: 14px solid rgba(255, 248, 234, 0.92);
+  border-bottom: 14px solid var(--mark);
 }
 
 #dpad [data-control="down"]::after {
   transform: translate(-50%, -40%);
   border-left: 9px solid transparent;
   border-right: 9px solid transparent;
-  border-top: 14px solid rgba(255, 248, 234, 0.92);
+  border-top: 14px solid var(--mark);
 }
 
 #dpad [data-control="left"]::after {
   transform: translate(-60%, -50%);
   border-top: 9px solid transparent;
   border-bottom: 9px solid transparent;
-  border-right: 14px solid rgba(255, 248, 234, 0.92);
+  border-right: 14px solid var(--mark);
 }
 
 #dpad [data-control="right"]::after {
   transform: translate(-40%, -50%);
   border-top: 9px solid transparent;
   border-bottom: 9px solid transparent;
-  border-left: 14px solid rgba(255, 248, 234, 0.92);
+  border-left: 14px solid var(--mark);
 }
 
+#touch button.is-down,
 #touch button:active {
-  background: rgba(216, 201, 163, 0.55);
+  --mark: #1a140e;
+  background: rgba(224, 196, 138, 0.88);
+  color: #1a140e;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.28);
+}
+
+@media (max-width: 420px) {
+  #dpad { --key: 48px; }
+  #actions button {
+    min-width: 92px;
+    height: 52px;
+    font-size: 20px;
+  }
+  #rotate-hint { font-size: 20px; }
+}
+
+@media (max-height: 420px) {
+  #dpad { --key: 42px; }
+  #actions button {
+    min-width: 84px;
+    height: 46px;
+    font-size: 18px;
+  }
 }
 
 /* Kích thước hiển thị do Renderer.fit() đặt; ở đây chỉ giữ pixel sắc nét khi phóng to. */

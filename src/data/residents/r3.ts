@@ -10,4 +10,6 @@ export const RESIDENT_R3: ResidentData = {
   mechanism: METRONOME,
   dialogue: { open: "r3Open", close: "r3Close", idle: "r3Idle" },
   vignette: "hum",
+  /** Máu tối đa ở các pha né (7 lần trúng). Xem docs/balance.md. */
+  hp: 28,
 };

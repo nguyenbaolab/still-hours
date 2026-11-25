@@ -34,11 +34,11 @@ describe("boss: ba lượt vòng lặp", () => {
     }
   });
 
-  it("lượt 1 tích tắc dồn (tăng tới 150 BPM); lượt 2 có `still` + xao nhãng, không có chữ; lượt 3 có chữ + đồng hồ trễ", () => {
+  it("lượt 1 tích tắc dồn (tăng tới 140 BPM); lượt 2 có `still` + xao nhãng, không có chữ; lượt 3 có chữ + đồng hồ trễ", () => {
     const [r1, r2, r3] = BOSS_ROUNDS;
     const tempo = r1.events.find((e) => e.type === "tempo");
-    expect(r1.bpm).toBe(120);
-    expect(tempo && tempo.type === "tempo" && tempo.bpm).toBe(150);
+    expect(r1.bpm).toBe(116);
+    expect(tempo && tempo.type === "tempo" && tempo.bpm).toBe(140);
     expect(r2.still).toEqual({ backdrop: "tower" });
     expect(r2.events.some((e) => e.type === "distraction")).toBe(true);
     expect(r2.events.some((e) => e.type === "word")).toBe(false);

@@ -141,8 +141,14 @@ export class VignetteScene implements Scene {
   /** Bác Hòa trước cửa cơ quan, điện thoại sáng lên mỗi hồi chuông, rồi màn mờ dần về đen. */
   private renderPhone(renderer: Renderer): void {
     const t = this.seconds;
+    renderer.rect(0, 0, GAME_WIDTH, 250, "#171310");
     this.ground(renderer);
-    renderer.rect(430, 110, 110, 140, "#2a2420");
+    renderer.rect(430, 90, 130, 160, "#2a2420");
+    renderer.rect(448, 108, 28, 36, "#12161a");
+    renderer.rect(514, 108, 28, 36, "#12161a");
+    renderer.disc(495, 78, 11, "#3a342c");
+    renderer.disc(495, 78, 8, "#e8d7b0");
+    renderer.rect(494, 74, 2, 6, "#2a241c");
     renderer.rect(470, 170, 30, 80, "#3a2814");
     this.put(renderer, "r1", 320, 248);
     const ringing = VIGNETTE_FEEL.ringAt.some((at) => t >= at && t < at + 0.9);
@@ -166,6 +172,9 @@ export class VignetteScene implements Scene {
     this.ground(renderer);
     const sky = Math.min(1, Math.max(0, (t - VIGNETTE_FEEL.skyFrom) / VIGNETTE_FEEL.skySeconds));
     drawBackdrop(renderer, "dusk", { x: 200, y: 20, w: 240, h: 130 }, sky, t);
+    renderer.rect(150, 228, 340, 4, "#6a5a48");
+    renderer.rect(168, 232, 4, 18, "#4a3822");
+    renderer.rect(468, 232, 4, 18, "#4a3822");
     this.put(renderer, t >= VIGNETTE_FEEL.lookAt ? "r2-up" : "r2", 320, 248);
   }
 
@@ -173,6 +182,11 @@ export class VignetteScene implements Scene {
   private renderHum(renderer: Renderer): void {
     const t = this.seconds;
     this.ground(renderer);
+    renderer.rect(96, 96, 70, 88, "#2a3330");
+    renderer.rect(102, 102, 58, 76, "#d8c9a3");
+    renderer.rect(108, 118, 46, 2, "#5c5346");
+    renderer.rect(108, 132, 40, 2, "#5c5346");
+    renderer.rect(108, 146, 46, 2, "#5c5346");
     renderer.rect(270, 232, 100, 8, "#7a5c3a");
     renderer.rect(276, 240, 6, 14, "#4a3822");
     renderer.rect(358, 240, 6, 14, "#4a3822");
@@ -190,6 +204,8 @@ export class VignetteScene implements Scene {
   private renderLeave(renderer: Renderer): void {
     const t = this.seconds;
     this.ground(renderer);
+    renderer.rect(0, 88, 110, 162, "#1a1612");
+    renderer.rect(108, 88, 4, 162, "#3a3228");
     renderer.rect(120, 214, 150, 6, COLOR.desk);
     renderer.rect(126, 220, 6, 34, COLOR.deskEdge);
     renderer.rect(258, 220, 6, 34, COLOR.deskEdge);
@@ -206,9 +222,16 @@ export class VignetteScene implements Scene {
     const { paper } = VIGNETTE_FEEL;
 
     // Bàn học cạnh cửa sổ: một tấm ván, một ngọn đèn, tờ giấy.
+    renderer.rect(500, 40, 100, 130, "#243038");
+    renderer.rect(508, 48, 38, 50, "#9ec4d0");
+    renderer.rect(554, 48, 38, 50, "#8eb4c0");
+    renderer.rect(508, 106, 84, 52, "#7aa4b0");
     renderer.rect(100, 214, 440, 70, COLOR.desk);
     renderer.rect(100, 214, 440, 4, COLOR.deskEdge);
     renderer.rect(450, 120, 6, 94, COLOR.deskEdge);
+    renderer.setAlpha(0.28);
+    renderer.disc(453, 116, 26, COLOR.lamp);
+    renderer.setAlpha(1);
     renderer.disc(453, 116, 8, COLOR.lamp);
     renderer.rect(paper.x - 4, paper.y - 4, paper.w + 8, paper.h + 8, COLOR.paperEdge);
     renderer.rect(paper.x, paper.y, paper.w, paper.h, COLOR.paper);

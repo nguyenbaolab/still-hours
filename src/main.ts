@@ -9,7 +9,7 @@ import { mountTouchControls } from "./core/touch-controls";
 import { wantsTouchControls } from "./core/touch-input";
 import { startLoop } from "./core/loop";
 import { Renderer } from "./core/renderer";
-import { greyscaleSprite } from "./core/sprites";
+import { greyscaleSprite, stillSprite } from "./core/sprites";
 import { browserStorage, SaveStore } from "./core/save";
 import { KEY_BINDINGS } from "./data/keybindings";
 import { RESIDENTS } from "./data/residents";
@@ -27,10 +27,10 @@ if (!canvas || !stage || !touchRoot) throw new Error("Không tìm thấy #game, 
 
 const renderer = new Renderer(canvas, stage);
 for (const [id, data] of Object.entries(SPRITES)) renderer.sprites.definePixels(id, data);
-// Cư dân chưa giải thoát vẽ bằng bản xám của sprite có màu.
+// Cư dân chưa giải thoát vẽ bằng bản xám, và đứng yên: không lấy khung hình của bản có màu.
 for (const npc of TOWN_NPCS) {
   const colored = (SPRITES as Record<string, PixelSpriteData>)[npc.freedSprite];
-  if (colored) renderer.sprites.definePixels(npc.sprite, greyscaleSprite(colored));
+  if (colored) renderer.sprites.definePixels(npc.sprite, greyscaleSprite(stillSprite(colored)));
 }
 const measure = (text: string, size: number): number => renderer.measureText(text, size);
 
