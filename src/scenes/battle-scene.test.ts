@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Workbench } from "../battle/mechanism";
 import type { DodgeOutcome } from "../battle/dodge-phase";
 import type { PageState } from "../battle/page";
+import type { RoundContext } from "../battle/progress";
+import { GameEvents, type GameEventMap, type GameEventName } from "../core/game-events";
 import { TICK_RATE } from "../core/config";
 import { Input } from "../core/input";
 import type { Pattern } from "../data/pattern-types";
@@ -16,8 +18,11 @@ class FakeDodge implements DodgeLike {
   updates = 0;
   gearPosition = { x: 300, y: 170 };
   loopsSeen = 0;
+  hp = 20;
+  maxHp = 20;
   /** `loopsSeen` mà `BattleScene` truyền vào lúc dựng. */
   carried = 0;
+  context: RoundContext | null = null;
   constructor(
     readonly round: number,
     readonly pattern: Pattern,
@@ -52,15 +57,16 @@ const pencilRound: Pattern = {
   events: [],
 };
 
-function setup(rounds: readonly [Pattern, Pattern, Pattern], startStep = 0) {
+function setup(rounds: readonly [Pattern, Pattern, Pattern], startStep = 0, events?: GameEvents) {
   const log: string[] = [];
   const dodges: FakeDodge[] = [];
   const disassembles: FakeDisassemble[] = [];
   const factory: BattleFactory = {
-    dodge(round, pattern, page, loopsSeen) {
+    dodge(round, pattern, page, loopsSeen, context) {
       log.push(`dodge${round + 1}`);
       const phase = new FakeDodge(round, pattern, page);
       phase.carried = loopsSeen;
+      phase.context = context;
       dodges.push(phase);
       return phase;
     },
@@ -81,7 +87,7 @@ function setup(rounds: readonly [Pattern, Pattern, Pattern], startStep = 0) {
   };
   const audio = new FakeAudio(5, 0);
   const input = new Input();
-  const scene = new BattleScene(resident, input, audio, factory, (text) => text.length * 10, startStep);
+  const scene = new BattleScene(resident, input, audio, factory, (text) => text.length * 10, startStep, events ? { events } : {});
   const tick = (confirm = false): void => {
     input.setActionState("test", "confirm", confirm);
     input.poll();
@@ -315,5 +321,86 @@ describe("BattleScene: trang vẽ", () => {
     const s = setup([plain, plain, plain]);
     expect(s.dodges[0]?.page).toBeNull();
     expect(s.scene.page).toBeNull();
+  });
+});
+
+
+/** Gom mọi sự kiện đã phát (tên + payload) để kiểm. */
+function record(events: GameEvents): { name: GameEventName; event: GameEventMap[GameEventName] }[] {
+  const seen: { name: GameEventName; event: GameEventMap[GameEventName] }[] = [];
+  for (const name of ["score", "mistake", "nearWin", "stuck", "clear"] as const) {
+    events.on(name, (event) => seen.push({ name, event }));
+  }
+  return seen;
+}
+
+describe("BattleScene: sao, sự kiện qua màn và kẹt", () => {
+  it("thắng pha né thì chấm sao theo máu còn lại và phát clear (round); xong trận phát clear (battle) với tổng sao", () => {
+    const events = new GameEvents();
+    const seen = record(events);
+    const s = setup([plain, plain, plain], 0, events);
+    const hpPerRound = [20, 10, 3]; // 3 sao, 2 sao, 1 sao
+    for (let step = 0; step < 6; step++) {
+      if (step % 2 === 0) {
+        const dodge = s.dodges.at(-1) as FakeDodge;
+        dodge.hp = hpPerRound[step / 2] as number;
+        dodge.outcome = "won";
+      } else (s.disassembles.at(-1) as FakeDisassemble).outcome = "done";
+      for (let i = 0; i < STEP_TICKS; i++) s.tick();
+    }
+    expect(s.scene.stars).toEqual([3, 2, 1]);
+    const clears = seen.filter((item) => item.name === "clear").map((item) => item.event as GameEventMap["clear"]);
+    expect(clears.map((c) => [c.scope, c.round, c.stars])).toEqual([
+      ["round", 1, 3],
+      ["round", 2, 2],
+      ["round", 3, 1],
+      ["battle", 3, 6],
+    ]);
+    expect(clears[0]?.resident).toBe("r4");
+    expect(clears[0]?.hp).toBe(20);
+    expect(clears[3]?.starsByRound).toEqual([3, 2, 1]);
+  });
+
+  it("truyền cho pha: lượt, sao các lượt trước, số lần thua, máu tối đa của cư dân; sang lượt thì số lần thua về 0", () => {
+    const s = setup([plain, plain, plain]);
+    const first = s.dodges.at(-1) as FakeDodge;
+    expect(first.context?.round).toBe(1);
+    expect(first.context?.losses).toBe(0);
+    first.outcome = "lost";
+    // Thua: mờ, giữ, lành, dựng lại.
+    for (let i = 0; i < s.ticksFor(FLOW_FEEL.fadeSeconds + FLOW_FEEL.loseHoldSeconds + FLOW_FEEL.mendSeconds) + 5; i++) s.tick();
+    const retry = s.dodges.at(-1) as FakeDodge;
+    expect(retry).not.toBe(first);
+    expect(retry.context?.losses).toBe(1);
+    retry.hp = 20;
+    retry.outcome = "won";
+    for (let i = 0; i < STEP_TICKS; i++) s.tick();
+    const dis = s.disassembles.at(-1) as FakeDisassemble;
+    dis.outcome = "done";
+    for (let i = 0; i < STEP_TICKS; i++) s.tick();
+    const second = s.dodges.at(-1) as FakeDodge;
+    expect(second.context?.round).toBe(2);
+    expect(second.context?.losses).toBe(0);
+    expect(second.context?.stars).toEqual([3]);
+    expect(second.context?.maxHp).toBe(20);
+  });
+
+  it("thua đủ stuckAfterLosses lần ở cùng một lượt thì phát stuck mỗi lần thua từ đó; trước đó thì không", () => {
+    const events = new GameEvents();
+    const seen = record(events);
+    const s = setup([plain, plain, plain], 0, events);
+    const loseOnce = (): void => {
+      (s.dodges.at(-1) as FakeDodge).outcome = "lost";
+      // Mờ, giữ, lành, rồi pha mới mờ vào (chỉ lúc đó mới đọc được outcome của nó).
+      for (let i = 0; i < s.ticksFor(FLOW_FEEL.fadeSeconds + FLOW_FEEL.loseHoldSeconds + FLOW_FEEL.mendSeconds) + FADE_TICKS + 5; i++) s.tick();
+    };
+    loseOnce();
+    loseOnce();
+    expect(seen.filter((item) => item.name === "stuck")).toHaveLength(0);
+    loseOnce();
+    loseOnce();
+    const stuck = seen.filter((item) => item.name === "stuck").map((item) => item.event as GameEventMap["stuck"]);
+    expect(stuck.map((e) => e.amount)).toEqual([3, 4]);
+    expect(stuck[0]).toMatchObject({ resident: "r4", round: 1, phase: "dodge", reason: "losses" });
   });
 });

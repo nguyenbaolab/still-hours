@@ -1,4 +1,5 @@
 import type { DialogueId } from "../dialogues";
+import type { PlayerFeel } from "../feel";
 import type { Mechanism } from "../mechanisms/types";
 import type { Pattern } from "../pattern-types";
 
@@ -28,4 +29,14 @@ export interface ResidentData {
     idle: DialogueId;
   };
   vignette: VignetteKind;
+  /**
+   * Máu tối đa của người chơi ở các pha né của trận này (bỏ trống = `PLAYER_FEEL.maxHp`). Độ khó tăng dần theo thứ tự gặp:
+   * cư dân đầu nhiều máu nhất, boss ít nhất (xem docs/balance.md).
+   */
+  hp?: number;
+  /**
+   * Ghi đè cảm giác của người chơi ở các pha né của trận này (hitbox nhỏ hơn, bất tử lâu hơn...). Bỏ trống = `PLAYER_FEEL`.
+   * Chỉ dùng để làm dễ các cư dân đầu; từ boss trở đi dùng mức mặc định.
+   */
+  player?: Partial<PlayerFeel>;
 }

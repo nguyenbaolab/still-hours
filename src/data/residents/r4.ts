@@ -10,4 +10,6 @@ export const RESIDENT_R4: ResidentData = {
   mechanism: ALARM_CLOCK,
   dialogue: { open: "r4Open", close: "r4Close", idle: "r4Idle" },
   vignette: "pencil",
+  /** Máu tối đa ở các pha né (6 lần trúng). Xem docs/balance.md. */
+  hp: 24,
 };
