@@ -7,7 +7,47 @@ import { SPRITES } from "./sprites";
 import { TOWN_NPCS } from "./town";
 
 const IDS = Object.keys(SPRITES);
-const table = SPRITES as Record<string, { palette: Record<string, string>; rows: readonly string[]; scale?: number }>;
+const table = SPRITES as Record<
+  string,
+  {
+    palette: Record<string, string>;
+    rows: readonly string[];
+    scale?: number;
+    frames?: readonly (readonly string[])[];
+    holds?: readonly number[];
+    frameSeconds?: number;
+  }
+>;
+
+/** width, height, scale của khung dữ liệu. Khóa chỗ gọi và va chạm. */
+const FRAME: Record<string, readonly [number, number, number]> = {
+  gear: [9, 9, 2],
+  "gear-cracked": [9, 9, 2],
+  distraction: [7, 7, 2],
+  pencil: [10, 9, 2],
+  r4: [8, 8, 2],
+  "r4-pencil": [9, 8, 2],
+  "keeper-down": [8, 12, 3],
+  "keeper-up": [8, 12, 3],
+  "keeper-left": [8, 12, 3],
+  "keeper-right": [8, 12, 3],
+  r1: [8, 12, 2],
+  r2: [8, 12, 2],
+  r3: [8, 12, 2],
+  "r2-up": [8, 12, 2],
+  boss: [8, 12, 2],
+  screw: [5, 5, 2],
+  "clock-face": [9, 9, 2],
+  cover: [11, 5, 2],
+  cog: [7, 7, 2],
+  spring: [7, 4, 2],
+  balance: [7, 7, 2],
+  hand: [8, 8, 2],
+  ring: [9, 8, 2],
+  crown: [7, 7, 2],
+  weight: [7, 7, 2],
+  rod: [5, 10, 2],
+};
 
 describe("sprite placeholder", () => {
   it("mọi sprite có hình chữ nhật đều, mọi ký tự có trong bảng màu, màu hợp lệ", () => {
@@ -16,9 +56,13 @@ describe("sprite placeholder", () => {
       expect(sprite, id).toBeDefined();
       const width = sprite?.rows[0]?.length ?? 0;
       expect(width, `${id}: rỗng`).toBeGreaterThan(0);
-      for (const row of sprite?.rows ?? []) {
-        expect(row.length, `${id}: hàng lệch bề ngang`).toBe(width);
-        for (const ch of row) if (ch !== ".") expect(Object.keys(sprite?.palette ?? {}), `${id}: ký tự "${ch}" thiếu màu`).toContain(ch);
+      const pictures = [sprite?.rows ?? [], ...(sprite?.frames ?? [])];
+      for (const picture of pictures) {
+        expect(picture.length, `${id}: lệch chiều cao`).toBe(sprite?.rows.length);
+        for (const row of picture) {
+          expect(row.length, `${id}: hàng lệch bề ngang`).toBe(width);
+          for (const ch of row) if (ch !== ".") expect(Object.keys(sprite?.palette ?? {}), `${id}: ký tự "${ch}" thiếu màu`).toContain(ch);
+        }
       }
       for (const color of Object.values(sprite?.palette ?? {})) expect(color, id).toMatch(/^#[0-9a-f]{6}$/i);
     }
@@ -56,6 +100,32 @@ describe("sprite placeholder", () => {
         const [r, g, b] = [color.slice(1, 3), color.slice(3, 5), color.slice(5, 7)];
         expect(r === g && g === b, `${npc.id} ${color}`).toBe(true);
       }
+    }
+  });
+
+  it("giữ nguyên kích thước khung các sprite cũ", () => {
+    for (const [id, [width, height, scale]] of Object.entries(FRAME)) {
+      const sprite = table[id];
+      expect(sprite?.rows[0]?.length, id).toBe(width);
+      expect(sprite?.rows.length, id).toBe(height);
+      expect(sprite?.scale, id).toBe(scale);
+    }
+  });
+
+  it("avatar hướng dẫn 38×38, phóng 2", () => {
+    for (const id of ["guide-happy", "guide-cheer", "guide-surprised", "guide-comfort"]) {
+      const sprite = table[id];
+      expect(sprite?.rows.length, id).toBe(38);
+      expect(sprite?.rows[0]?.length, id).toBe(38);
+      expect(sprite?.scale, id).toBe(2);
+      expect(sprite?.frames, id).toBeUndefined();
+    }
+  });
+
+  it("nháy mắt và lóe sáng nằm trong sprite; bánh răng nứt đứng một khung", () => {
+    expect(table["gear-cracked"]?.frames).toBeUndefined();
+    for (const id of ["gear", "keeper-down", "keeper-left", "r1", "r4", "cog", "balance"]) {
+      expect(table[id]?.frames?.length ?? 0, id).toBeGreaterThan(0);
     }
   });
 
