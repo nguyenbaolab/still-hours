@@ -10,4 +10,6 @@ export const RESIDENT_BOSS: ResidentData = {
   mechanism: TOWER_CLOCK,
   dialogue: { open: "bossOpen", close: "bossClose", idle: "bossIdle" },
   vignette: "leave",
+  /** Máu tối đa ở các pha né (5 lần trúng, như trước). Xem docs/balance.md. */
+  hp: 20,
 };

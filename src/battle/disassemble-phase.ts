@@ -1,6 +1,9 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { TickScheduler } from "../audio/tick-scheduler";
 import { stageOf, type Workbench } from "./mechanism";
+import { disassembleHint, disassembleProgress, soloContext, stageCounts, type RoundContext } from "./progress";
+import { drawBattleHud } from "./progress-hud";
+import { HUD_FEEL } from "../data/hud-feel";
 import { BeatClock } from "../core/beat-clock";
 import { DEBUG } from "../core/debug";
 import type { Input } from "../core/input";
@@ -36,6 +39,13 @@ export class DisassemblePhase implements Scene {
   private memoryShown = 0;
   private heardAt: number;
   private done = false;
+  private readonly ctx: RoundContext;
+  /** Giây nghe được từ lúc pha bắt đầu (bảng "xong lượt" mờ dần), và từ lần tiến bộ cuối (gợi ý khi kẹt). */
+  private age = 0;
+  private idle = 0;
+  private nextStuckAt = HUD_FEEL.idleSeconds;
+  private progressMark = "";
+  private nearWinSent = false;
 
   constructor(
     private readonly input: Input,
@@ -43,7 +53,10 @@ export class DisassemblePhase implements Scene {
     private readonly mechanism: Mechanism,
     private readonly bench: Workbench,
     private readonly stage: number,
+    /** Trận chứa pha này (sự kiện, HUD). Không có thì pha chạy riêng (`soloContext` với `round` = tầng). */
+    context?: RoundContext,
   ) {
+    this.ctx = context ?? soloContext({ round: stage });
     this.bench.setStage(stage);
     this.clock = this.makeClock();
     this.ticks = new TickScheduler(this.clock, () => audio.contextTime(), audio.tickSink);
@@ -60,6 +73,7 @@ export class DisassemblePhase implements Scene {
     const heard = this.audio.heardTime();
     const heardDt = Math.max(0, heard - this.heardAt);
     this.heardAt = heard;
+    this.age += heardDt;
     this.clock.update();
     this.ticks.update();
 
@@ -78,6 +92,9 @@ export class DisassemblePhase implements Scene {
       } else {
         this.memoryShown = Math.min(text.length, this.memoryShown + DISASSEMBLY_FEEL.memoryCharsPerSecond * heardDt);
       }
+      // Đang đọc ký ức là đang tiến bộ, không tính là kẹt.
+      this.idle = 0;
+      this.nextStuckAt = HUD_FEEL.idleSeconds;
       return;
     }
 
@@ -90,6 +107,69 @@ export class DisassemblePhase implements Scene {
     this.apply(this.bench.hold(tempo, time, this.input.isDown("confirm")));
     // Tháo xong bộ phận cuối của tầng mà không có câu ký ức thì tầng xong ngay.
     if (this.bench.stageComplete) this.done = true;
+    this.trackProgress(heardDt);
+  }
+
+  private place(): { resident: RoundContext["resident"]; round: number; phase: "disassemble" } {
+    return { resident: this.ctx.resident, round: this.stage, phase: "disassemble" };
+  }
+
+  /** Số nấc vặn của mọi bộ phận (để biết có vừa vặn thêm nấc nào không). */
+  private notchTotal(): number {
+    let total = 0;
+    for (const part of this.mechanism.parts) total += this.bench.notchCount(part.id);
+    return total;
+  }
+
+  /** Tiến độ của tầng (bộ phận đã tháo và phần lẻ của thao tác đang làm). */
+  get progress(): number {
+    if (this.done) return 1;
+    const { total, done } = stageCounts(this.mechanism, this.bench.removed, this.stage);
+    const part = this.mechanism.parts.find((item) => item.id === this.bench.selectedId);
+    let partial = 0;
+    if (part && !this.bench.removed.has(part.id) && stageOf(part) === this.stage) {
+      if (part.operation === "unscrew") partial = this.bench.notchCount(part.id) / DISASSEMBLY_FEEL.unscrewSteps;
+      else if (part.operation === "lift") partial = this.bench.liftProgress(this.clock.beat);
+    }
+    return disassembleProgress(total, done, partial);
+  }
+
+  /**
+   * "Gần thắng" một lần, và "kẹt lâu": không có gì tiến bộ (tháo xong bộ phận, vặn thêm nấc, đang giữ nhấc, đang đọc ký ức)
+   * trong `HUD_FEEL.idleSeconds` thì phát `stuck`, rồi cứ mỗi chừng đó giây nữa phát tiếp cho tới khi có tiến bộ.
+   */
+  private trackProgress(heardDt: number): void {
+    const value = this.progress;
+    if (!this.nearWinSent && !this.done && value >= HUD_FEEL.nearWinFraction) {
+      this.nearWinSent = true;
+      this.ctx.events.emit("nearWin", { ...this.place(), progress: value });
+    }
+    if (this.done) return;
+    const holding = this.bench.liftProgress(this.clock.beat) > 0;
+    const mark = `${this.bench.removed.size}/${this.notchTotal()}`;
+    if (mark !== this.progressMark || holding) {
+      this.progressMark = mark;
+      this.idle = 0;
+      this.nextStuckAt = HUD_FEEL.idleSeconds;
+      return;
+    }
+    this.idle += heardDt;
+    if (this.idle >= this.nextStuckAt) {
+      this.nextStuckAt += HUD_FEEL.idleSeconds;
+      this.ctx.events.emit("stuck", {
+        ...this.place(),
+        reason: "idle",
+        amount: this.idle,
+        partId: this.bench.selectedId,
+      });
+    }
+  }
+
+  /** Gợi ý khi kẹt: theo bộ phận đang chọn. Rỗng khi chưa kẹt. */
+  private hints(): string[] {
+    if (this.done || this.bench.memory || this.idle < HUD_FEEL.idleSeconds) return [];
+    const part = this.mechanism.parts.find((item) => item.id === this.bench.selectedId);
+    return [disassembleHint(part, this.bench.removed, this.mechanism.rhythmic)];
   }
 
   render(renderer: Renderer, _alpha: number): void {
@@ -125,6 +205,7 @@ export class DisassemblePhase implements Scene {
     }
 
     this.drawProgress(renderer);
+    this.renderHud(renderer);
     const memory = this.bench.memory;
     if (memory) {
       renderer.text(memory.slice(0, Math.floor(this.memoryShown)), 32, DISASSEMBLY_LAYOUT.memoryY, {
@@ -147,6 +228,22 @@ export class DisassemblePhase implements Scene {
     }
   }
 
+  /** Bảng "xong lượt" vài giây đầu (sao vừa được ở pha né ngay trước), rồi gợi ý khi kẹt. */
+  private renderHud(renderer: Renderer): void {
+    const won = this.ctx.stars[this.stage - 1] ?? 0;
+    const bannerLeft = HUD_FEEL.starsBannerSeconds - this.age;
+    const showBanner = won > 0 && bannerLeft > 0 && !this.bench.memory;
+    drawBattleHud(renderer, {
+      round: this.stage,
+      rounds: this.ctx.rounds,
+      stars: this.ctx.stars,
+      progress: this.progress,
+      hints: this.hints(),
+      hintAlpha: Math.min(1, Math.max(0, (this.idle - HUD_FEEL.idleSeconds) / HUD_FEEL.hintFadeSeconds)),
+      banner: showBanner ? { round: this.stage, stars: won, alpha: Math.min(1, bannerLeft / 0.5) } : undefined,
+    });
+  }
+
   private drawProgress(renderer: Renderer): void {
     const part = this.mechanism.parts.find((item) => item.id === this.bench.selectedId);
     if (!part || this.bench.removed.has(part.id) || this.bench.memory || this.done) return;
@@ -164,9 +261,25 @@ export class DisassemblePhase implements Scene {
     }
   }
 
-  private apply(result: { cue: "unscrew" | "lift" | "unhook" | "clack" | null; removedId: string | null }): void {
+  private apply(result: {
+    cue: "unscrew" | "lift" | "unhook" | "clack" | null;
+    removedId: string | null;
+    flashed?: readonly string[];
+  }): void {
     if (result.cue) this.audio.playCue(result.cue);
     if (result.removedId && this.bench.memory) this.memoryShown = 0;
+    if (result.cue === "clack") this.ctx.events.emit("mistake", { ...this.place(), kind: "off-beat" });
+    else if (result.flashed && result.flashed.length > 0) this.ctx.events.emit("mistake", { ...this.place(), kind: "blocked" });
+    if (result.removedId) {
+      const total = this.ctx.score.add(HUD_FEEL.points.part);
+      this.ctx.events.emit("score", {
+        ...this.place(),
+        reason: "part",
+        points: HUD_FEEL.points.part,
+        total,
+        detail: result.removedId,
+      });
+    }
   }
 
   private makeClock(): BeatClock {

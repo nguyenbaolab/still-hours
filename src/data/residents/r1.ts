@@ -10,4 +10,6 @@ export const RESIDENT_R1: ResidentData = {
   mechanism: POCKET_WATCH,
   dialogue: { open: "r1Open", close: "r1Close", idle: "r1Idle" },
   vignette: "phone",
+  /** Cư dân đầu tiên: nhiều máu nhất (9 lần trúng mới thua). Xem docs/balance.md. */
+  hp: 36,
 };

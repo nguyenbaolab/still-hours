@@ -6,7 +6,7 @@ import type { BulletEvent, Pattern, PatternEvent, Side } from "../pattern-types"
  * mở ở một beat của mỗi vòng và rộng dần theo số vòng đã qua (mặc định rộng 28 / 44 / 64 px, mở 2 / 4 / hết vòng; từ vòng
  * thứ 4 mở ngay từ beat 0). Số vòng đã qua giữ qua lần thua. Ba lượt nhắc lại hai cư dân, khe cửa ở cả ba:
  *
- *  Lượt 1 "giờ làm":  tích tắc dồn (120 → 150 BPM), khe bên phải, mở ở beat 24
+ *  Lượt 1 "giờ làm":  tích tắc dồn (116 → 140 BPM, trước 120 → 150), khe bên phải, mở ở beat 24
  *  Lượt 2 "ngẩng lên": đứng yên thì cảnh tháp nhìn ra thị trấn hiện ra, đạn xao nhãng chỉ hút, khe phía trên, mở ở beat 20
  *  Lượt 3 "vòng lặp": lời tiêu cực làm chậm nhịp, mặt đồng hồ trễ, khe bên trái, mở ở beat 28
  */
@@ -34,7 +34,8 @@ function aimed(first: number, last: number, every: number, sources: readonly Sid
 
 // ── Lượt 1: giờ làm ─────────────────────────────────────────────────────────────────────────────────────────────
 const round1Events: PatternEvent[] = [
-  { beat: 0, type: "tempo", bpm: 150, overBeats: LOOP_BEATS },
+  { beat: 0, type: "tempo", bpm: 140, overBeats: LOOP_BEATS },
+  // Cứ 2 beat một viên (trước: mỗi beat); các lượt khác của boss vốn đã nhẹ nên lượt 1 là chỗ khó nhất của boss.
   ...chain(2, 30, [
     ["left", 0.25],
     ["top", 0.7],
@@ -42,7 +43,7 @@ const round1Events: PatternEvent[] = [
     ["bottom", 0.3],
     ["top", 0.2],
     ["bottom", 0.8],
-  ]),
+  ]).filter((e) => e.beat % 2 === 0),
   ...aimed(6, 30, 4, ["left", "top", "bottom"], 3, 18),
 ];
 
@@ -79,7 +80,7 @@ for (let beat = 4, i = 0; beat <= 28; beat += 4, i++) {
 export const BOSS_ROUNDS: readonly [Pattern, Pattern, Pattern] = [
   {
     name: "Ông Khải: giờ làm",
-    bpm: 120,
+    bpm: 116,
     lengthBeats: LOOP_BEATS,
     loop: true,
     finish: { kind: "exit", side: "right", at: 0.5, openBeat: 24, widths: [28, 44, 64], openBeats: [2, 4, 999] },

@@ -28,4 +28,9 @@ export interface ResidentData {
     idle: DialogueId;
   };
   vignette: VignetteKind;
+  /**
+   * Máu tối đa của người chơi ở các pha né của trận này (bỏ trống = `PLAYER_FEEL.maxHp`). Độ khó tăng dần theo thứ tự gặp:
+   * cư dân đầu nhiều máu nhất, boss ít nhất (xem docs/balance.md).
+   */
+  hp?: number;
 }

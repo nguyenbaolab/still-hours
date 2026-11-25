@@ -3,6 +3,11 @@ import { DisassemblePhase } from "../battle/disassemble-phase";
 import { DodgePhase, type DodgeOutcome } from "../battle/dodge-phase";
 import { stageOf, Workbench } from "../battle/mechanism";
 import { PageState, type Point } from "../battle/page";
+import { ScoreBoard, starsFor, type RoundContext } from "../battle/progress";
+import { drawStarSummary } from "../battle/progress-hud";
+import { gameEvents, type GameEvents } from "../core/game-events";
+import { PLAYER_FEEL } from "../data/feel";
+import { HUD_FEEL } from "../data/hud-feel";
 import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
 import type { Renderer } from "../core/renderer";
@@ -21,6 +26,9 @@ export interface DodgeLike extends Scene {
   readonly gearPosition: Point;
   /** Số vòng pattern đã qua của lượt này (boss: giữ qua lần thua). */
   readonly loopsSeen: number;
+  /** Máu còn lại / tối đa lúc xong pha (tính sao khi thắng). */
+  readonly hp: number;
+  readonly maxHp: number;
 }
 
 /** Phần của pha tháo mà `BattleScene` cần biết. */
@@ -30,8 +38,8 @@ export interface DisassembleLike extends Scene {
 
 /** Nơi dựng pha thật. Tách ra để test thay bằng pha giả có `outcome` điều khiển được. */
 export interface BattleFactory {
-  dodge(round: number, pattern: Pattern, page: PageState | null, loopsSeen: number): DodgeLike;
-  disassemble(stage: number, bench: Workbench): DisassembleLike;
+  dodge(round: number, pattern: Pattern, page: PageState | null, loopsSeen: number, context: RoundContext): DodgeLike;
+  disassemble(stage: number, bench: Workbench, context: RoundContext): DisassembleLike;
 }
 
 export function createBattleFactory(
@@ -41,9 +49,9 @@ export function createBattleFactory(
   resident: ResidentData,
 ): BattleFactory {
   return {
-    dodge: (_round, pattern, page, loopsSeen) =>
-      new DodgePhase(input, audio, gearSize, pattern, { ...(page ? { page } : {}), loopsSeen }),
-    disassemble: (stage, bench) => new DisassemblePhase(input, audio, resident.mechanism, bench, stage),
+    dodge: (_round, pattern, page, loopsSeen, context) =>
+      new DodgePhase(input, audio, gearSize, pattern, { ...(page ? { page } : {}), loopsSeen, context }),
+    disassemble: (stage, bench, context) => new DisassemblePhase(input, audio, resident.mechanism, bench, stage, context),
   };
 }
 
@@ -85,6 +93,12 @@ export class BattleScene implements Scene {
   /** Số vòng đã qua của lượt né hiện tại, giữ qua lần thua (khe cửa của boss rộng dần theo số này). Hết lượt thì về 0. */
   private loops = 0;
   private closing: DialogueBox | null = null;
+  /** Số lần đã thua ở lượt né hiện tại (chỉ để gợi ý và sự kiện `stuck`; không hiện ở đâu). Sang lượt thì về 0. */
+  private losses = 0;
+  /** Sao của từng lượt đã thắng (theo thứ tự lượt), và điểm của trận. */
+  private readonly starsByRound: number[] = [];
+  private readonly score = new ScoreBoard();
+  private readonly events: GameEvents;
 
   constructor(
     readonly resident: ResidentData,
@@ -94,7 +108,9 @@ export class BattleScene implements Scene {
     private readonly measure: MeasureText,
     /** Bước bắt đầu (0..5). Khác 0 chỉ khi nhảy cóc: các tầng trước coi như đã tháo. */
     startStep = 0,
+    options: { events?: GameEvents } = {},
   ) {
+    this.events = options.events ?? gameEvents;
     this.bench = new Workbench(resident.mechanism, DISASSEMBLY_FEEL);
     const round = Math.floor(startStep / 2) + 1;
     for (const part of resident.mechanism.parts) if (stageOf(part) < round) this.bench.removed.add(part.id);
@@ -124,6 +140,16 @@ export class BattleScene implements Scene {
   /** Bước hiện tại: 0 = né 1, 1 = tháo 1, ..., 5 = tháo 3. */
   get step(): number {
     return this.running.step;
+  }
+
+  /** Sao đã được của các lượt đã thắng (theo thứ tự lượt). */
+  get stars(): readonly number[] {
+    return this.starsByRound;
+  }
+
+  /** Điểm của trận tính tới giờ (xem `HUD_FEEL.points`). */
+  get points(): number {
+    return this.score.total;
   }
 
   /** Sprite của bánh răng ở màn thua. */
@@ -195,6 +221,7 @@ export class BattleScene implements Scene {
     }
     if (mode === "closing") {
       renderer.clear(BACKGROUND);
+      drawStarSummary(renderer, this.starsByRound);
       this.closing?.render(renderer);
       return;
     }
@@ -228,6 +255,20 @@ export class BattleScene implements Scene {
     this.clock = 0;
   }
 
+  /** Ngữ cảnh của pha ở lượt `round` (0-based): cư dân, sao đã có, số lần thua, máu tối đa. */
+  private contextFor(round: number): RoundContext {
+    return {
+      resident: this.resident.id,
+      round: round + 1,
+      rounds: ROUNDS,
+      stars: [...this.starsByRound],
+      losses: this.losses,
+      maxHp: this.resident.hp ?? PLAYER_FEEL.maxHp,
+      score: this.score,
+      events: this.events,
+    };
+  }
+
   /** Dựng pha của bước `step`. */
   private build(step: number): Running {
     const round = Math.floor(step / 2);
@@ -235,9 +276,12 @@ export class BattleScene implements Scene {
       const pattern = this.resident.rounds[round];
       if (!pattern) throw new Error(`${this.resident.id}: không có lượt ${round + 1}`);
       if (pattern.pencil && !this.pageState) this.pageState = new PageState(SKETCH_FEEL);
-      return { step, scene: this.factory.dodge(round, pattern, pattern.pencil ? this.pageState : null, this.loops) };
+      return {
+        step,
+        scene: this.factory.dodge(round, pattern, pattern.pencil ? this.pageState : null, this.loops, this.contextFor(round)),
+      };
     }
-    return { step, scene: this.factory.disassemble(round + 1, this.bench) };
+    return { step, scene: this.factory.disassemble(round + 1, this.bench, this.contextFor(round)) };
   }
 
   /** Đọc `outcome` của pha đang chạy; thắng / xong thì mờ ra, thua thì vào màn thua. */
@@ -249,9 +293,30 @@ export class BattleScene implements Scene {
         this.gearAt = dodge.gearPosition;
         this.loops = dodge.loopsSeen;
         this.cracked = true;
+        this.losses++;
+        if (this.losses >= HUD_FEEL.stuckAfterLosses) {
+          this.events.emit("stuck", {
+            resident: this.resident.id,
+            round: Math.floor(step / 2) + 1,
+            phase: "dodge",
+            reason: "losses",
+            amount: this.losses,
+          });
+        }
         this.setMode("loseFade");
       } else if (dodge.outcome === "won") {
         this.pageState?.closeRound();
+        const round = Math.floor(step / 2);
+        const stars = starsFor(dodge.hp, dodge.maxHp);
+        this.starsByRound[round] = stars;
+        this.events.emit("clear", {
+          resident: this.resident.id,
+          scope: "round",
+          round: round + 1,
+          stars,
+          hp: dodge.hp,
+          maxHp: dodge.maxHp,
+        });
         this.setMode("fadeOut");
       }
       return;
@@ -263,11 +328,20 @@ export class BattleScene implements Scene {
   private advance(): void {
     const next = this.running.step + 1;
     if (next >= ROUNDS * 2) {
+      this.events.emit("clear", {
+        resident: this.resident.id,
+        scope: "battle",
+        round: ROUNDS,
+        stars: this.starsByRound.reduce((sum, value) => sum + value, 0),
+        starsByRound: [...this.starsByRound],
+        score: this.score.total,
+      });
       this.closing = new DialogueBox(DIALOGUES[this.resident.dialogue.close], this.measure);
       this.setMode("closing");
       return;
     }
     this.loops = 0;
+    this.losses = 0;
     this.running = this.build(next);
     this.setMode("fadeIn");
   }

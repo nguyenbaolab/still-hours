@@ -20,6 +20,9 @@ import { exitView, hasExited, type ExitView } from "./exit";
 import { InkLayer } from "./ink-layer";
 import { lagClockHands } from "./lag-clock";
 import { Pace } from "./pace";
+import { drawBattleHud } from "./progress-hud";
+import { crossedMilestones, dodgeHints, dodgeProgress, soloContext, type RoundContext } from "./progress";
+import { HUD_FEEL } from "../data/hud-feel";
 import { isStill, Stillness } from "./stillness";
 import { addDrawnBeats, dropPoint, PageState, pencilHome, pencilPickup, type Point } from "./page";
 import { PatternRunner } from "./pattern-runner";
@@ -59,6 +62,11 @@ export interface DodgeOptions {
   page?: PageState;
   /** Số vòng đã qua từ các lần thua trước của lượt này (boss: khe cửa rộng dần theo số vòng; không đặt lại khi thua). */
   loopsSeen?: number;
+  /**
+   * Trận chứa pha này: cư dân, lượt, sao đã có, số lần đã thua, bộ phát sự kiện. Không có thì pha chạy riêng
+   * (`soloContext`): HUD vẫn vẽ, sự kiện phát vào bộ phát dùng chung với `resident` null.
+   */
+  context?: RoundContext;
 }
 
 type Stage = "play" | "reveal" | "clearing" | "done" | "lost";
@@ -91,6 +99,7 @@ export class DodgePhase implements Scene {
   private readonly stillness: Stillness | null;
   /** Số vòng đã qua từ các lần thua trước (xem `DodgeOptions.loopsSeen`). */
   private readonly carriedLoops: number;
+  private readonly ctx: RoundContext;
   /** Khe cửa ở tick này (chỉ pattern `finish: exit`). */
   private exit: ExitView | null = null;
   private readonly ticks: TickScheduler;
@@ -115,6 +124,12 @@ export class DodgePhase implements Scene {
   private idleLeft = 0;
   private idleText = "";
 
+  /** Tiến độ (0..1) ở tick trước, để biết mốc nào vừa qua; và đã báo "gần thắng" chưa. */
+  private lastProgress = 0;
+  private nearWinSent = false;
+  /** Số giây kể từ lúc pha bắt đầu (cho gợi ý hiện dần). */
+  private age = 0;
+
   /** Giây còn lại của màn lộ tranh, và tổng của nó. */
   private revealLeft = 0;
   private readonly revealTotal = SKETCH_FEEL.replaySeconds + SKETCH_FEEL.revealSeconds;
@@ -131,7 +146,10 @@ export class DodgePhase implements Scene {
   ) {
     this.pattern = pattern;
     this.carriedLoops = options.loopsSeen ?? 0;
-    this.player = new Player(PLAYER_FEEL, bodySize);
+    this.ctx = options.context ?? soloContext();
+    // Chơi lại sau khi thua (boss mang số vòng theo): các mốc dưới mức tiến độ lúc bắt đầu không ghi điểm dồn một lúc.
+    this.lastProgress = dodgeProgress(pattern, 0, 0, this.carriedLoops);
+    this.player = new Player({ ...PLAYER_FEEL, maxHp: this.ctx.maxHp ?? PLAYER_FEEL.maxHp }, bodySize);
     this.player.place(this.arena.x + this.arena.w / 2, this.arena.y + this.arena.h / 2);
 
     // Beat 0 diễn ra sau một đoạn dạo đầu, tính từ bây giờ theo đồng hồ âm thanh.
@@ -162,6 +180,20 @@ export class DodgePhase implements Scene {
     return this.carriedLoops + this.runner.cycle;
   }
 
+  /** Máu còn lại và máu tối đa (màn thắng tính sao theo đây). */
+  get hp(): number {
+    return this.player.hp;
+  }
+
+  get maxHp(): number {
+    return this.player.maxHp;
+  }
+
+  /** Tiến độ của pha, 0..1 (1 khi đã thắng). */
+  get progress(): number {
+    return this.result === "won" ? 1 : this.lastProgress;
+  }
+
   /** Trang vẽ (null nếu pattern không có bút). */
   get page(): PageState | null {
     return this.pageState;
@@ -182,6 +214,7 @@ export class DodgePhase implements Scene {
 
   update(): void {
     this.tick++;
+    this.age += 1 / TICK_RATE;
 
     if (this.stage === "lost" || this.stage === "done") return;
     if (this.stage === "reveal") {
@@ -240,7 +273,9 @@ export class DodgePhase implements Scene {
 
     // Player.hit tự bỏ qua nếu đang bất tử. Chỉ tính một lần trúng mỗi tick. Đạn chữ không đi qua đây.
     const damage = this.world.hit(this.player.hitbox);
-    if (damage > 0) this.player.hit(damage);
+    if (damage > 0 && this.player.hit(damage)) {
+      this.emitMistake(damage);
+    }
 
     if (this.player.hp <= 0) {
       this.stage = "lost";
@@ -249,7 +284,51 @@ export class DodgePhase implements Scene {
       this.pageState?.sketch.lift();
       return;
     }
+    this.trackProgress();
     this.checkFinish();
+  }
+
+  private place(): { resident: RoundContext["resident"]; round: number; phase: "dodge" } {
+    return { resident: this.ctx.resident, round: this.ctx.round, phase: "dodge" };
+  }
+
+  private emitMistake(damage: number): void {
+    this.ctx.events.emit("mistake", {
+      ...this.place(),
+      kind: "hit",
+      damage,
+      hp: this.player.hp,
+      maxHp: this.player.maxHp,
+    });
+  }
+
+  /**
+   * Tiến độ của pha: mỗi mốc vừa qua là một lần ghi điểm (`score`), và lần đầu tới `nearWinFraction` là `nearWin`.
+   * Chỉ chạy lúc đang chơi, nên không phát gì khi pha đã thắng hoặc thua.
+   */
+  private trackProgress(): void {
+    const page = this.pageState;
+    const value = dodgeProgress(this.pattern, this.clock.beat, page?.drawnBeats ?? 0, this.carriedLoops);
+    for (const mark of crossedMilestones(this.lastProgress, value)) {
+      const total = this.ctx.score.add(HUD_FEEL.points.milestone);
+      this.ctx.events.emit("score", {
+        ...this.place(),
+        reason: "milestone",
+        points: HUD_FEEL.points.milestone,
+        total,
+        detail: mark,
+      });
+    }
+    this.lastProgress = Math.max(this.lastProgress, value);
+    if (!this.nearWinSent && value >= HUD_FEEL.nearWinFraction) {
+      this.nearWinSent = true;
+      this.ctx.events.emit("nearWin", {
+        ...this.place(),
+        progress: value,
+        hp: this.player.hp,
+        maxHp: this.player.maxHp,
+      });
+    }
   }
 
   /**
@@ -417,6 +496,7 @@ export class DodgePhase implements Scene {
     this.renderGirlClock(renderer);
     this.renderLagClock(renderer);
     renderer.setAlpha(1);
+    this.renderHud(renderer);
 
     if (this.idleLeft > 0 && !revealing) {
       renderer.text(this.idleText, arena.x, arena.y - border - 26, {
@@ -548,6 +628,19 @@ export class DodgePhase implements Scene {
     renderer.rect(barX, y, barWidth, hpBar.height, COLOR.hpLost);
     renderer.rect(barX, y, hp * hpBar.pxPerHp, hpBar.height, COLOR.hp);
     renderer.text(`${hp} / ${maxHp}`, barX + barWidth + 12, y, { size: 20, color: COLOR.text });
+  }
+
+  /** Tiến độ, sao các lượt và gợi ý khi kẹt (`progress-hud.ts`). Gợi ý chỉ hiện lúc đang chơi. */
+  private renderHud(renderer: Renderer): void {
+    const hints = this.stage === "play" ? dodgeHints(this.pattern, this.ctx.losses) : [];
+    drawBattleHud(renderer, {
+      round: this.ctx.round,
+      rounds: this.ctx.rounds,
+      stars: this.ctx.stars,
+      progress: this.progress,
+      hints,
+      hintAlpha: Math.min(1, this.age / HUD_FEEL.hintFadeSeconds),
+    });
   }
 
   /** Lớp debug (F1): hitbox thật của bánh răng và đạn, cùng số liệu nhịp. */

@@ -10,4 +10,6 @@ export const RESIDENT_R2: ResidentData = {
   mechanism: STOPWATCH,
   dialogue: { open: "r2Open", close: "r2Close", idle: "r2Idle" },
   vignette: "lookUp",
+  /** Máu tối đa ở các pha né (8 lần trúng). Xem docs/balance.md. */
+  hp: 32,
 };
