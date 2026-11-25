@@ -15,6 +15,23 @@ function controlFrom(target: EventTarget | null): TouchControl | null {
  */
 export function mountTouchControls(root: HTMLElement, input: Input): TouchInput {
   const touch = new TouchInput(input);
+  const buttons = new Map<TouchControl, HTMLElement>();
+  for (const el of root.querySelectorAll<HTMLElement>("[data-control]")) {
+    const name = el.getAttribute("data-control");
+    if (name && CONTROL_NAMES.has(name)) buttons.set(name as TouchControl, el);
+  }
+  const held = new Map<number, TouchControl>();
+
+  const paint = (): void => {
+    const down = new Set(held.values());
+    for (const [name, el] of buttons) el.classList.toggle("is-down", down.has(name));
+  };
+
+  const releasePointer = (pointerId: number): void => {
+    held.delete(pointerId);
+    touch.pointerUp(pointerId);
+    paint();
+  };
 
   root.addEventListener("pointerdown", (event) => {
     const control = controlFrom(event.target);
@@ -25,21 +42,38 @@ export function mountTouchControls(root: HTMLElement, input: Input): TouchInput 
     } catch {
       // Một số trình duyệt từ chối capture. pointerup trên window vẫn nhả được.
     }
+    held.set(event.pointerId, control);
     touch.pointerDown(event.pointerId, control);
+    paint();
   });
 
   const release = (event: PointerEvent): void => {
-    touch.pointerUp(event.pointerId);
+    releasePointer(event.pointerId);
   };
   root.addEventListener("pointerup", release);
-  root.addEventListener("pointercancel", (event) => touch.pointerCancel(event.pointerId));
-  root.addEventListener("lostpointercapture", (event) => touch.pointerUp(event.pointerId));
+  root.addEventListener("pointercancel", (event) => {
+    held.delete(event.pointerId);
+    touch.pointerCancel(event.pointerId);
+    paint();
+  });
+  root.addEventListener("lostpointercapture", (event) => releasePointer(event.pointerId));
   // Ngón kết thúc ngoài vùng capture (capture bị từ chối): vẫn nhả.
   window.addEventListener("pointerup", release);
-  window.addEventListener("pointercancel", (event) => touch.pointerCancel(event.pointerId));
-  window.addEventListener("blur", () => touch.releaseAll());
+  window.addEventListener("pointercancel", (event) => {
+    held.delete(event.pointerId);
+    touch.pointerCancel(event.pointerId);
+    paint();
+  });
+  window.addEventListener("blur", () => {
+    held.clear();
+    touch.releaseAll();
+    paint();
+  });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) touch.releaseAll();
+    if (!document.hidden) return;
+    held.clear();
+    touch.releaseAll();
+    paint();
   });
 
   root.addEventListener("contextmenu", (event) => event.preventDefault());

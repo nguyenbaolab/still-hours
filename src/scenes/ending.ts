@@ -4,7 +4,7 @@ import { BeatClock } from "../core/beat-clock";
 import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import { formatPlayTime } from "../core/format";
 import type { Input } from "../core/input";
-import type { Renderer } from "../core/renderer";
+import { doubleFrame, type Renderer } from "../core/renderer";
 import { CREDITS, ENDING_LINE } from "../data/credits";
 import { ENDING_FEEL, TOWN_FEEL, type EndingFeel } from "../data/flow-feel";
 import { TOWN, TOWN_NPCS } from "../data/town";
@@ -42,9 +42,12 @@ interface Layer {
 }
 
 const COLOR = {
-  time: "#d8c9a3",
-  line: "#ffffff",
-  credits: "#d8c9a3",
+  card: "#100e0c",
+  brass: "#e0c48a",
+  gap: "#2a241c",
+  time: "#f0e2c4",
+  line: "#f4efe4",
+  credits: "#f0e2c4",
   creditsDim: "#8a7f68",
 } as const;
 
@@ -154,7 +157,7 @@ export class EndingScene implements Scene {
   }
 
   render(renderer: Renderer): void {
-    renderer.clear("#000000");
+    renderer.clear(this.current === "drift" || this.current === "fade" ? "#000000" : COLOR.card);
     switch (this.current) {
       case "drift":
         this.drawTown(renderer, 0);
@@ -236,6 +239,11 @@ export class EndingScene implements Scene {
     const cx = GAME_WIDTH / 2;
     const mid = GAME_HEIGHT / 2;
     const seconds = this.phaseSeconds;
+    doubleFrame(renderer, cx - 188, mid - 64, 376, 128, COLOR.brass, COLOR.gap, COLOR.card);
+    for (let i = -2; i <= 2; i++) {
+      if (i === 0) continue;
+      renderer.rect(cx + i * 18 - 4, mid - 50, 8, 2, COLOR.brass);
+    }
     renderer.text(formatPlayTime(this.playSeconds), cx, mid - 32, {
       size: 24,
       align: "center",
@@ -250,9 +258,15 @@ export class EndingScene implements Scene {
         alpha: Math.min(1, (seconds - this.feel.closingLineAfterSeconds) / 0.8),
       });
     }
+    renderer.rect(cx - 40, mid + 40, 80, 2, COLOR.brass);
   }
 
   private drawCredits(renderer: Renderer): void {
+    // Viền né ô hướng dẫn (kết thúc ở x = 76, y = 76).
+    renderer.rect(88, 14, GAME_WIDTH - 104, 2, COLOR.brass);
+    renderer.rect(16, 88, 2, GAME_HEIGHT - 104, COLOR.brass);
+    renderer.rect(GAME_WIDTH - 18, 14, 2, GAME_HEIGHT - 30, COLOR.brass);
+    renderer.rect(16, GAME_HEIGHT - 16, GAME_WIDTH - 34, 2, COLOR.brass);
     const gap = 14;
     let total = 0;
     for (const line of CREDITS) total += line.size + gap;
