@@ -1,7 +1,7 @@
 import type { AudioPort } from "../audio/audio-engine";
 import { GAME_HEIGHT, GAME_WIDTH, TICK_RATE } from "../core/config";
 import type { Input } from "../core/input";
-import type { Renderer } from "../core/renderer";
+import { doubleFrame, type Renderer } from "../core/renderer";
 import { SPEAKERS, type DialogueLine } from "../data/dialogues";
 import { DIALOGUE_FEEL, type DialogueFeel } from "../data/flow-feel";
 
@@ -9,11 +9,13 @@ import { DIALOGUE_FEEL, type DialogueFeel } from "../data/flow-feel";
 export type MeasureText = (text: string, size: number) => number;
 
 const COLOR = {
-  frame: "#ffffff",
-  fill: "#000000",
-  text: "#ffffff",
-  name: "#d8c9a3",
-  narration: "#d8c9a3",
+  frame: "#e0c48a",
+  gap: "#2a241c",
+  fill: "#14110e",
+  plate: "#1a1612",
+  text: "#f4efe4",
+  name: "#e0c48a",
+  narration: "#e0c48a",
 } as const;
 
 const STOPS = new Set([".", "?", "!", "…"]);
@@ -207,22 +209,32 @@ export class DialogueBox {
     if (this.style === "narration") {
       const total = this.wrapped.length * feel.lineHeight;
       const top = Math.round((GAME_HEIGHT - total) / 2);
+      renderer.rect(GAME_WIDTH / 2 - 36, top - 18, 72, 2, COLOR.narration);
       this.drawLines(renderer, GAME_WIDTH / 2, top, visible, "center", COLOR.narration);
+      renderer.rect(GAME_WIDTH / 2 - 36, top + total + 12, 72, 2, COLOR.narration);
       return;
     }
 
     const { box } = feel;
-    renderer.rect(box.x, box.y, box.w, box.h, COLOR.frame);
-    renderer.rect(box.x + box.border, box.y + box.border, box.w - 2 * box.border, box.h - 2 * box.border, COLOR.fill);
+    doubleFrame(renderer, box.x, box.y, box.w, box.h, COLOR.frame, COLOR.gap, COLOR.fill);
     const name = SPEAKERS[line.speaker].name;
-    if (name !== "") renderer.text(name, box.x + box.border + 4, box.y - feel.lineHeight, { size: feel.fontSize, color: COLOR.name });
+    if (name !== "") {
+      const nameX = box.x + box.border + 4;
+      const nameY = box.y - feel.lineHeight;
+      const nameW = Math.ceil(this.measure(name, feel.fontSize)) + 16;
+      const plateH = feel.lineHeight + 2;
+      renderer.rect(nameX - 8, nameY - 2, nameW, plateH, COLOR.plate);
+      renderer.rect(nameX - 8, nameY - 2, nameW, 2, COLOR.frame);
+      renderer.rect(nameX - 8, nameY - 2, 2, plateH, COLOR.frame);
+      renderer.text(name, nameX, nameY, { size: feel.fontSize, color: COLOR.name });
+    }
     this.drawLines(renderer, box.x + box.border + box.padding, box.y + box.border + box.padding - 2, visible, "left", COLOR.text);
     if (this.lineComplete && Math.floor(this.tick / 20) % 2 === 0) {
       const x = box.x + box.w - box.border - 20;
       const y = box.y + box.h - box.border - 18;
-      renderer.rect(x, y, 10, 2, COLOR.text);
-      renderer.rect(x + 2, y + 2, 6, 2, COLOR.text);
-      renderer.rect(x + 4, y + 4, 2, 2, COLOR.text);
+      renderer.rect(x, y, 10, 2, COLOR.frame);
+      renderer.rect(x + 2, y + 2, 6, 2, COLOR.frame);
+      renderer.rect(x + 4, y + 4, 2, 2, COLOR.frame);
     }
   }
 

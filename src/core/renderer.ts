@@ -1,4 +1,4 @@
-import { FONT_FAMILY, GAME_HEIGHT, GAME_WIDTH } from "./config";
+import { FONT_FAMILY, GAME_HEIGHT, GAME_WIDTH, GUIDE_SLOT } from "./config";
 import { SpriteStore } from "./sprites";
 
 /**
@@ -27,6 +27,45 @@ export function canvasCssSize(
     ? Math.min((boxWidth * ratio) / GAME_WIDTH, (boxHeight * ratio) / GAME_HEIGHT)
     : pixelArtScale(boxWidth * ratio, boxHeight * ratio);
   return { scale, width: (GAME_WIDTH * scale) / ratio, height: (GAME_HEIGHT * scale) / ratio };
+}
+
+export interface CssRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Hộp CSS của `#guide-slot` so với khung chứa canvas.
+ * `canvasLeft` / `canvasTop` là góc trên-trái của canvas trong khung đó (pixel CSS).
+ * Kích thước lấy theo hộp canvas đang hiện, nên ô bám GUIDE_SLOT khi canvas co giãn.
+ */
+export function guideSlotCss(canvasLeft: number, canvasTop: number, canvasWidth: number, canvasHeight: number): CssRect {
+  const sx = canvasWidth / GAME_WIDTH;
+  const sy = canvasHeight / GAME_HEIGHT;
+  return {
+    left: canvasLeft + GUIDE_SLOT.x * sx,
+    top: canvasTop + GUIDE_SLOT.y * sy,
+    width: GUIDE_SLOT.w * sx,
+    height: GUIDE_SLOT.h * sy,
+  };
+}
+
+/** Khung kép: viền `outer`, rãnh `gap`, ruột `fill`. Ruột thụt 4 px, cùng độ dày viền hộp thoại. */
+export function doubleFrame(
+  draw: { rect(x: number, y: number, w: number, h: number, color: string): void },
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  outer: string,
+  gap: string,
+  fill: string,
+): void {
+  draw.rect(x, y, w, h, outer);
+  draw.rect(x + 2, y + 2, w - 4, h - 4, gap);
+  draw.rect(x + 4, y + 4, w - 8, h - 8, fill);
 }
 
 export interface TextOptions {
@@ -78,6 +117,27 @@ export class Renderer {
     this.pixelScale = size.scale;
     this.canvas.style.width = `${size.width}px`;
     this.canvas.style.height = `${size.height}px`;
+    this.placeGuideSlot();
+  }
+
+  /**
+   * Đặt `#guide-slot` đúng hình GUIDE_SLOT trên canvas đang hiện.
+   * CSS không làm được việc này: kích thước canvas là style inline do `fit()` ghi, và canvas được căn giữa trong `#stage`.
+   */
+  private placeGuideSlot(): void {
+    const slot = document.getElementById("guide-slot");
+    const frame = this.frame;
+    if (!slot || !frame) return;
+    const frameRect = frame.getBoundingClientRect();
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const canvasWidth = canvasRect.width > 0 ? canvasRect.width : this.canvas.clientWidth;
+    const canvasHeight = canvasRect.height > 0 ? canvasRect.height : this.canvas.clientHeight;
+    if (!(canvasWidth > 0) || !(canvasHeight > 0)) return;
+    const placed = guideSlotCss(canvasRect.left - frameRect.left, canvasRect.top - frameRect.top, canvasWidth, canvasHeight);
+    slot.style.left = `${placed.left}px`;
+    slot.style.top = `${placed.top}px`;
+    slot.style.width = `${placed.width}px`;
+    slot.style.height = `${placed.height}px`;
   }
 
   clear(color: string): void {

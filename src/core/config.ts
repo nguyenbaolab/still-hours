@@ -11,3 +11,11 @@ export const TICK_RATE = 60;
  * Yêu cầu khi chọn: hỗ trợ đầy đủ dấu tiếng Việt (xem CLAUDE.md).
  */
 export const FONT_FAMILY = '"VT323", monospace';
+
+/**
+ * Vùng trống góc trên-trái cho nhân vật hướng dẫn, theo pixel logic.
+ * Avatar 38×38 vẽ phóng 2 vừa khít 76×76. Viền bàn tháo nằm ngoài bàn 4 px (từ x = 76, y = 24),
+ * nên ô kết thúc đúng trước viền đó. Không phủ khung né, thanh HP, khung thoại hay đồng hồ góc phải-trên.
+ * Phần tử `#guide-slot` bám vùng này mỗi lần canvas co giãn.
+ */
+export const GUIDE_SLOT = { x: 0, y: 0, w: 76, h: 76 } as const;

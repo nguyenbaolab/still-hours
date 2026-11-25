@@ -8,7 +8,14 @@ import type { Scene } from "./scene";
 
 type Mode = "idle" | "out" | "in";
 
-const COLOR = { fade: "#000000", hint: "#8a7f68", debug: "#e0524a" } as const;
+const COLOR = {
+  fade: "#000000",
+  lid: "#14110e",
+  brass: "#e0c48a",
+  plate: "#1a1612",
+  hint: "#e0c48a",
+  debug: "#e0524a",
+} as const;
 
 /**
  * Giữ cảnh hiện tại và chuyển cảnh có mờ đen `FLOW_FEEL.fadeSeconds`. Cũng giữ những việc chung của mọi cảnh:
@@ -102,16 +109,29 @@ export class Director {
   render(renderer: Renderer, alpha: number): void {
     this.current.render(renderer, alpha);
     const cover = this.cover;
-    if (cover > 0) {
-      renderer.setAlpha(cover);
-      renderer.rect(0, 0, GAME_WIDTH, GAME_HEIGHT, COLOR.fade);
-      renderer.setAlpha(1);
-    }
+    if (cover > 0) this.drawFade(renderer, cover);
+    // Nhãn nằm trên dải y < 24, phía trên viền bàn tháo và trên đồng hồ góc phải.
     if (this.audio.muted) {
-      renderer.text("tắt tiếng (M)", GAME_WIDTH - 8, 8, { size: 16, align: "right", color: COLOR.hint });
+      renderer.rect(GAME_WIDTH - 128, 4, 120, 18, COLOR.plate);
+      renderer.text("tắt tiếng (M)", GAME_WIDTH - 8, 4, { size: 16, align: "right", color: COLOR.hint });
     }
     if (DEBUG.session) {
-      renderer.text("DEBUG · không lưu", GAME_WIDTH - 8, 28, { size: 16, align: "right", color: COLOR.debug });
+      const right = this.audio.muted ? GAME_WIDTH - 136 : GAME_WIDTH - 8;
+      renderer.rect(right - 158, 4, 158, 18, COLOR.plate);
+      renderer.text("DEBUG · không lưu", right, 4, { size: 16, align: "right", color: COLOR.debug });
     }
+  }
+
+  /** Mờ đen như cũ, thêm hai nắp mỏng khép từ trên và dưới theo đúng `cover`. */
+  private drawFade(renderer: Renderer, cover: number): void {
+    renderer.setAlpha(cover);
+    renderer.rect(0, 0, GAME_WIDTH, GAME_HEIGHT, COLOR.fade);
+    renderer.setAlpha(1);
+    const band = Math.round(cover * 14);
+    if (band <= 0) return;
+    renderer.rect(0, 0, GAME_WIDTH, band, COLOR.lid);
+    renderer.rect(0, band, GAME_WIDTH, 2, COLOR.brass);
+    renderer.rect(0, GAME_HEIGHT - band - 2, GAME_WIDTH, 2, COLOR.brass);
+    renderer.rect(0, GAME_HEIGHT - band, GAME_WIDTH, band, COLOR.lid);
   }
 }
