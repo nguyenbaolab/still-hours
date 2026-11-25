@@ -4,6 +4,7 @@
  */
 
 import { gameEvents, type GameEvents } from "../core/game-events";
+import type { PlayerFeel } from "../data/feel";
 import type { ResidentId } from "../data/residents/types";
 import { stageOf } from "./mechanism";
 import { DRAW_FEEL } from "../data/sketch-feel";
@@ -61,11 +62,12 @@ export function crossedMilestones(from: number, to: number, milestones: readonly
   return milestones.filter((mark) => mark > from && mark <= to).sort((a, b) => a - b);
 }
 
-/** Loại gợi ý riêng của một pattern: bút, đứng yên, khe cửa, chữ, hoặc thường. */
-export type DodgeHintKind = "pencil" | "still" | "exit" | "word" | "plain";
+/** Loại gợi ý riêng của một pattern: đứng yên, khe cửa, chữ, hoặc thường. */
+export type DodgeHintKind = "still" | "exit" | "word" | "plain";
 
-export function dodgeHintKind(pattern: Pattern): DodgeHintKind {
-  if (pattern.pencil) return "pencil";
+/** Loại gợi ý của pattern; null với pha có bút (Linh), không có gợi ý chữ. */
+export function dodgeHintKind(pattern: Pattern): DodgeHintKind | null {
+  if (pattern.pencil) return null;
   if (pattern.finish?.kind === "exit") return "exit";
   if (pattern.still) return "still";
   if (pattern.events.some((event) => event.type === "word")) return "word";
@@ -75,10 +77,14 @@ export function dodgeHintKind(pattern: Pattern): DodgeHintKind {
 /**
  * Gợi ý hiện ở pha né sau khi thua `losses` lần ở lượt này. Chưa đủ `hintAfterLosses` thì không có.
  * Đủ thì một dòng riêng theo loại pha; từ `generalHintAfterLosses` thì thêm dòng chung (Shift).
+ * Pha có bút (Linh) không có gợi ý chữ nào (cả dòng chung): CLAUDE.md đòi không chữ hướng dẫn ở đó; sự kiện `stuck` vẫn phát
+ * và nhân vật hướng dẫn (đợt sau) là bên nói.
  */
 export function dodgeHints(pattern: Pattern, losses: number, feel: HudFeel = HUD_FEEL): string[] {
-  if (losses < feel.hintAfterLosses) return [];
-  const lines: string[] = [HINTS.dodge[dodgeHintKind(pattern)]];
+  if (losses < feel.hintAfterLosses || pattern.pencil) return [];
+  const kind = dodgeHintKind(pattern);
+  if (!kind) return [];
+  const lines: string[] = [HINTS.dodge[kind]];
   if (losses >= feel.generalHintAfterLosses) lines.push(HINTS.dodgeGeneral);
   return lines;
 }
@@ -145,6 +151,8 @@ export interface RoundContext {
   losses: number;
   /** Máu tối đa của người chơi ở pha né (bỏ trống = `PLAYER_FEEL.maxHp`). */
   maxHp?: number;
+  /** Ghi đè cảm giác của người chơi ở pha né (hitbox, thời gian bất tử...) theo cư dân; bỏ trống = `PLAYER_FEEL`. */
+  player?: Partial<PlayerFeel>;
   score: ScoreBoard;
   events: GameEvents;
 }

@@ -84,9 +84,11 @@ export const HUD_COLOR = {
 
 /** Gợi ý khi kẹt. Tiếng Việt, ngắn, một dòng ≤ ~60 ký tự (cỡ chữ 16). */
 export const HINTS = {
-  /** Gợi ý riêng theo loại pha né. */
+  /**
+   * Gợi ý riêng theo loại pha né. Pha có bút (Linh) cố ý KHÔNG có dòng nào: CLAUDE.md đòi không chữ hướng dẫn ở đó; gợi ý khi kẹt
+   * của Linh do nhân vật hướng dẫn nói (đợt sau), nghe qua sự kiện `stuck`.
+   */
   dodge: {
-    pencil: "Chạm vào cây bút để cầm, rồi cứ đi là có nét. Tránh những thứ lấp lánh.",
     still: "Đứng yên một lúc thì nhịp chậm lại và đạn thưa ra.",
     exit: "Một đoạn viền khung sẽ nhấp nháy rồi mở. Bước ra khỏi khung qua đó.",
     word: "Câu chữ không mất máu, chỉ làm chậm nhịp. Cứ né đạn trước.",

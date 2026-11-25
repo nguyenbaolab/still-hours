@@ -149,7 +149,7 @@ export class DodgePhase implements Scene {
     this.ctx = options.context ?? soloContext();
     // Chơi lại sau khi thua (boss mang số vòng theo): các mốc dưới mức tiến độ lúc bắt đầu không ghi điểm dồn một lúc.
     this.lastProgress = dodgeProgress(pattern, 0, 0, this.carriedLoops);
-    this.player = new Player({ ...PLAYER_FEEL, maxHp: this.ctx.maxHp ?? PLAYER_FEEL.maxHp }, bodySize);
+    this.player = new Player({ ...PLAYER_FEEL, ...this.ctx.player, maxHp: this.ctx.maxHp ?? PLAYER_FEEL.maxHp }, bodySize);
     this.player.place(this.arena.x + this.arena.w / 2, this.arena.y + this.arena.h / 2);
 
     // Beat 0 diễn ra sau một đoạn dạo đầu, tính từ bây giờ theo đồng hồ âm thanh.

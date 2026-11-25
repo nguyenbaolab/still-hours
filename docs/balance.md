@@ -1,5 +1,8 @@
 # Cân bằng độ khó (gameplay-balance-v2)
 
+> **Hai đợt.** Đợt 1 (commit `721782d`) làm cư dân 1 dễ hơn cư dân sau, nhưng chủ dự án chơi thử vẫn thấy quá khó. **Đợt 2** (mục cuối
+> file này, "Đợt 2") hạ thêm cư dân 1 và làm mềm cư dân 2. Các bảng ngay dưới là của đợt 1; số hiện hành ở mục "Đợt 2".
+
 Vấn đề: game quá khó, và người chơi không biết bao giờ mới thắng. Số đo "trước" là của commit `cff009e`.
 
 ## Phát hiện
@@ -79,7 +82,7 @@ Mọi con số ở `src/data/hud-feel.ts` (`HUD_FEEL`, `HUD_LAYOUT`, `HINTS`).
 | Sao của lượt | theo máu còn lại lúc thắng | ≥ 75% máu: 3 sao; ≥ 40%: 2; còn lại 1 (`stars.three`, `stars.two`) |
 | Bảng "Xong lượt n" + sao | dưới màn, 3 giây đầu pha tháo ngay sau đó | `starsBannerSeconds` 3 |
 | Tổng kết sao cuối trận | giữa màn, trên hội thoại khép trận | "n/9 sao" |
-| Gợi ý riêng (bút, đứng yên, khe cửa, chữ, thường) | dưới màn, pha né | sau 2 lần thua cùng lượt (`hintAfterLosses`) |
+| Gợi ý riêng (đứng yên, khe cửa, chữ, thường; **không có cho Linh**, đợt 2) | dưới màn, pha né | sau 2 lần thua cùng lượt (`hintAfterLosses`) |
 | Gợi ý chung (Shift) | dòng thứ hai | sau 4 lần thua (`generalHintAfterLosses`) |
 | Gợi ý pha tháo theo bộ phận đang chọn | dưới màn | sau 12 giây không tiến bộ (`idleSeconds`) |
 
@@ -95,3 +98,77 @@ Số lần thua **không hiện ở đâu** (CLAUDE.md, mục "Thua"): chỉ dù
 - CLAUDE.md còn ghi số cũ (r1 120→144..., máu 20 cho mọi người): chưa sửa vì ngoài phạm vi nhiệm vụ này (xem báo cáo, "Cần task nối").
 - Sao tính theo máu của **lần thắng**, không phạt số lần thua trước đó. Muốn thưởng cho ai không thua lần nào: thêm ràng buộc ở
   `BattleScene.watchOutcome` (có sẵn `this.losses`).
+
+## Đợt 2: cư dân 1 là màn làm quen
+
+Phản hồi sau khi chơi thử: r1 vẫn quá khó. Mục tiêu: người chơi mới thắng r1 ngay lần đầu mà không cần biết luật; r2 là bước
+chuyển hợp lý. Tiêu chí đo được: bot **kém** thắng cả ba lượt r1 ngay lần đầu ít nhất 9/10 lần.
+
+### Bot kém (`src/testing/difficulty.ts`, `firstTryTrials`)
+
+`DodgerBot` (nhìn cảnh báo, tính quỹ đạo đạn chính xác) bị làm kém theo hai cách:
+
+1. **Phản xạ chậm:** chỉ được ra quyết định mỗi ~1 giây (`reactionTicks` 30; bot quyết định cách một lần gọi), giữa hai quyết định giữ nguyên phím.
+2. **Hay đi sai:** mỗi quyết định có 50% xác suất bị thay bằng một hướng bấm bừa (8 hướng hoặc đứng yên), giữ tới quyết định sau.
+
+Một lần thử = ba lượt r1 liên tiếp, mỗi lượt chỉ được chơi MỘT lần (thua là hỏng lần thử). Bot vẫn nhìn thấy cảnh báo và tính quỹ đạo
+đúng lúc nó quyết định, nên vẫn là cận dưới của người thật; số thật chỉ biết khi chủ dự án chơi.
+
+| Cấu hình | r1 gốc (cff009e) | r1 đợt 1 (721782d) | **r1 nay** | r2 gốc | r2 đợt 1 | **r2 nay** |
+| -------- | ---------------- | ------------------ | ---------- | ------ | -------- | ---------- |
+| Máu (lần trúng) | 20 (5) | 36 (9) | **40 (10)** | 20 (5) | 32 (8) | 32 (8) |
+| Thắng ngay lần đầu, bot kém (phản xạ 1 s, 50% bấm bừa), 10 lần thử | 0/10 | 7/10 | **10/10** | 1/10 | 7/10 | **10/10** |
+| Cùng cấu hình, 30 lần thử | 0/30 | 25/30 | **30/30** | 4/30 | 23/30 | **30/30** |
+| Bot rất kém (phản xạ 1,5 s, 60% bấm bừa), 30 lần thử | 0/30 | 29/30 | **30/30** | 7/30 | 25/30 | **29/30** |
+| Trúng đạn trung bình mỗi ba lượt (bot kém) | 14,9 | 13,8 | **10,7** | 10,6 | 11,7 | **10,2** |
+
+### Thông số r1
+
+| | Gốc | Đợt 1 | **Nay** |
+| - | --- | ----- | ------- |
+| Máu | 20 | 36 | **40** |
+| Hitbox người chơi (`ResidentData.player.hitboxSize`) | 10 | 10 | **8** |
+| Bất tử sau khi trúng (`player.invincibleSeconds`) | 1,0 s | 1,0 s | **1,6 s** |
+| Tốc độ đạn thẳng / nhắm (`R1_BULLET_SPEED`) | 140 | 140 | **100** |
+| BPM lượt 1 | 120→144 | 96→112 | **88→98** |
+| BPM lượt 2 | 132→160 | 104→122 | **94→106** |
+| BPM lượt 3 | 144→176 | 112→132 | **100→114** |
+| Độ dài (beat) lượt 1 / 2 / 3 | 60 / 64 / 68 | 48 / 52 / 56 | **44 / 46 / 50** |
+| Giây kịch bản lượt 1 / 2 / 3 | 26,3 / 25,2 / 24,3 | 27,1 / 26,9 / 26,7 | **28,0 / 27,1 / 27,4** |
+| Đạn trừ máu / giây, lượt 1 / 2 / 3 | 3,54 / 4,29 / 5,02 | 0,92 / 1,53 / 2,06 | **0,79 / 1,11 / 1,46** |
+| Đỉnh trong 4 giây, lượt 1 / 2 / 3 | 19 / 22 / 26 | 5 / 9 / 13 | **5 / 6 / 10** |
+| `aimed` | 3 viên mỗi 4 beat | 1 / 2 / 2 viên mỗi 8 beat | **1 / 1 / 2 viên mỗi 8 beat** |
+| `sweep` (kim quét) lượt 3 | 2 | 2 | **1** |
+| Áp lực (đạn/giây ÷ lần trúng chịu được) TB | 0,86 | 0,17 | **0,11** |
+
+### Thông số r2
+
+Chỉ làm mềm vừa đủ để từ r1 sang r2 không nhảy vọt; cơ chế "đứng yên" vẫn là thứ mới phải học. Cảm giác người chơi của r2 là mặc định
+(hitbox 10, bất tử 1,0 s).
+
+| | Gốc | Đợt 1 | **Nay** |
+| - | --- | ----- | ------- |
+| Máu | 20 | 32 | 32 |
+| Đạn trừ máu / giây, lượt 1 / 2 / 3 | 0,93 / 1,64 / 2,25 | 0,93 / 1,64 / 2,25 | 0,93 / **1,28 / 1,67** |
+| Số đạn lượt 1 / 2 / 3 | 29 / 55 / 81 | 29 / 55 / 81 | 29 / **43 / 60** |
+| Đỉnh trong 4 giây lượt 1 / 2 / 3 | 5 / 8 / 11 | 5 / 8 / 11 | 5 / **7 / 8** |
+| Lượt 2 | chuỗi mỗi beat | chuỗi mỗi beat | bỏ mỗi viên thứ tư |
+| Lượt 3 | chuỗi mỗi beat + viên đôi mỗi 4, `aimed` 2 viên | như gốc | chuỗi mỗi beat, bỏ viên đôi, `aimed` 1 viên |
+| Áp lực TB | 0,32 | 0,20 | 0,16 |
+
+Đường cong áp lực trung bình (đạn thuần): r1 0,11 → r2 0,16 → r4 0,24 → boss 0,27 (test `src/testing/difficulty.test.ts` giữ thứ tự này).
+
+### Vì sao chọn các đòn bẩy này
+
+- **Đạn chậm hơn (140 → 100) và thưa hơn:** người mới chưa biết luật nên cần thời gian nhìn và quyết định; đạn chậm tăng thời gian phản ứng thêm
+  40% mà không đổi hình dạng pattern. Đây là đòn bẩy mạnh nhất với người phản xạ chậm.
+- **Hitbox 8, bất tử 1,6 s, 40 máu:** mỗi lần trúng bớt đau và không bị trúng liên tiếp (bất tử lâu hơn). Chỉ áp cho r1 (`ResidentData.player`):
+  từ r2 về mặc định để mức khó "thật" của game giữ nguyên.
+- **Không làm r1 không thể thua:** thắng là có nghĩa nhờ có thể thua; bot kém thắng 30/30 mà không cần miễn thua. Nếu chủ dự án vẫn thấy khó,
+  bước tiếp theo hợp lý là máu không xuống dưới 1 ở r1 (một dòng ở `DodgePhase`), nhưng sao theo máu sẽ mất ý nghĩa ở r1.
+- **Pha tháo r1:** không cần đổi. Đồng hồ quả quýt đã `rhythmic: false` (không có cửa sổ nhịp để bấm trượt) và `lift` chỉ giữ Z 2 beat ở 60 BPM.
+
+### Bỏ gợi ý chữ của Linh
+
+`HINTS.dodge.pencil` ("Chạm vào cây bút để cầm...") đã xóa. Pha có bút giờ **không có gợi ý chữ nào** (cả dòng chung về Shift): `dodgeHintKind`
+trả `null`, `dodgeHints` trả mảng rỗng. Sự kiện `stuck` (thua nhiều lần) vẫn phát như cũ; nhân vật hướng dẫn nói thay ở đợt sau.

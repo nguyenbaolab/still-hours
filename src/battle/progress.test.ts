@@ -109,8 +109,8 @@ describe("crossedMilestones", () => {
 });
 
 describe("gợi ý pha né", () => {
-  it("loại gợi ý theo pattern: bút, khe cửa, đứng yên, chữ, thường", () => {
-    expect(dodgeHintKind(R4_ROUNDS[0])).toBe("pencil");
+  it("loại gợi ý theo pattern: không có cho bút, khe cửa, đứng yên, chữ, thường", () => {
+    expect(dodgeHintKind(R4_ROUNDS[0])).toBeNull();
     expect(dodgeHintKind(BOSS_ROUNDS[0])).toBe("exit");
     expect(dodgeHintKind(R2_ROUNDS[0])).toBe("still");
     expect(dodgeHintKind(R3_ROUNDS[0])).toBe("word");
@@ -123,7 +123,9 @@ describe("gợi ý pha né", () => {
     expect(dodgeHints(pattern, HUD_FEEL.hintAfterLosses - 1)).toEqual([]);
     expect(dodgeHints(pattern, HUD_FEEL.hintAfterLosses)).toEqual([HINTS.dodge.plain]);
     expect(dodgeHints(pattern, HUD_FEEL.generalHintAfterLosses)).toEqual([HINTS.dodge.plain, HINTS.dodgeGeneral]);
-    expect(dodgeHints(R4_ROUNDS[0], 2)).toEqual([HINTS.dodge.pencil]);
+    // Linh (pha có bút): không có gợi ý chữ nào, dù thua bao nhiêu lần.
+    for (const losses of [0, 2, 4, 9]) for (const round of R4_ROUNDS) expect(dodgeHints(round, losses)).toEqual([]);
+    expect(Object.keys(HINTS.dodge)).not.toContain("pencil");
   });
 
   it("mỗi dòng gợi ý đủ ngắn để vừa màn 640 ở cỡ 16 (VT323, advance 0,4 em)", () => {

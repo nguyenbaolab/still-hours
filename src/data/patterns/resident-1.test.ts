@@ -6,7 +6,7 @@ import { BULLET_FEEL } from "../rhythm-feel";
 import { POCKET_WATCH } from "../mechanisms/pocket-watch";
 import type { Pattern } from "../pattern-types";
 import { threat } from "../../testing/difficulty";
-import { R1_ROUNDS } from "./resident-1";
+import { R1_BULLET_SPEED, R1_ROUNDS } from "./resident-1";
 
 /** Tempo sau khi chạy hết sự kiện `tempo` của một lượt. */
 function tempoOf(round: Pattern): TempoMap {
@@ -24,11 +24,11 @@ describe("cư dân 1: tích tắc dồn dập", () => {
     }
   });
 
-  it("BPM tăng dần: 96 → 112, 104 → 122, 112 → 132 (đã hạ so với 120 → 144, 132 → 160, 144 → 176); lượt 3 kết ở đúng 132", () => {
+  it("BPM tăng nhẹ: 88 → 98, 94 → 106, 100 → 114 (đã hạ so với 120 → 144, 132 → 160, 144 → 176); lượt 3 kết ở đúng 114", () => {
     const expected = [
-      [96, 112, 48],
-      [104, 122, 52],
-      [112, 132, 56],
+      [88, 98, 44],
+      [94, 106, 46],
+      [100, 114, 50],
     ] as const;
     R1_ROUNDS.forEach((round, i) => {
       const [start, end, length] = expected[i] as readonly [number, number, number];
@@ -39,7 +39,7 @@ describe("cư dân 1: tích tắc dồn dập", () => {
       expect(tempo.bpmAtBeat(32)).toBeCloseTo(end, 6);
       expect(tempo.bpmAtBeat(round.lengthBeats)).toBeCloseTo(end, 6);
     });
-    expect(tempoOf(R1_ROUNDS[2]).bpmAtBeat(R1_ROUNDS[2].lengthBeats)).toBeCloseTo(132, 6);
+    expect(tempoOf(R1_ROUNDS[2]).bpmAtBeat(R1_ROUNDS[2].lengthBeats)).toBeCloseTo(114, 6);
   });
 
   it("mỗi lượt dài 22–32 giây trên tempo kịch bản", () => {
@@ -63,7 +63,7 @@ describe("cư dân 1: tích tắc dồn dập", () => {
     }
   });
 
-  it("chuỗi straight cứ 2 beat xen hai bên; aimed thưa (cứ 8 beat); lượt 3 có đúng hai sweep 30°/beat", () => {
+  it("chuỗi straight cứ 2 beat xen hai bên; aimed thưa (cứ 8 beat); lượt 3 có đúng một sweep 30°/beat", () => {
     for (const round of R1_ROUNDS) {
       const chain = round.events.filter(
         (e) => e.type === "straight" && Number.isInteger(e.beat) && (e.from === "left" || e.from === "right"),
@@ -76,14 +76,25 @@ describe("cư dân 1: tích tắc dồn dập", () => {
         if (e.type === "straight") expect(e.from).toBe(i % 2 === 0 ? "left" : "right");
       });
       const aimed = round.events.filter((e) => e.type === "aimed");
-      expect(aimed.length).toBeGreaterThanOrEqual(5);
+      expect(aimed.length).toBeGreaterThanOrEqual(4);
       const aimedBeats = aimed.map((e) => e.beat);
       for (let i = 1; i < aimedBeats.length; i++) expect((aimedBeats[i] as number) - (aimedBeats[i - 1] as number)).toBe(8);
     }
     expect(R1_ROUNDS[0].events.some((e) => e.type === "sweep")).toBe(false);
     const sweeps = R1_ROUNDS[2].events.filter((e) => e.type === "sweep");
-    expect(sweeps).toHaveLength(2);
+    expect(sweeps).toHaveLength(1);
     for (const e of sweeps) if (e.type === "sweep") expect(e.degreesPerBeat).toBe(30);
+  });
+});
+
+describe("cư dân 1: đạn chậm", () => {
+  it("mọi đạn thẳng và đạn nhắm bay R1_BULLET_SPEED (100), chậm hơn mặc định 140", () => {
+    expect(R1_BULLET_SPEED).toBeLessThan(BULLET_FEEL.speed);
+    for (const round of R1_ROUNDS) {
+      for (const e of round.events) {
+        if (e.type === "straight" || e.type === "aimed") expect(e.speed).toBe(R1_BULLET_SPEED);
+      }
+    }
   });
 });
 
@@ -109,9 +120,9 @@ describe("cư dân 1: đồng hồ quả quýt", () => {
 });
 
 describe("cư dân 1 là cư dân dễ nhất (gameplay-balance-v2)", () => {
-  it("mỗi lượt có ít hơn 2,5 đạn trừ máu mỗi giây kịch bản (trước đó 3,5 – 5,0), tăng dần qua ba lượt", () => {
+  it("mỗi lượt có ít hơn 1,6 đạn trừ máu mỗi giây kịch bản (gốc 3,5 – 5,0; đợt 1 còn 0,9 – 2,1), tăng dần qua ba lượt", () => {
     const rates = R1_ROUNDS.map((round) => threat(round).perSecond);
-    for (const rate of rates) expect(rate).toBeLessThan(2.5);
+    for (const rate of rates) expect(rate).toBeLessThan(1.6);
     expect(rates[0]).toBeLessThan(rates[1] as number);
     expect(rates[1]).toBeLessThan(rates[2] as number);
   });

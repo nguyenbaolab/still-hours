@@ -14,7 +14,8 @@ import { PLAYER_FEEL } from "../data/feel";
 import type { Pattern } from "../data/pattern-types";
 import { BULLET_FEEL } from "../data/rhythm-feel";
 import { DodgerBot } from "./dodger";
-import { FakeAudio, simulate } from "./sim";
+import { steer } from "./bots";
+import { FakeAudio, lcg, simulate } from "./sim";
 
 /** Thời gian kịch bản (giây) của `beats` beat đầu của lượt. */
 export function scriptSeconds(pattern: Pattern, beats: number): number {
@@ -84,6 +85,15 @@ export function hitsToLose(maxHp: number = PLAYER_FEEL.maxHp, damage: number = B
   return Math.ceil(maxHp / damage);
 }
 
+/**
+ * Người chơi KÉM: ngoài phản xạ chậm (`reactionTicks`), mỗi lần bot ra quyết định có xác suất `errorRate` làm sai: bấm một hướng
+ * ngẫu nhiên (hoặc đứng yên) thay cho hướng bot chọn, giữ tới lần quyết định sau. Cảm giác của người chơi (`player`) là của cư dân.
+ */
+export interface PoorOptions {
+  errorRate?: number;
+  player?: Partial<typeof PLAYER_FEEL>;
+}
+
 export interface HumanResult {
   won: boolean;
   losses: number;
@@ -96,18 +106,27 @@ export interface HumanResult {
  * Chạy một lượt né thật với bot phản xạ chậm: bot chỉ được hành động mỗi `reactionTicks` tick (trong lúc đó giữ nguyên phím).
  * Chỉ dùng cho lượt không cần hành vi riêng (không `pencil`, không `exit`): các lượt đó cần mục tiêu, xem `playthrough.test.ts`.
  */
-export function humanLosses(pattern: Pattern, maxHp: number, reactionTicks: number, maxAttempts = 8, seed = 1): HumanResult {
+export function humanLosses(
+  pattern: Pattern,
+  maxHp: number,
+  reactionTicks: number,
+  maxAttempts = 8,
+  seed = 1,
+  options: PoorOptions = {},
+): HumanResult {
   const { arena } = BATTLE_LAYOUT;
   let losses = 0;
   let hitsTaken = 0;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const audio = new FakeAudio(5, 0.03);
     const input = new Input();
-    const phase = new DodgePhase(input, audio, 18, pattern, { context: soloContext({ maxHp }) });
+    const phase = new DodgePhase(input, audio, 18, pattern, { context: soloContext({ maxHp, ...(options.player ? { player: options.player } : {}) }) });
     const player = phase["player"];
     const world = phase["world"];
     const clock = phase["clock"];
     const bot = new DodgerBot(input);
+    const random = lcg(seed * 7919 + attempt);
+    const hitHalf = (options.player?.hitboxSize ?? PLAYER_FEEL.hitboxSize) / 2;
     let tick = 0;
     let lastHp = maxHp;
     simulate({
@@ -116,7 +135,13 @@ export function humanLosses(pattern: Pattern, maxHp: number, reactionTicks: numb
       step: () => {
         if (tick++ % reactionTicks === 0) {
           const beatsPerSecond = clock.tempo.bpmAtBeat(Math.max(0, clock.beat)) / 60;
-          bot.act(player, world, { arena, beatsPerSecond, hitHalf: PLAYER_FEEL.hitboxSize / 2, speed: PLAYER_FEEL.speed });
+          bot.act(player, world, { arena, beatsPerSecond, hitHalf, speed: PLAYER_FEEL.speed });
+          if (options.errorRate && random() < options.errorRate) {
+            const angle = Math.floor(random() * 9) * (Math.PI / 4);
+            // 9 lựa chọn: 8 hướng, hoặc đứng yên.
+            if (angle >= 2 * Math.PI) steer(input, 0, 0);
+            else steer(input, Math.cos(angle), Math.sin(angle), 0.3);
+          }
         }
         input.poll();
         phase.update();
@@ -132,4 +157,38 @@ export function humanLosses(pattern: Pattern, maxHp: number, reactionTicks: numb
     losses++;
   }
   return { won: false, losses, hp: 0, hitsTaken };
+}
+
+export interface Trials {
+  /** Số lần thử mà cả ba lượt đều thắng ngay lần đầu, không thua lần nào. */
+  wins: number;
+  trials: number;
+  /** Tổng số lần trúng đạn trung bình mỗi lần thử (cả ba lượt). */
+  meanHits: number;
+}
+
+/**
+ * Một người chơi mới chơi cư dân với `rounds` ba lượt: mỗi lần thử là ba lượt liên tiếp, mỗi lượt chỉ được chơi MỘT lần
+ * (thua là hỏng lần thử). Dùng để kiểm "người kém thắng ngay lần đầu".
+ */
+export function firstTryTrials(
+  rounds: readonly Pattern[],
+  maxHp: number,
+  reactionTicks: number,
+  errorRate: number,
+  trials: number,
+  player?: Partial<typeof PLAYER_FEEL>,
+): Trials {
+  let wins = 0;
+  let hits = 0;
+  for (let seed = 1; seed <= trials; seed++) {
+    let ok = true;
+    for (const [index, pattern] of rounds.entries()) {
+      const result = humanLosses(pattern, maxHp, reactionTicks, 1, seed * 31 + index, { errorRate, ...(player ? { player } : {}) });
+      hits += result.hitsTaken;
+      if (!result.won) ok = false;
+    }
+    if (ok) wins++;
+  }
+  return { wins, trials, meanHits: hits / trials };
 }

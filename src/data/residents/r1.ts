@@ -10,6 +10,10 @@ export const RESIDENT_R1: ResidentData = {
   mechanism: POCKET_WATCH,
   dialogue: { open: "r1Open", close: "r1Close", idle: "r1Idle" },
   vignette: "phone",
-  /** Cư dân đầu tiên: nhiều máu nhất (9 lần trúng mới thua). Xem docs/balance.md. */
-  hp: 36,
+  /**
+   * Cư dân đầu tiên, màn làm quen: nhiều máu nhất (10 lần trúng mới thua), hitbox nhỏ hơn (8 px thay vì 10: né sát dễ hơn), bất tử
+   * sau khi trúng 1,6 giây thay vì 1,0 (không bị trúng liên tiếp). Xem docs/balance.md.
+   */
+  hp: 40,
+  player: { hitboxSize: 8, invincibleSeconds: 1.6 },
 };

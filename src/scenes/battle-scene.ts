@@ -264,6 +264,7 @@ export class BattleScene implements Scene {
       stars: [...this.starsByRound],
       losses: this.losses,
       maxHp: this.resident.hp ?? PLAYER_FEEL.maxHp,
+      ...(this.resident.player ? { player: this.resident.player } : {}),
       score: this.score,
       events: this.events,
     };

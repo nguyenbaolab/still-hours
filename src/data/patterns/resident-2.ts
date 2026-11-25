@@ -6,6 +6,8 @@ import type { BulletEvent, Pattern, Side } from "../pattern-types";
  *
  * Đạn `straight` chạy dọc các làn NGOÀI một túi an toàn quanh tâm khung (ô giữa, y và x trong 0,3..0,7), nên đứng giữa
  * khung thì không bị trúng. Cứ 8 beat có `aimed` nhắm vào người chơi, ép phải bước ra rồi mới quay lại đứng yên.
+ * Cân bằng lại (gameplay-balance-v2): lượt 2 bỏ mỗi viên thứ tư của chuỗi, lượt 3 bỏ viên đôi và `aimed` chỉ còn một viên, để bước từ
+ * cư dân 1 sang đây không nhảy vọt (đạn/giây 0,93 / 1,64 / 2,25 → 0,93 / 1,28 / 1,67).
  * Lượt dài nhất khi đứng yên mãi: 1 / 0,75 ≈ 1,33 lần kịch bản. Ba lượt, 100 BPM, 52 / 56 / 60 beat, mỗi lượt một cảnh nền.
  */
 
@@ -64,7 +66,7 @@ export const R2_ROUNDS: readonly [Pattern, Pattern, Pattern] = [
     loop: false,
     finish: { kind: "length" },
     still: { backdrop: "clouds" },
-    events: [...stream(4, 52, 1), ...aimedEvery8(52, 1, 0)],
+    events: [...stream(4, 52, 1).filter((_, i) => i % 4 !== 3), ...aimedEvery8(52, 1, 0)],
   },
   {
     name: "Chú Minh: đàn chim",
@@ -73,6 +75,6 @@ export const R2_ROUNDS: readonly [Pattern, Pattern, Pattern] = [
     loop: false,
     finish: { kind: "length" },
     still: { backdrop: "birds" },
-    events: [...stream(4, 56, 1, 4), ...aimedEvery8(56, 2, 16)],
+    events: [...stream(4, 56, 1), ...aimedEvery8(56, 1, 0)],
   },
 ];
